@@ -2,8 +2,9 @@
 
 ## To ship
 
-- **A mark.** `vexelray-icons` has none for Pix. Draw one on the 96 px grid (`svg/pix.svg`, its own hue), render
-  `src/main/rc/pix.ico`, and put back the `rc.exe` step and the `.res` linker option Vexplore's pom has.
+- ~~A mark~~ — done: `src/main/rc/pix.svg` from the suite icon canvas, rendered to `pix.ico` and linked into the
+  executable through `pix.rc`. The window, file and light variants are beside it; the file icon is for the
+  associations below.
 - **A native build**, both editions, and the reachability metadata checked against it (copied from Vexplore's, with
   the main class renamed; never run).
 - **`installer.json`, `manifest.json`, `install.ps1`**, like Vexplore's, with file associations for the image types,

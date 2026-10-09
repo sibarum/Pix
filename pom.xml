@@ -158,6 +158,7 @@
                                  spelled out so both editions pass the same two options. -->
                             <buildArg>-H:NativeLinkerOption=/SUBSYSTEM:${native.subsystem}</buildArg>
                             <buildArg>-H:NativeLinkerOption=/ENTRY:mainCRTStartup</buildArg>
+                            <buildArg>-H:NativeLinkerOption=${project.build.directory}/pix.res</buildArg>
                             <!-- imagelib linked in rather than extracted: its loader finds the symbols in the
                                  executable and skips the DLL. The exports are what keep the linker from dropping a
                                  library nothing calls by name. They are imagelib-link.args (beside imagelib.lib)
@@ -183,6 +184,31 @@
                             <buildArg>-H:NativeLinkerOption=dbghelp.lib</buildArg>
                         </buildArgs>
                     </configuration>
+                </plugin>
+                <!-- The executable's icon: a resource linked into the program, so it has to exist as a compiled .res
+                     before link time. rc.exe is the Windows SDK's resource compiler and must be on PATH, as it is in a
+                     Visual Studio developer prompt (which the native build already needs for link.exe). -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <version>3.1.0</version>
+                    <executions>
+                        <execution>
+                            <id>compile-icon-resource</id>
+                            <phase>prepare-package</phase>
+                            <goals><goal>run</goal></goals>
+                            <configuration>
+                                <target>
+                                    <exec executable="rc.exe" searchpath="true" failonerror="true">
+                                        <arg value="/nologo"/>
+                                        <arg value="/fo"/>
+                                        <arg file="${project.build.directory}/pix.res"/>
+                                        <arg file="${project.basedir}/src/main/rc/pix.rc"/>
+                                    </exec>
+                                </target>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -262,7 +288,8 @@
 
           release: Windows GUI subsystem (no console window ever) and no automation socket in the image.
           debug:   console subsystem (stdout is the `automation: localhost:<port>` protocol line) and automation.
-          The plugins are declared once, in pluginManagement; the profiles only choose their inputs. Run them from a Visual Studio developer prompt, for link.exe.
+          The plugins are declared once, in pluginManagement; the profiles only choose their inputs. Both run rc.exe
+          for the icon (src/main/rc), so run them from a Visual Studio developer prompt.
         -->
         <profile>
             <id>native</id>
@@ -272,6 +299,10 @@
             </properties>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                    </plugin>
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
@@ -290,6 +321,10 @@
             </properties>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                    </plugin>
                     <plugin>
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>

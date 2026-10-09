@@ -79,4 +79,5 @@ mvn -Pnative-release package -DskipTests   # target/pix.exe        GUI subsystem
 mvn -Pnative package -DskipTests           # target/pix-debug.exe  console, automation present
 ```
 
-Not yet built, and there is no icon resource yet: Pix has no mark.
+Both link `src/main/rc/pix.rc`, the executable's icon: `pix.svg` from the suite icon canvas, rendered to `pix.ico` by
+`vex-suite-common`'s `tools/Ico.java`. The window, file and light variants are beside it.
