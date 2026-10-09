@@ -5,10 +5,14 @@
 - ~~A mark~~ — done: `src/main/rc/pix.svg` from the suite icon canvas, rendered to `pix.ico` and linked into the
   executable through `pix.rc`. The window, file and light variants are beside it; the file icon is for the
   associations below.
-- **A native build**, both editions, and the reachability metadata checked against it (copied from Vexplore's, with
-  the main class renamed; never run).
-- **`installer.json`, `manifest.json`, `install.ps1`**, like Vexplore's, with file associations for the image types,
-  and an entry in Vexplore's `suite/suite.json`.
+- **The debug native build** (`-Pnative`). The release edition builds, starts and shows a picture with the
+  reachability metadata copied from Vexplore's; the debug one, with automation, has not been built.
+- ~~`installer.json` and the suites~~ — done: `installer.json` (id `pix`, on PATH, the icon, associations for every
+  type imagelib decodes), and Pix is a member of both suites, Vexplore's `suite/suite.json` and
+  `vexelray-framework/installer-suite.json` (with `docs/apps/pix.md`). They skip it until it is published.
+- **The first release**: the GitHub repo `sibarum/Pix` (public, since the installers read its raw `manifest.json`),
+  then `installer-core`'s CLI to generate `install.ps1`, `uninstall.ps1`, `update.ps1` and `manifest.json` and to
+  publish `pix.exe` as release `v0.1.0`, as Vexplore's were. Its build needs `vex-suite-common` published too.
 
 ## The suite
 
