@@ -1,6 +1,6 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.pix.files.Preview;
+import dev.sibarum.suite.pictures.Decoded;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ import java.util.List;
  * @param at       the image shown; null when the folder has none
  * @param preview  the picture of {@code at}, or null until it has been read. Never of another file
  */
-record Doc(Path folder, List<Path> pictures, boolean listed, Path at, Preview preview) {
+record Doc(Path folder, List<Path> pictures, boolean listed, Path at, Decoded preview) {
 
     static Doc initial() {
         return new Doc(null, List.of(), false, null, null);
@@ -48,7 +48,7 @@ record Doc(Path folder, List<Path> pictures, boolean listed, Path at, Preview pr
         return new Doc(folder, pictures, listed, path, null);
     }
 
-    Doc previewing(Preview p) {
+    Doc previewing(Decoded p) {
         return new Doc(folder, pictures, listed, at, p);
     }
 

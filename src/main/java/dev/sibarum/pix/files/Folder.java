@@ -1,5 +1,7 @@
 package dev.sibarum.pix.files;
 
+import dev.sibarum.suite.pictures.Pictures;
+
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;

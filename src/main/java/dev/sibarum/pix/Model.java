@@ -1,6 +1,6 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.pix.files.Preview;
+import dev.sibarum.suite.pictures.Decoded;
 import sibarum.atchung.Committer;
 import sibarum.atchung.State;
 
@@ -50,7 +50,7 @@ final class Model {
     }
 
     /** A picture arrived. Dropped unless {@code path} is still the one shown. */
-    void previewed(Path path, Preview preview) {
+    void previewed(Path path, Decoded preview) {
         change(d -> Objects.equals(d.at(), path) ? d.previewing(preview) : d);
     }
 

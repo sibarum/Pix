@@ -4,8 +4,9 @@ An image viewer: one picture, as large as the window allows, and the rest of its
 [vexelray-gui](../vexelray-gui) through [vexelray-framework](../vexelray-framework), and the third member of the suite
 with [Vex](../text-editor-vexel-demo) and [Vexplore](../vexplore).
 
-Pix began as Vexplore's viewer. There the viewer is a second window that drives the explorer's selection; here it is
-the whole application, so `pix <file>` opens a picture without an explorer behind it.
+Pix began as Vexplore's viewer, and the two still share it. In Vexplore the viewer is a second window that drives
+the explorer's selection; here it is the whole application, so `pix <file>` opens a picture without an explorer
+behind it. Vexplore hands pictures to Pix when Pix is installed.
 
 ## Run it
 
@@ -43,22 +44,18 @@ The file asked for is shown before its folder has been read; the count says *rea
 ## How it is put together
 
 ```
-files/     the file system, and nothing else. Pictures (pixels from a file, through imagelib), Picture (a decoded
-           image packed into one sheet), Folder (the images in a folder, in order), Preview, Stamp. No GUI.
-           Blocking: callers run these on Gui.offload().
+files/     Folder: the images in a folder, in order. Blocking: run it on Gui.offload().
 Doc        the one state: the folder, its images, which one is shown and its picture.
 Model      the only way to change it, and an onChange that never delivers an older document after a newer one.
 Previewer  reads the picture of whatever is shown: one worker, latest request wins, read-ahead, an LRU by bytes.
-Viewer     the tree: the picture, and the bar of Tiles under it. Draws the document; steps change it.
-ImageView  one picture, fitted, animated, sliding, over a backdrop.
-Filmstrip  the neighbours' thumbnails.
-Textures   pictures on the GPU: uploaded once, recent ones kept, the rest handed to GuiApp.release. Late-bound.
+Viewer     the suite's PictureViewer as the whole tree: draws the document, and a step changes it.
 Recipes    what is built; the wiring is generated from it.
 ```
 
-**Copied from Vexplore, for now:** `ImageView`, `Filmstrip`, `Tile`, `Icons`, `Textures`, `Lru`, `Type`, `Look`
-(trimmed), `files/Picture`, `files/Stamp`, and the shapes of `Previewer`, `Viewer` and `files/Pictures`. Two copies
-drift, so these belong in a shared module; see [docs/TODO.md](docs/TODO.md).
+Everything else is [`vex-suite-common`](../vex-suite-common), shared with Vexplore: `Pictures` and `Picture`
+(decoding and packing), `PictureViewer` (the tree and its bar), `ImageView`, `Filmstrip`, `Tile`, `Icons`,
+`Textures`, `Lru` and the palette. It is a sibling checkout, installed to the local Maven repository (`mvn install`)
+before this one builds.
 
 ## Looking at it without a person
 

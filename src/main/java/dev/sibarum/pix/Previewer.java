@@ -1,8 +1,9 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.pix.files.Pictures;
-import dev.sibarum.pix.files.Preview;
-import dev.sibarum.pix.files.Stamp;
+import dev.sibarum.suite.Lru;
+import dev.sibarum.suite.pictures.Decoded;
+import dev.sibarum.suite.pictures.Pictures;
+import dev.sibarum.suite.pictures.Stamp;
 import dev.vexelray.gui.core.Gui;
 
 import java.io.IOException;
@@ -42,7 +43,7 @@ final class Previewer {
     static final long BUDGET = 256L * 1024 * 1024;
 
     private final Gui gui;
-    private final Lru<Stamp, Preview> images = new Lru<>(BUDGET, Preview::bytes, p -> { });
+    private final Lru<Stamp, Decoded> images = new Lru<>(BUDGET, Decoded::bytes, p -> { });
 
     // Guarded by this.
     private Path last;
@@ -73,7 +74,7 @@ final class Previewer {
      * The picture already decoded for {@code path}, or null if there is none or the file has changed since. Reads the
      * file's stamp, so not on the GUI thread.
      */
-    Preview kept(Path path) {
+    Decoded kept(Path path) {
         try {
             return images.get(Stamp.of(path));
         } catch (IOException e) {
@@ -141,7 +142,7 @@ final class Previewer {
                         return;
                     }
                 }
-                Preview p = preview(path, big);
+                Decoded p = preview(path, big);
                 if (real) {
                     model.previewed(path, p);
                 } else {
@@ -156,16 +157,16 @@ final class Previewer {
         }
     }
 
-    private Preview preview(Path path, boolean big) {
+    private Decoded preview(Path path, boolean big) {
         try {
-            Preview kept = images.get(Stamp.of(path));
+            Decoded kept = images.get(Stamp.of(path));
             if (kept != null && (!big || kept.large() != null)) {
                 return kept;
             }
         } catch (IOException e) {
             // Gone or unreadable: Pictures says so.
         }
-        Preview fresh = Pictures.of(path, big);
+        Decoded fresh = Pictures.of(path, big);
         if (fresh.picture() != null) {
             images.put(fresh.picture().stamp(), fresh);
         }

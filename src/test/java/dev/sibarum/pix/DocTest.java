@@ -1,6 +1,6 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.pix.files.Preview;
+import dev.sibarum.suite.pictures.Decoded;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -30,7 +30,7 @@ class DocTest {
 
     @Test
     void theListingKeepsTheFileShownAndItsPicture() {
-        Preview p = Preview.none(B, "reading");
+        Decoded p = Decoded.none(B, "reading");
         Doc d = Doc.initial().opening(DIR, B).previewing(p).listing(List.of(A, B, C));
         assertEquals(B, d.at());
         assertEquals(1, d.index());
@@ -68,9 +68,9 @@ class DocTest {
         m.open(DIR, A);
         m.listed(Path.of("elsewhere"), List.of(C));
         assertFalse(m.doc().listed(), "a listing of a folder no longer open");
-        m.previewed(B, Preview.none(B, "late"));
+        m.previewed(B, Decoded.none(B, "late"));
         assertNull(m.doc().preview(), "a picture of a file no longer shown");
-        m.previewed(A, Preview.none(A, "on time"));
+        m.previewed(A, Decoded.none(A, "on time"));
         assertEquals("on time", m.doc().preview().identity());
     }
 }

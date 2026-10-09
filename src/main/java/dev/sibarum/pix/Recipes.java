@@ -1,6 +1,8 @@
 package dev.sibarum.pix;
 
 import dev.sibarum.pix.files.Folder;
+import dev.sibarum.suite.view.SuiteLook;
+import dev.sibarum.suite.view.Textures;
 import dev.vexelray.framework.api.Configuration;
 import dev.vexelray.framework.api.MainThread;
 import dev.vexelray.framework.api.Provides;
@@ -31,7 +33,7 @@ final class Recipes {
     /** The look, and the smallest window this UI is still coherent in — a floor, not the design size. */
     @Provides
     Appearance look() {
-        return Appearance.of(Look.THEME, Length.em(Pix.MIN_W_EM), Length.em(Pix.MIN_H_EM));
+        return Appearance.of(SuiteLook.THEME, Length.em(Pix.MIN_W_EM), Length.em(Pix.MIN_H_EM));
     }
 
     /** The one authoritative state, built before the tree because every control is a view onto it. */

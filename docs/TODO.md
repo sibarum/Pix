@@ -11,26 +11,20 @@
 
 ## The suite
 
-- **Vexplore hands pictures to Pix**, the way it hands text to Vex: *View* and *Pop out* start `pix <file>` when Pix
-  is installed (found through its install record, framework `Apps`), and keep Vexplore's own viewer when it is not.
+- ~~Vexplore hands pictures to Pix~~ — done: Enter, double-click and *View in Pix* start `pix <file>` when Pix's install
+  record is there, and Vexplore keeps its own viewer when it is not.
+- **One Pix per picture.** Each hand-off starts a new Pix; a second could go to the one already open.
 - **The order.** Pix steps by name; Vexplore steps in whatever order its list is sorted. A hand-off that should keep
   the explorer's order needs a way to say it on the command line.
 
-## The copies
-
-The viewer's parts are in both Vexplore and Pix: `ImageView`, `Filmstrip`, `Tile`, `Icons`, `Textures`, `Lru`,
-`files/Picture`, `files/Stamp`, and most of `Previewer` and `Pictures`. Move them to one place both depend on:
-`vexelray-gui-widget` where they are general (`Lru`, `Textures`, `ImageView`, `Filmstrip`), or a small shared module
-for what is the suite's own (`Tile`, `Icons`, the palette).
-
 ## The viewer
 
-- Zoom and pan; the viewer forgets its backdrop and size on close (both carried over from Vexplore).
+- Zoom and pan, in `vex-suite-common`'s `PictureViewer` so Vexplore gets them too; the backdrop is forgotten on close.
 - Watch the folder: a file added, removed or renamed while Pix is open is not seen until it is opened again.
 - Delete, copy, rotate: nothing here changes a file yet.
 - Drop a file on the window to open it; an Open… for a file.
 
 ## Beyond pictures
 
-"All the formats" means decoders the stack does not have: video, audio and PDF. `Preview` is the seam a second kind
-of content would come in through.
+"All the formats" means decoders the stack does not have: video, audio and PDF. The document's `Decoded` is the seam a
+second kind of content would come in through, and `PictureViewer.Showing` the one it would be drawn through.
