@@ -1,0 +1,85 @@
+# Pix
+
+An image viewer: one picture, as large as the window allows, and the rest of its folder a key press away. Built on
+[vexelray-gui](../vexelray-gui) through [vexelray-framework](../vexelray-framework), and the third member of the suite
+with [Vex](../text-editor-vexel-demo) and [Vexplore](../vexplore).
+
+Pix began as Vexplore's viewer. There the viewer is a second window that drives the explorer's selection; here it is
+the whole application, so `pix <file>` opens a picture without an explorer behind it.
+
+## Run it
+
+```
+mvn compile exec:exec
+mvn compile exec:exec "-Dapp.args=C:/Users/me/Pictures/holiday/IMG_0412.jpg"
+mvn compile exec:exec "-Dapp.args=C:/Users/me/Pictures/holiday"
+mvn test
+```
+
+Needs the stack installed to the local Maven repository first, in the order in
+[vexelray-gui/CLAUDE.md](../vexelray-gui/CLAUDE.md), and imagelib's native library (`imagelib-wrapper`).
+
+| Command | Opens |
+| --- | --- |
+| `pix <file>` | that picture, stepping through the images in its folder |
+| `pix <folder>` | the folder's first image |
+| `pix` | the first image in the user's Pictures folder, or their home |
+
+The file asked for is shown before its folder has been read; the count says *reading the folder…* until it has.
+
+## What it does
+
+- **Every format imagelib decodes**: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG, ICO and the rest, animated where the file
+  is. A file that is not a picture, or will not decode, says why in place of the picture.
+- **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
+  before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
+  kept, so going back is instant. A picture slides in from the side it is on.
+- **The filmstrip** shows the neighbours as they are read; a click shows one.
+- **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
+- **The bar under the picture fades** when the pointer rests and keeps its room, so the picture never moves; moving
+  the mouse, a click or Tab brings it back, and **Keep shown** stops it fading.
+- **Esc** closes the background menu, or Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
+
+## How it is put together
+
+```
+files/     the file system, and nothing else. Pictures (pixels from a file, through imagelib), Picture (a decoded
+           image packed into one sheet), Folder (the images in a folder, in order), Preview, Stamp. No GUI.
+           Blocking: callers run these on Gui.offload().
+Doc        the one state: the folder, its images, which one is shown and its picture.
+Model      the only way to change it, and an onChange that never delivers an older document after a newer one.
+Previewer  reads the picture of whatever is shown: one worker, latest request wins, read-ahead, an LRU by bytes.
+Viewer     the tree: the picture, and the bar of Tiles under it. Draws the document; steps change it.
+ImageView  one picture, fitted, animated, sliding, over a backdrop.
+Filmstrip  the neighbours' thumbnails.
+Textures   pictures on the GPU: uploaded once, recent ones kept, the rest handed to GuiApp.release. Late-bound.
+Recipes    what is built; the wiring is generated from it.
+```
+
+**Copied from Vexplore, for now:** `ImageView`, `Filmstrip`, `Tile`, `Icons`, `Textures`, `Lru`, `Type`, `Look`
+(trimmed), `files/Picture`, `files/Stamp`, and the shapes of `Previewer`, `Viewer` and `files/Pictures`. Two copies
+drift, so these belong in a shared module; see [docs/TODO.md](docs/TODO.md).
+
+## Looking at it without a person
+
+The debug edition has the framework's automation socket. Every control has a landmark (`name`, `count`, `info`,
+`previous`, `next`, `background`, `keep`, `backdrop.checker`, …):
+
+```
+java -jar ../vexelray-gui/vexelray-gui-automation-cli/target/vexelray-gui-automation-cli-0.1.0-SNAPSHOT.jar \
+     --script scene.txt --launch mvn.cmd -q exec:exec -Dautomation=0 "-Dapp.args=C:/some/folder"
+```
+
+`settle` waits for every animation, and that includes the bar's fade, so a script that wants the bar in its picture
+clicks `keep` first.
+
+## Native builds
+
+As Vexplore's: GraalVM 25 as `JAVA_HOME`, from a Visual Studio developer prompt.
+
+```
+mvn -Pnative-release package -DskipTests   # target/pix.exe        GUI subsystem, no automation
+mvn -Pnative package -DskipTests           # target/pix-debug.exe  console, automation present
+```
+
+Not yet built, and there is no icon resource yet: Pix has no mark.
