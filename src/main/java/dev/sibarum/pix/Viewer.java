@@ -31,7 +31,7 @@ final class Viewer {
     private final PictureViewer view;
     private volatile GuiApp app;
 
-    Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar) {
+    Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar, Opener opener) {
         this.model = model;
         this.previewer = previewer;
         this.view = new PictureViewer(gui, krono, textures, bar, this::thumbnail, new PictureViewer.Host() {
@@ -48,6 +48,16 @@ final class Viewer {
             @Override
             public void close() {
                 Viewer.this.close();
+            }
+
+            @Override
+            public boolean opens() {
+                return true;
+            }
+
+            @Override
+            public void open() {
+                opener.file();
             }
         }, "");
         model.onChange(this::show);

@@ -1,6 +1,5 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.pix.files.Folder;
 import dev.sibarum.suite.view.SuiteLook;
 import dev.sibarum.suite.view.Textures;
 import dev.vexelray.framework.api.Configuration;
@@ -58,19 +57,24 @@ final class Recipes {
         return new Previewer(gui, model);
     }
 
+    /** Opening a place, and the dialogs that pick one: built with the tree, given its window by {@link #windowBinding}. */
+    @Provides
+    Opener opener(Gui gui, Model model) {
+        return new Opener(gui, model);
+    }
+
     /**
      * The tree, which is the viewer. Needs the {@code Gui}, its clock and the title bar, and no window. The first
-     * folder is opened here, last, and its listing read off the frame loop: the file asked for is shown before the
-     * folder around it has been read.
+     * place is opened here, last: the file asked for is shown before the folder around it has been read.
      */
     @Provides
     Viewer viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar titleBar,
-                  Launch launch) {
-        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar);
+                  Opener opener, Launch launch) {
+        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener);
         zoomShortcuts(gui);
-        Startup.Place place = Startup.place(launch.rest());
-        model.open(place.folder(), place.file());
-        gui.offload().execute(() -> model.listed(place.folder(), Folder.images(place.folder())));
+        gui.shortcut(Key.O, opener::file, Modifier.CONTROL);
+        gui.shortcut(Key.O, opener::folder, Modifier.CONTROL, Modifier.SHIFT);
+        opener.open(Startup.place(launch.rest()));
         return viewer;
     }
 
@@ -80,10 +84,12 @@ final class Recipes {
      */
     @Provides
     @MainThread
-    AutoCloseable windowBinding(GuiApp app, Textures textures, Viewer viewer) {
+    AutoCloseable windowBinding(GuiApp app, Textures textures, Viewer viewer, Opener opener) {
         textures.bind(app);
         viewer.bind(app);
+        opener.bind(app);
         return () -> {
+            opener.bind(null);
             viewer.bind(null);
             textures.bind(null);
         };

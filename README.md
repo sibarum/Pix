@@ -39,6 +39,8 @@ The file asked for is shown before its folder has been read; the count says *rea
 - **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
 - **The bar under the picture fades** when the pointer rests and keeps its room, so the picture never moves; moving
   the mouse, a click or Tab brings it back, and **Keep shown** stops it fading.
+- **Ctrl+O**, the **Open** tile, or a click on the name opens a picture, among the images in its folder;
+  **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
 - **Esc** closes the background menu, or Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
 
 ## How it is put together
@@ -48,6 +50,7 @@ files/     Folder: the images in a folder, in order. Blocking: run it on Gui.off
 Doc        the one state: the folder, its images, which one is shown and its picture.
 Model      the only way to change it, and an onChange that never delivers an older document after a newer one.
 Previewer  reads the picture of whatever is shown: one worker, latest request wins, read-ahead, an LRU by bytes.
+Opener     opens a place: the command line's, or one picked in the open or folder dialog.
 Viewer     the suite's PictureViewer as the whole tree: draws the document, and a step changes it.
 Recipes    what is built; the wiring is generated from it.
 ```
@@ -59,7 +62,7 @@ before this one builds.
 
 ## Looking at it without a person
 
-The debug edition has the framework's automation socket. Every control has a landmark (`name`, `count`, `info`,
+The debug edition has the framework's automation socket. Every control has a landmark (`name`, `count`, `info`, `open`,
 `previous`, `next`, `background`, `keep`, `backdrop.checker`, …):
 
 ```
