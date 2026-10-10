@@ -8,7 +8,7 @@ import dev.vexelray.framework.api.VexelApp;
  * {@code -Pnative-release}, so a shipped binary cannot open a driving socket. The debug edition is
  * {@code src/edition-debug}; keep the two annotations identical apart from {@code starters}.
  */
-@VexelApp(name = Pix.APP, title = Pix.TITLE, width = Pix.W, height = Pix.H)
+@VexelApp(name = Pix.APP, title = Pix.TITLE, width = Pix.W, height = Pix.H, icon = "/pix.ico")
 final class PixApp {
 
     private PixApp() {
