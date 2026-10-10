@@ -41,7 +41,7 @@ Set these in the same PowerShell window *before* the install command:
 
 | File | Kind | Version | Size | Installed to |
 | --- | --- | --- | --- | --- |
-| `pix.exe` | native executable | 0.1.0 | 38.7 MB | `%LOCALAPPDATA%\Programs\Pix\pix.exe` |
+| `pix.exe` | native executable | 0.1.0 | 39.5 MB | `%LOCALAPPDATA%\Programs\Pix\pix.exe` |
 
 Everything installed is recorded in `%LOCALAPPDATA%\Programs\Pix\install-manifest.json`, and a copy
 in `%LOCALAPPDATA%\vexelray-installer\installs\pix.json`.

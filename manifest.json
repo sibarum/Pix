@@ -40,8 +40,8 @@
               "kind": "native",
               "file": "pix.exe",
               "url": "https://github.com/sibarum/Pix/releases/download/v0.1.0/pix.exe",
-              "sha256": "e5e0bef7d82df93736c2d28763f7a794b44ef81dc254c328771099aeb2e54c9a",
-              "size": 40538112,
+              "sha256": "a309b772f77c67dc2aa9cd371adde22c335c90c61b96f55147b130a2c77726e3",
+              "size": 41406464,
               "installPath": "{installDir}\\pix.exe",
               "executable": true,
               "addToPath": true,
@@ -186,7 +186,8 @@
             }
           ]
         }
-      }
+      },
+      "updatedAt": "2026-10-10T04:14:24Z"
     }
   ]
 }
