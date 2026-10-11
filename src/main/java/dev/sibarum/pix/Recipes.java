@@ -7,6 +7,7 @@ import dev.vexelray.framework.api.MainThread;
 import dev.vexelray.framework.api.Provides;
 import dev.vexelray.framework.core.Launch;
 import dev.vexelray.framework.shell.Appearance;
+import dev.vexelray.framework.shell.Dialogs;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.app.GuiApp;
 import dev.vexelray.gui.core.layout.Length;
@@ -57,10 +58,10 @@ final class Recipes {
         return new Previewer(gui, model);
     }
 
-    /** Opening a place, and the dialogs that pick one: built with the tree, given its window by {@link #windowBinding}. */
+    /** Opening a place, and the dialogs that pick one: the framework's, which need no window to be handed out. */
     @Provides
-    Opener opener(Gui gui, Model model) {
-        return new Opener(gui, model);
+    Opener opener(Gui gui, Model model, Dialogs dialogs) {
+        return new Opener(gui, model, dialogs);
     }
 
     /**
@@ -84,12 +85,10 @@ final class Recipes {
      */
     @Provides
     @MainThread
-    AutoCloseable windowBinding(GuiApp app, Textures textures, Viewer viewer, Opener opener) {
+    AutoCloseable windowBinding(GuiApp app, Textures textures, Viewer viewer) {
         textures.bind(app);
         viewer.bind(app);
-        opener.bind(app);
         return () -> {
-            opener.bind(null);
             viewer.bind(null);
             textures.bind(null);
         };
