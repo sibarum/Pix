@@ -1,6 +1,6 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.suite.pictures.Decoded;
+import dev.vexelray.codec.image.Decoded;
 import sibarum.atchung.Committer;
 import sibarum.atchung.State;
 

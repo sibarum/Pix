@@ -1,10 +1,10 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.suite.pictures.Decoded;
-import dev.sibarum.suite.pictures.Picture;
 import dev.sibarum.suite.view.PictureViewer;
 import dev.sibarum.suite.view.PictureViewer.Showing;
-import dev.sibarum.suite.view.Textures;
+import dev.vexelray.codec.image.Decoded;
+import dev.vexelray.codec.image.Picture;
+import dev.vexelray.codec.image.gui.Textures;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.framework.shell.Window;
 import dev.vexelray.gui.krono.KronoGui;
@@ -99,7 +99,7 @@ final class Viewer {
         String title = at == null ? Pix.TITLE : file + " — " + Pix.TITLE;
         Decoded p = doc.preview();
         String info = at == null ? "" : p == null ? "reading…" : p.identity();
-        Picture picture = p == null || !p.image() ? null : p.large() != null ? p.large() : p.picture();
+        Picture picture = p == null || !p.image() ? null : p.picture(1) != null ? p.picture(1) : p.picture();
         // Keep the picture up while the next is read; clear it for a file with none, or none shown.
         return new Showing(doc.pictures(), doc.index(), name, title, count, info, picture, at != null && p == null);
     }

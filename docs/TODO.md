@@ -12,7 +12,8 @@
   `vexelray-framework/installer-suite.json` (with `docs/apps/pix.md`). They skip it until it is published.
 - **The first release**: the GitHub repo `sibarum/Pix` (public, since the installers read its raw `manifest.json`),
   then `installer-core`'s CLI to generate `install.ps1`, `uninstall.ps1`, `update.ps1` and `manifest.json` and to
-  publish `pix.exe` as release `v0.1.0`, as Vexplore's were. Its build needs `vex-suite-common` published too.
+  publish `pix.exe` as release `v0.1.0`, as Vexplore's were. Its build needs `vex-suite-common` and
+  `vexelray-codec` published too.
 
 ## The suite
 

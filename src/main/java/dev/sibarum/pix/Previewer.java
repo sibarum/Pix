@@ -1,9 +1,10 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.suite.Lru;
-import dev.sibarum.suite.pictures.Decoded;
-import dev.sibarum.suite.pictures.Pictures;
-import dev.sibarum.suite.pictures.Stamp;
+import dev.sibarum.suite.pictures.Sizes;
+import dev.vexelray.codec.image.Decoded;
+import dev.vexelray.codec.image.Lru;
+import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.image.Stamp;
 import dev.vexelray.gui.core.Gui;
 
 import java.io.IOException;
@@ -43,7 +44,7 @@ final class Previewer {
     static final long BUDGET = 256L * 1024 * 1024;
 
     private final Gui gui;
-    private final Lru<Stamp, Decoded> images = new Lru<>(BUDGET, Decoded::bytes, p -> { });
+    private final Lru<Object, Decoded> images = new Lru<>(BUDGET, Decoded::bytes, p -> { });
 
     // Guarded by this.
     private Path last;
@@ -160,15 +161,15 @@ final class Previewer {
     private Decoded preview(Path path, boolean big) {
         try {
             Decoded kept = images.get(Stamp.of(path));
-            if (kept != null && (!big || kept.large() != null)) {
+            if (kept != null && (!big || kept.picture(1) != null)) {
                 return kept;
             }
         } catch (IOException e) {
             // Gone or unreadable: Pictures says so.
         }
-        Decoded fresh = Pictures.of(path, big);
+        Decoded fresh = Pictures.of(path, Sizes.of(big));
         if (fresh.picture() != null) {
-            images.put(fresh.picture().stamp(), fresh);
+            images.put(fresh.picture().key(), fresh);
         }
         return fresh;
     }

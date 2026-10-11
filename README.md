@@ -18,7 +18,8 @@ mvn test
 ```
 
 Needs the stack installed to the local Maven repository first, in the order in
-[vexelray-gui/CLAUDE.md](../vexelray-gui/CLAUDE.md), and imagelib's native library (`imagelib-wrapper`).
+[vexelray-gui/CLAUDE.md](../vexelray-gui/CLAUDE.md), then [`vexelray-codec`](../vexelray-codec), and imagelib's
+native library (`imagelib-wrapper`) behind it.
 
 | Command | Opens |
 | --- | --- |
@@ -58,10 +59,11 @@ Viewer     the suite's PictureViewer as the whole tree: draws the document, and 
 Recipes    what is built; the wiring is generated from it.
 ```
 
-Everything else is [`vex-suite-common`](../vex-suite-common), shared with Vexplore: `Pictures` and `Picture`
-(decoding and packing), `PictureViewer` (the tree and its bar), `ImageView`, `Filmstrip`, `Tile`, `Icons`,
-`Textures`, `Lru` and the palette. It is a sibling checkout, installed to the local Maven repository (`mvn install`)
-before this one builds.
+Everything else is shared. [`vexelray-codec`](../vexelray-codec)'s image module has the pictures: `Pictures` and
+`Picture` (decoding and packing), `Textures`, `ImageView` and `Lru`, and `ImageStarter`, which `PixApp` names so the
+textures are built and bound to the window. [`vex-suite-common`](../vex-suite-common), shared with Vexplore, has the
+sizes they are decoded at, `PictureViewer` (the tree and its bar), `Filmstrip`, `Tile`, `Icons` and the palette. Both
+are sibling checkouts, installed to the local Maven repository (`mvn install`) before this one builds.
 
 ## Looking at it without a person
 

@@ -1,6 +1,6 @@
 package dev.sibarum.pix.files;
 
-import dev.sibarum.suite.pictures.Pictures;
+import dev.vexelray.codec.image.Pictures;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;

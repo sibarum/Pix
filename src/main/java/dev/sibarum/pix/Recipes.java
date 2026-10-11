@@ -1,7 +1,7 @@
 package dev.sibarum.pix;
 
 import dev.sibarum.suite.view.SuiteLook;
-import dev.sibarum.suite.view.Textures;
+import dev.vexelray.codec.image.gui.Textures;
 import dev.vexelray.framework.api.Configuration;
 import dev.vexelray.framework.api.MainThread;
 import dev.vexelray.framework.api.Provides;
@@ -10,7 +10,6 @@ import dev.vexelray.framework.shell.Appearance;
 import dev.vexelray.framework.shell.Dialogs;
 import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
-import dev.vexelray.gui.core.app.GuiApp;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
@@ -41,12 +40,6 @@ final class Recipes {
     @Provides
     Model model() {
         return new Model();
-    }
-
-    /** Pictures on the GPU, built with the tree and given its window by {@link #windowBinding}. */
-    @Provides
-    Textures textures() {
-        return new Textures();
     }
 
     /**
@@ -81,18 +74,15 @@ final class Recipes {
     }
 
     /**
-     * Gives the textures the device and switches the viewer on, and undoes both on close. One binding for every
-     * part that needs the device: the container holds one provider per type.
+     * Switches the viewer on once its textures have the device, and off on close. Taking the binding is what puts
+     * this after it: {@code ImageStarter} binds the {@code Textures} to the window, and a viewer shown before then
+     * would have nothing to upload into.
      */
     @Provides
     @MainThread
-    AutoCloseable windowBinding(GuiApp app, Textures textures, Viewer viewer) {
-        textures.bind(app);
+    AutoCloseable windowBinding(Textures.Binding textures, Viewer viewer) {
         viewer.active(true);
-        return () -> {
-            viewer.active(false);
-            textures.bind(null);
-        };
+        return () -> viewer.active(false);
     }
 
     /** Ctrl+= / Ctrl+- / Ctrl+0, and the numpad's three: the controls' size, not the picture's. */

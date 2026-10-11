@@ -1,7 +1,7 @@
 package dev.sibarum.pix;
 
 import dev.sibarum.pix.files.Folder;
-import dev.sibarum.suite.pictures.Pictures;
+import dev.vexelray.codec.image.Pictures;
 import dev.vexelray.framework.shell.Dialogs;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.nfd.FileDialog;
