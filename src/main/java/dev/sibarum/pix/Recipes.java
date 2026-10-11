@@ -8,6 +8,7 @@ import dev.vexelray.framework.api.Provides;
 import dev.vexelray.framework.core.Launch;
 import dev.vexelray.framework.shell.Appearance;
 import dev.vexelray.framework.shell.Dialogs;
+import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.app.GuiApp;
 import dev.vexelray.gui.core.layout.Length;
@@ -70,8 +71,8 @@ final class Recipes {
      */
     @Provides
     Viewer viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar titleBar,
-                  Opener opener, Launch launch) {
-        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener);
+                  Opener opener, Launch launch, Windows windows) {
+        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener, windows.main());
         zoomShortcuts(gui);
         gui.shortcut(Key.O, opener::file, Modifier.CONTROL);
         gui.shortcut(Key.O, opener::folder, Modifier.CONTROL, Modifier.SHIFT);
@@ -80,16 +81,16 @@ final class Recipes {
     }
 
     /**
-     * Gives the parts that need the window their window, and takes it back on close. One binding for every late-bound
-     * part: the container holds one provider per type.
+     * Gives the textures the device and switches the viewer on, and undoes both on close. One binding for every
+     * part that needs the device: the container holds one provider per type.
      */
     @Provides
     @MainThread
     AutoCloseable windowBinding(GuiApp app, Textures textures, Viewer viewer) {
         textures.bind(app);
-        viewer.bind(app);
+        viewer.active(true);
         return () -> {
-            viewer.bind(null);
+            viewer.active(false);
             textures.bind(null);
         };
     }

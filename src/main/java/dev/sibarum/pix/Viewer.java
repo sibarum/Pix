@@ -6,7 +6,7 @@ import dev.sibarum.suite.view.PictureViewer;
 import dev.sibarum.suite.view.PictureViewer.Showing;
 import dev.sibarum.suite.view.Textures;
 import dev.vexelray.gui.core.Gui;
-import dev.vexelray.gui.core.app.GuiApp;
+import dev.vexelray.framework.shell.Window;
 import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
 
@@ -20,20 +20,22 @@ import java.nio.file.Path;
  * whatever the document's picture is, so a step from a key, the filmstrip or a script is drawn the same way. Until the
  * new picture lands the old one stays up, under the new name and count.
  *
- * <p>Close closes the window, which is quitting; that needs the {@code GuiApp}, which {@link Recipes#windowBinding}
- * hands it, and which is also when the viewer becomes active: the first picture is usually decoded before the window
- * exists, and is drawn then.
+ * <p>Close closes the main window, which is quitting, through the framework's handle for it, so a close gate would be
+ * asked first. The viewer becomes active when {@link Recipes#windowBinding} says there is a device to upload its
+ * pictures to: the first picture is usually decoded before the window exists, and is drawn then.
  */
 final class Viewer {
 
     private final Model model;
     private final Previewer previewer;
     private final PictureViewer view;
-    private volatile GuiApp app;
+    private final Window main;
 
-    Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar, Opener opener) {
+    Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar, Opener opener,
+           Window main) {
         this.model = model;
         this.previewer = previewer;
+        this.main = main;
         this.view = new PictureViewer(gui, krono, textures, bar, this::thumbnail, new PictureViewer.Host() {
             @Override
             public void step(int delta) {
@@ -65,18 +67,14 @@ final class Viewer {
         show(model.doc());
     }
 
-    /** Main thread. Null on the way out. */
-    void bind(GuiApp app) {
-        this.app = app;
-        view.active(app != null);
+    /** Main thread: whether there is a device to draw pictures with. False on the way out. */
+    void active(boolean on) {
+        view.active(on);
     }
 
-    /** Close the window, which is quitting. Nothing before there is a window. */
+    /** Close the window, which is quitting. From any thread; before there is a window, quitting as soon as there is. */
     void close() {
-        GuiApp a = app;
-        if (a != null) {
-            a.controls().close();
-        }
+        main.close();
     }
 
     private void show(Doc doc) {
