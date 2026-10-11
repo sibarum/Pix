@@ -37,8 +37,10 @@ The file asked for is shown before its folder has been read; the count says *rea
   kept, so going back is instant. A picture slides in from the side it is on.
 - **The filmstrip** shows the neighbours as they are read; a click shows one.
 - **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
-- **The bar under the picture fades** when the pointer rests and keeps its room, so the picture never moves; moving
-  the mouse, a click or Tab brings it back, and **Keep shown** stops it fading.
+- **The picture has the whole window**, and the controls float over it and fade when the pointer rests; moving the
+  mouse, a click or Tab brings them back. **Keep shown** (the pin) pins them: they stop fading and take room of their
+  own, so none of them covers the picture. In a narrow window Previous and Next move to its sides, and what does not
+  fit is hidden.
 - **Ctrl+O**, or a click on the name (the words beside Close, which say *Open a picture…* while nothing is open)
   opens a picture, among the images in its folder;
   **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
