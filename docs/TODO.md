@@ -27,8 +27,9 @@
 - Zoom and pan, in `vex-suite-common`'s `PictureViewer` so Vexplore gets them too; the backdrop is forgotten on close.
 - Watch the folder: a file added, removed or renamed while Pix is open is not seen until it is opened again.
 - Delete, copy, rotate: nothing here changes a file yet.
-- Drop a file on the window to open it. (~~An Open… for a file~~ — done: Ctrl+O, Ctrl+Shift+O, the Open tile and a
+- Drop a file on the window to open it. (~~An Open… for a file~~ — done: Ctrl+O, Ctrl+Shift+O and a
   click on the name.)
+- One dialog that picks a file or a folder, for the click on the name: it picks only a file.
 
 ## Beyond pictures
 

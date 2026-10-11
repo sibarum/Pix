@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Opens a place: the one on the command line, or one picked in the OS's open dialog (Ctrl+O, the Open tile or a click
+ * Opens a place: the one on the command line, or one picked in the OS's open dialog (Ctrl+O or a click
  * on the name) or its folder dialog (Ctrl+Shift+O).
  *
  * <p>Opening is the document's {@link Model#open} and the folder's listing read off the frame loop, so the file picked

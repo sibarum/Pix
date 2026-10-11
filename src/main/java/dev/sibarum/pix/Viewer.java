@@ -87,7 +87,9 @@ final class Viewer {
     static Showing showing(Doc doc) {
         Path at = doc.at();
         String count;
-        if (!doc.listed()) {
+        if (doc.folder() == null) {
+            count = "";
+        } else if (!doc.listed()) {
             count = "reading the folder…";
         } else if (doc.pictures().isEmpty()) {
             count = "no images here";

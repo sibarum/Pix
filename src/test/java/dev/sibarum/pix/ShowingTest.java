@@ -49,4 +49,13 @@ class ShowingTest {
         assertEquals("Pix", s.title());
         assertFalse(s.keep());
     }
+
+    @Test
+    void nothingOpenSaysNothing() {
+        // The viewer puts its prompt to open in the empty name.
+        Showing s = Viewer.showing(Doc.initial());
+        assertEquals("", s.name());
+        assertEquals("", s.count());
+        assertEquals("", s.info());
+    }
 }

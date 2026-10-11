@@ -39,7 +39,8 @@ The file asked for is shown before its folder has been read; the count says *rea
 - **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
 - **The bar under the picture fades** when the pointer rests and keeps its room, so the picture never moves; moving
   the mouse, a click or Tab brings it back, and **Keep shown** stops it fading.
-- **Ctrl+O**, the **Open** tile, or a click on the name opens a picture, among the images in its folder;
+- **Ctrl+O**, or a click on the name (the words beside Close, which say *Open a picture…* while nothing is open)
+  opens a picture, among the images in its folder;
   **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
 - **Esc** closes the background menu, or Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
 
