@@ -45,9 +45,10 @@ The file asked for is shown before its folder has been read; the count says *rea
   what is on screen is made again from the file's own pixels at exactly the size shown, in linear light, on whole
   screen pixels.
 - **Settings** (the gear) chooses how the picture is scaled **while moving** (on the GPU, every frame) and **at
-  rest** (made again, as above), from the same seven: Nearest, Sharp bilinear (square pixels with clean edges),
-  Bilinear, Gaussian, B-spline, Mitchell and Lanczos. Bilinear and Lanczos at first; the choice is kept in Pix's
-  settings (`scaling.moving`, `scaling.resting`).
+  rest** (made again, as above), from the same eight: Nearest, Sharp bilinear (square pixels with clean edges),
+  Bilinear, Gaussian (the bell read at points), Normal (the bell's area over each pixel, with the B-spline's spread),
+  B-spline, Mitchell and Lanczos, each with its icon from the icon set. Bilinear and Lanczos at first; the choice is
+  kept in Pix's settings (`scaling.moving`, `scaling.resting`).
 - **The filmstrip** shows the neighbours as they are read; a click shows one.
 - **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
 - **The picture has the whole window**, and the controls float over it and fade when the pointer rests; moving the
