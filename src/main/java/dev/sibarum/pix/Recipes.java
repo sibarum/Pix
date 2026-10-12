@@ -10,6 +10,7 @@ import dev.vexelray.framework.shell.Appearance;
 import dev.vexelray.framework.shell.Dialogs;
 import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
+import dev.vexelray.gui.core.app.Settings;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
@@ -64,8 +65,8 @@ final class Recipes {
      */
     @Provides
     Viewer viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar titleBar,
-                  Opener opener, Launch launch, Windows windows) {
-        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener, windows.main());
+                  Opener opener, Launch launch, Windows windows, Settings settings) {
+        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener, windows.main(), settings);
         zoomShortcuts(gui);
         gui.shortcut(Key.O, opener::file, Modifier.CONTROL);
         gui.shortcut(Key.O, opener::folder, Modifier.CONTROL, Modifier.SHIFT);

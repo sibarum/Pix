@@ -25,7 +25,13 @@
 
 ## The viewer
 
-- Zoom and pan, in `vex-suite-common`'s `PictureViewer` so Vexplore gets them too; the backdrop is forgotten on close.
+- ~~Zoom and pan~~ — done, with turning, in `vex-suite-common`'s `PictureViewer` (its `Lens`), so Vexplore has them too.
+  ~~Bilinear at rest~~ — done: once still, the part on screen is made again from the file's own pixels (`Sharpen`).
+- ~~A setting for how pictures are scaled~~ — done: the Settings menu, moving and at rest, seven filters each.
+  Moving, the kernel filters shrinking a picture spread a fixed number of bilinear taps, which approximates; mipmaps
+  would make that exact. Moving, filtering is in the stored sRGB values; at rest, in linear light, so a filter can look
+  a shade different once still.
+- The backdrop is forgotten on close.
 - Watch the folder: a file added, removed or renamed while Pix is open is not seen until it is opened again.
 - Delete, copy, rotate: nothing here changes a file yet.
 - Drop a file on the window to open it. (~~An Open… for a file~~ — done: Ctrl+O, Ctrl+Shift+O and a

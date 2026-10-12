@@ -2,10 +2,12 @@ package dev.sibarum.pix;
 
 import dev.sibarum.suite.view.PictureViewer;
 import dev.sibarum.suite.view.PictureViewer.Showing;
+import dev.vexelray.canvas.ImageFilter;
 import dev.vexelray.codec.image.Decoded;
 import dev.vexelray.codec.image.Picture;
 import dev.vexelray.codec.image.gui.Textures;
 import dev.vexelray.gui.core.Gui;
+import dev.vexelray.gui.core.app.Settings;
 import dev.vexelray.framework.shell.Window;
 import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
@@ -26,13 +28,17 @@ import java.nio.file.Path;
  */
 final class Viewer {
 
+    /** Where the Settings menu's choices are kept: how pictures are scaled moving, and at rest. */
+    static final String MOVING = "scaling.moving";
+    static final String RESTING = "scaling.resting";
+
     private final Model model;
     private final Previewer previewer;
     private final PictureViewer view;
     private final Window main;
 
     Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar, Opener opener,
-           Window main) {
+           Window main, Settings settings) {
         this.model = model;
         this.previewer = previewer;
         this.main = main;
@@ -61,7 +67,13 @@ final class Viewer {
             public void open() {
                 opener.file();
             }
+
+            @Override
+            public void scaled(ImageFilter moving, ImageFilter resting) {
+                settings.putString(MOVING, moving.name()).putString(RESTING, resting.name()).save();
+            }
         }, "");
+        view.scaling(filter(settings, MOVING, ImageFilter.BILINEAR), filter(settings, RESTING, ImageFilter.LANCZOS));
         model.onChange(this::show);
         previewer.onRead(p -> view.film());
         show(model.doc());
@@ -102,6 +114,15 @@ final class Viewer {
         Picture picture = p == null || !p.image() ? null : p.picture(1) != null ? p.picture(1) : p.picture();
         // Keep the picture up while the next is read; clear it for a file with none, or none shown.
         return new Showing(doc.pictures(), doc.index(), name, title, count, info, picture, at != null && p == null);
+    }
+
+    /** The filter kept under {@code key}, or {@code def} if none is, or it names no filter (an older or edited file). */
+    private static ImageFilter filter(Settings settings, String key, ImageFilter def) {
+        try {
+            return ImageFilter.valueOf(settings.getString(key, def.name()));
+        } catch (IllegalArgumentException e) {
+            return def;
+        }
     }
 
     private static String name(Path p) {

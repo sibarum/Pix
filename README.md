@@ -36,6 +36,18 @@ The file asked for is shown before its folder has been read; the count says *rea
 - **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
   before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
   kept, so going back is instant. A picture slides in from the side it is on.
+- **Look closely**: the wheel zooms about the pointer and a drag moves the picture. Smaller than the window, it stays
+  inside it; larger, it always covers at least a quarter of it, and pulled further it gives against the hand and
+  springs back with the momentum it had. **R** and **Shift+R** turn it a quarter (a fitted picture is fitted again the
+  new way round); **Ctrl+drag** turns it to any angle with the pointer, and **Shift+wheel** a few degrees at a time.
+  A double click fits it again. The next picture starts fitted and upright. Nothing is written to the file.
+- **Sharp at rest**: while the picture moves it is drawn from a copy at most 2560 px across; a moment after it stops,
+  what is on screen is made again from the file's own pixels at exactly the size shown, in linear light, on whole
+  screen pixels.
+- **Settings** (the gear) chooses how the picture is scaled **while moving** (on the GPU, every frame) and **at
+  rest** (made again, as above), from the same seven: Nearest, Sharp bilinear (square pixels with clean edges),
+  Bilinear, Gaussian, B-spline, Mitchell and Lanczos. Bilinear and Lanczos at first; the choice is kept in Pix's
+  settings (`scaling.moving`, `scaling.resting`).
 - **The filmstrip** shows the neighbours as they are read; a click shows one.
 - **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
 - **The picture has the whole window**, and the controls float over it and fade when the pointer rests; moving the
