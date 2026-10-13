@@ -5,10 +5,11 @@
   "description": "An image viewer: one picture, as large as the window allows, and the rest of its folder a key press away.",
   "version": "0.1.0",
 
-  "repo": "sibarum/Pix",
+  "repo": "sibarum/vexelray-dist",
   "branch": "main",
-  "releasesRepo": "sibarum/Pix",
-  "tagFormat": "v{version}",
+  "repoPath": "apps/pix",
+  "releasesRepo": "sibarum/vexelray-dist",
+  "tagFormat": "pix-v{version}",
 
   "windows": {
     "binaries": [
