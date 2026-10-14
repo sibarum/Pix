@@ -7,13 +7,13 @@
   associations below.
 - **The debug native build** (`-Pnative`). The release edition builds, starts and shows a picture with the
   reachability metadata copied from Vexplore's; the debug one, with automation, has not been built.
-- ~~`installer.json` and the suites~~ — done: `installer.json` (id `pix`, on PATH, the icon, associations for every
-  type imagelib decodes), and Pix is a member of both suites, Vexplore's `suite/suite.json` and
-  `vexelray-framework/installer-suite.json` (with `docs/apps/pix.md`). They skip it until it is published.
-- **The first release**: the GitHub repo `sibarum/Pix` (public, since the installers read its raw `manifest.json`),
-  then `installer-core`'s CLI to generate `install.ps1`, `uninstall.ps1`, `update.ps1` and `manifest.json` and to
-  publish `pix.exe` as release `v0.1.0`, as Vexplore's were. Its build needs `vex-suite-common` and
-  `vexelray-codec` published too.
+- ~~`installer.json` and the suite~~ — done: `installer.json` (id `pix`, on PATH, the icon, associations for every
+  type imagelib decodes), and Pix is a member of the suite in `vexelray-dist/installer-suite.json` (with
+  `vexelray-framework/docs/apps/pix.md`).
+- ~~The first release~~ — done: `pix.exe` 0.1.0 is published from
+  [`vexelray-dist`](https://github.com/sibarum/vexelray-dist) (`apps/pix/`, release `pix-v0.1.0`). Its
+  [DEPLOYING.md](https://github.com/sibarum/vexelray-dist/blob/main/DEPLOYING.md) says how the next one goes out;
+  the install page is <https://sibarum.github.io/vexelray-framework/install/>.
 
 ## The suite
 
