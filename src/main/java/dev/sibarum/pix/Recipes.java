@@ -1,12 +1,15 @@
 package dev.sibarum.pix;
 
+import dev.sibarum.suite.update.Updates;
 import dev.sibarum.suite.view.SuiteLook;
+import dev.sibarum.suite.view.UpdateNotice;
 import dev.vexelray.codec.image.gui.Textures;
 import dev.vexelray.framework.api.Configuration;
 import dev.vexelray.framework.api.MainThread;
 import dev.vexelray.framework.api.Provides;
 import dev.vexelray.framework.core.Launch;
 import dev.vexelray.framework.shell.Appearance;
+import dev.vexelray.framework.shell.Apps;
 import dev.vexelray.framework.shell.Dialogs;
 import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
@@ -16,6 +19,9 @@ import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
 import sibarum.tactroller.api.Key;
 import sibarum.tactroller.api.Modifier;
+
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * What this application builds — one recipe per part — and nothing about when.
@@ -71,7 +77,24 @@ final class Recipes {
         gui.shortcut(Key.O, opener::file, Modifier.CONTROL);
         gui.shortcut(Key.O, opener::folder, Modifier.CONTROL, Modifier.SHIFT);
         opener.open(Startup.place(launch.rest()));
+        updates(gui, model, viewer);
         return viewer;
+    }
+
+    /**
+     * Word of a newer version, over the top right of the picture, when this is the installed copy: Update and restart
+     * closes Pix, lets the installer's updater replace it, and opens it again on the picture that was shown.
+     */
+    private static void updates(Gui gui, Model model, Viewer viewer) {
+        Updates.of(Apps.registryDir(), Pix.APP).ifPresent(u -> {
+            UpdateNotice notice = new UpdateNotice(gui, u, viewer::close, () -> {
+                Doc d = model.doc();
+                Path place = d.at() != null ? d.at() : d.folder();
+                return place == null ? List.of() : List.of(place.toString());
+            }, "");
+            gui.root().append(notice.node());
+            notice.start();
+        });
     }
 
     /**
