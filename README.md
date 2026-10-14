@@ -4,6 +4,8 @@ An image viewer: one picture, as large as the window allows, and the rest of its
 [vexelray-gui](../vexelray-gui) through [vexelray-framework](../vexelray-framework), and the third member of the suite
 with [Vex](../text-editor-vexel-demo) and [Vexplore](../vexplore).
 
+**Install it** on Windows, with the other VexelRay applications, from [sibarum.github.io](https://sibarum.github.io/).
+
 Pix began as Vexplore's viewer, and the two still share it. In Vexplore the viewer is a second window that drives
 the explorer's selection; here it is the whole application, so `pix <file>` opens a picture without an explorer
 behind it. Vexplore hands pictures to Pix when Pix is installed.
