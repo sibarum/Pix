@@ -5,29 +5,24 @@
 - ~~A mark~~ — done: `src/main/rc/pix.svg` from the suite icon canvas, rendered to `pix.ico` and linked into the
   executable through `pix.rc`. The window, file and light variants are beside it; the file icon is for the
   associations below.
-- **The debug native build** (`-Pnative`). The release edition builds, starts and shows a picture with the
-  reachability metadata copied from Vexplore's; the debug one, with automation, has not been built.
+- ~~The debug native build~~ — done: `-Pnative` builds `pix-debug.exe`, and ottermate drives it (video posters were
+  checked that way).
 - ~~`installer.json` and the suite~~ — done: `installer.json` (id `pix`, on PATH, the icon, associations for every
   type imagelib decodes), and Pix is a member of the suite in `vexelray-dist/installer-suite.json` (with
   `vexelray-framework/docs/apps/pix.md`).
-- **FFmpeg beside the native build**, for video posters. Checked, not done; what it needs:
-  1. *Reachability metadata in ffmpeg-wrapper* (`META-INF/native-image/.../reachability-metadata.json`), declaring its
-     FFM downcall shapes the way imagelib-wrapper's does. It has none, so a native image cannot call FFmpeg at all.
-  2. *Not the libraries as resources.* ffmpeg-wrapper finds them in `-Dffmpeg.native.dir` or extracts them from its
-     jar's `natives/<platform>/`. Registering those resources would put 125 MB into `pix.exe`; leaving them out and
-     pointing the property at a folder beside the executable is the shape that fits. Better in ffmpeg-wrapper's
-     `NativeLib` (look beside the running executable before extracting) than a `System.setProperty` in Pix.
-  3. *A zip of the folder* (`ffwrap.dll`, the five FFmpeg DLLs, `libs.txt`, `FFMPEG-LICENSE.txt`,
-     `FFMPEG-SOURCE.txt`), as a second entry in `installer.json`'s `binaries`: `kind` `archive` (inferred from
-     `.zip`) with `dir` set to an `ffmpeg` folder of the install. vexelray-installer already unpacks, records and
-     removes archives; it is how a jlink runtime ships. Nothing builds that zip yet. Keeping the DLLs as separate,
-     replaceable files is also what FFmpeg's LGPL asks of a shared build, and the licence and source pointer travel
-     in the zip.
-  4. *The size*: about 55 MB more to download, beside a 43 MB `pix.exe`. A custom FFmpeg configured with
-     `--disable-everything` and only the decoders and demuxers wanted is a fraction of that, and changes nothing above
-     ffmpeg-wrapper's `build.sh`.
-  5. *File associations* for `.mp4`, `.mkv`, `.webm`, `.mov`: deliberately not added. Pix shows a poster, not the
-     film, so it should not become what double-clicking a video opens.
+- ~~FFmpeg beside the native build~~ — done: ffmpeg-wrapper carries its downcall metadata and looks for an `ffmpeg`
+  folder beside the running executable; both native builds fill `target/ffmpeg/` and zip it, and `installer.json`
+  installs the zip there as the archive `pix-ffmpeg` (checked by generating into a scratch folder, not published).
+  The DLLs stay separate, replaceable files, as FFmpeg's LGPL asks of a shared build, with its licence and source
+  pointer beside them. What is left:
+  - *Not released.* The next release uploads `pix-ffmpeg-windows-x86_64.zip` beside `pix.exe`. vexelray-dist's
+    `build.cmd` does not build ffmpeg-wrapper, whose libraries come from its own `native/build.sh` (Git Bash and the
+    Visual Studio build tools) before `mvn install`; vexelray-codec now needs it installed first.
+  - *The size*: about 55 MB more to download, beside `pix.exe`. A custom FFmpeg configured with
+    `--disable-everything` and only the decoders and demuxers wanted is a fraction of that, and changes nothing above
+    ffmpeg-wrapper's `build.sh`.
+  - *File associations* for `.mp4`, `.mkv`, `.webm`, `.mov`: deliberately not added. Pix shows a poster, not the
+    film, so it should not become what double-clicking a video opens.
 - ~~The first release~~ — done: `pix.exe` 0.1.0 is published from
   [`vexelray-dist`](https://github.com/sibarum/vexelray-dist) (`apps/pix/`, release `pix-v0.1.0`). Its
   [DEPLOYING.md](https://github.com/sibarum/vexelray-dist/blob/main/DEPLOYING.md) says how the next one goes out;

@@ -121,7 +121,12 @@ mvn -Pnative package -DskipTests           # target/pix-debug.exe  console, auto
 Both link `src/main/rc/pix.rc`, the executable's icon: `pix.svg` from the suite icon canvas, rendered to `pix.ico` by
 `vex-suite-common`'s `tools/Ico.java`. The window, file and light variants are beside it.
 
-**Video posters are not in a native build yet.** FFmpeg is six shared libraries (about 125 MB, `avcodec` most of it),
-not a static library to link in as imagelib is, so they would ship beside `pix.exe` rather than inside it. What that
-needs is in [docs/TODO.md](docs/TODO.md), *To ship*. A native build with video in it has not been made. The JVM run (`mvn exec:exec`) shows them, extracting the libraries from ffmpeg-wrapper's jar to a temp
-folder the first time a video is read.
+**FFmpeg ships beside the executable, not in it.** It is six shared libraries (about 125 MB, `avcodec` most of it),
+not a static library to link in as imagelib is. Both native builds take them out of ffmpeg-wrapper's jar into
+`target/ffmpeg/`, where ffmpeg-wrapper looks beside a running executable, so `target/pix.exe` shows video posters as
+it stands. They are also zipped, with FFmpeg's licence and source pointer, into
+`target/pix-ffmpeg-windows-x86_64.zip` (about 55 MB, the same bytes for the same libraries), which `installer.json`
+lists as a second binary: an archive unpacked into the install's `ffmpeg` folder, and downloaded again only when it
+changes. Without that folder Pix still runs; a video says *the video decoder is unavailable* where its poster would
+be. The JVM run (`mvn exec:exec`) extracts the libraries from the jar to a temp folder instead, the first time a
+video is read.

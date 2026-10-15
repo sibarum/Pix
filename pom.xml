@@ -213,6 +213,30 @@
                         </buildArgs>
                     </configuration>
                 </plugin>
+                <!-- FFmpeg beside the executable, for video posters. ffmpeg-wrapper's libraries are not resources
+                     of the image (125 MB), so they are taken out of its jar (into target/ffmpeg-wrapper, then
+                     flattened into target/ffmpeg by ffmpeg-zip below), where its loader looks beside a pix.exe run
+                     from target/. The licence and the source pointer that FFmpeg's LGPL asks for come out with them.
+                     Windows only, as the native build is. -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.7.0</version>
+                    <executions>
+                        <execution>
+                            <id>ffmpeg-beside</id>
+                            <phase>prepare-package</phase>
+                            <goals><goal>unpack-dependencies</goal></goals>
+                            <configuration>
+                                <includeArtifactIds>ffmpeg-wrapper</includeArtifactIds>
+                                <includes>natives/windows-x86_64/**</includes>
+                                <outputDirectory>${project.build.directory}/ffmpeg-wrapper</outputDirectory>
+                                <overWriteReleases>true</overWriteReleases>
+                                <overWriteSnapshots>true</overWriteSnapshots>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <!-- The executable's icon: a resource linked into the program, so it has to exist as a compiled .res
                      before link time. rc.exe is the Windows SDK's resource compiler and must be on PATH, as it is in a
                      Visual Studio developer prompt (which the native build already needs for link.exe). -->
@@ -233,6 +257,27 @@
                                         <arg file="${project.build.directory}/pix.res"/>
                                         <arg file="${project.basedir}/src/main/rc/pix.rc"/>
                                     </exec>
+                                </target>
+                            </configuration>
+                        </execution>
+                        <!-- FFmpeg's libraries (see ffmpeg-beside) laid out flat in target/ffmpeg, and zipped for
+                             installer.json, which unpacks the zip into the install's own ffmpeg folder. The times are
+                             fixed so the same libraries make the same zip: the installer skips downloading an
+                             archive whose hash it already has, and this one is 55 MB. -->
+                        <execution>
+                            <id>ffmpeg-zip</id>
+                            <phase>prepare-package</phase>
+                            <goals><goal>run</goal></goals>
+                            <configuration>
+                                <target>
+                                    <delete dir="${project.build.directory}/ffmpeg"/>
+                                    <copy todir="${project.build.directory}/ffmpeg" flatten="true">
+                                        <fileset dir="${project.build.directory}/ffmpeg-wrapper/natives/windows-x86_64"/>
+                                    </copy>
+                                    <delete file="${project.build.directory}/pix-ffmpeg-windows-x86_64.zip"/>
+                                    <zip destfile="${project.build.directory}/pix-ffmpeg-windows-x86_64.zip"
+                                         basedir="${project.build.directory}/ffmpeg"
+                                         modificationtime="2026-01-01T00:00:00Z"/>
                                 </target>
                             </configuration>
                         </execution>
@@ -329,6 +374,10 @@
                 <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>
                     </plugin>
                     <plugin>
@@ -349,6 +398,10 @@
             </properties>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-antrun-plugin</artifactId>

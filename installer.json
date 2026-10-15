@@ -43,6 +43,11 @@
           { "extension": ".exr", "description": "OpenEXR Image", "icon": "src/main/rc/file-images.ico" },
           { "extension": ".hdr", "description": "Radiance HDR Image", "icon": "src/main/rc/file-images.ico" }
         ]
+      },
+      {
+        "name": "pix-ffmpeg",
+        "source": "target/pix-ffmpeg-windows-x86_64.zip",
+        "dir": "ffmpeg"
       }
     ]
   }
