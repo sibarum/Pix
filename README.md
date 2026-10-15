@@ -35,6 +35,13 @@ The file asked for is shown before its folder has been read; the count says *rea
 
 - **Every format imagelib decodes**: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG, ICO and the rest, animated where the file
   is. A file that is not a picture, or will not decode, says why in place of the picture.
+- **An animated GIF, WebP or APNG plays like a movie**, of any length and size: a transport over the picture has play
+  and pause, a frame back and on, a seek bar to drag, the clock and frame, and loop. **Space** plays and pauses,
+  **,** and **.** step a frame (with **Shift**, a second), **L** turns looping off and on. It plays as soon as it is
+  shown, round and round, and pauses where it is while Pix is not the window in front, playing on when it is again
+  (a pause of your own stays). Its frames are decoded as it plays, a few ahead, each scaled to at most 2560 px with
+  its mip chain, and streamed to the GPU; up to 512 MB of the frames already shown are kept, so seeking back within
+  them is instant.
 - **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
   before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
   kept, so going back is instant. A picture slides in from the side it is on.
@@ -83,7 +90,8 @@ are sibling checkouts, installed to the local Maven repository (`mvn install`) b
 ## Looking at it without a person
 
 The debug edition has the framework's automation socket. Every control has a landmark (`name`, `count`, `info`, `open`,
-`previous`, `next`, `background`, `keep`, `backdrop.checker`, …):
+`previous`, `next`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
+`frame-on`, `seek`, `loop` and `position`, which reads like `0:01.8 / 0:04.8  48/120`), …:
 
 ```
 java -jar ../vexelray-gui/vexelray-gui-automation-cli/target/vexelray-gui-automation-cli-0.1.0-SNAPSHOT.jar \
@@ -91,7 +99,10 @@ java -jar ../vexelray-gui/vexelray-gui-automation-cli/target/vexelray-gui-automa
 ```
 
 `settle` waits for every animation, and that includes the bar's fade, so a script that wants the bar in its picture
-clicks `keep` first.
+clicks `keep` first. A picture that plays keeps the clock busy for as long as it plays, so `settle` times out on one:
+`await position " 30/120"` waits for a frame instead, and `click play` pauses it for a picture that holds still. Pix
+holds a picture while its window is not in front, and a window opened over it (a second Pix, say) leaves the next
+picture on its first frame until Pix is in front again.
 
 ## Native builds
 

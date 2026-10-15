@@ -31,6 +31,12 @@
   ~~Mipmaps and linear light while moving~~ — done: a picture's texture carries its mip chain, made in linear light,
   and is sRGB, so the GPU blends in light; the kernels' taps read the level of their own spacing. What still differs
   at rest: it is made from the file's own pixels, where moving reads the 2560 px copy.
+- ~~Animations as movies~~ — done: an animated GIF, WebP or APNG is listed as its first frame and played from the file
+  (`Movie`, `Playback` in `vexelray-codec-image`), streamed through `GuiApp.stream`, with a transport in the suite's
+  `PictureViewer`, held while the window is not in front. What is left: a held picture's play button still shows
+  Pause, since pressing it would pause; seeking back past the kept frames (512 MB) walks forward from the start, with
+  nothing on screen saying so; and the filmstrip's thumbnails do not fill in on the first picture until a step (seen
+  with stills too, so older than this).
 - Show the file's pixels untouched at exactly 100%, whatever the filter: at that scale they are the honest answer.
 - The backdrop is forgotten on close.
 - Watch the folder: a file added, removed or renamed while Pix is open is not seen until it is opened again.
