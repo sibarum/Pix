@@ -54,7 +54,10 @@ The file asked for is shown before its folder has been read; the count says *rea
   inside it; larger, it always covers at least a quarter of it, and pulled further it gives against the hand and
   springs back with the momentum it had. **R** and **Shift+R** turn it a quarter (a fitted picture is fitted again the
   new way round); **Ctrl+drag** turns it to any angle with the pointer, and **Shift+wheel** a few degrees at a time.
-  A double click fits it again. The next picture starts fitted and upright. Nothing is written to the file.
+  **H** mirrors it left and right and **V** top and bottom, as it is seen, whichever way it is turned. **Turn** (the
+  tile beside Background) has the quarter turns and the mirrors as a menu, and *As the file is*: upright, not
+  mirrored, fitted. A double click fits it again. The next picture starts fitted, upright and not mirrored. Nothing
+  is written to the file.
 - **Sharp at rest**: while the picture moves it is drawn from a copy at most 2560 px across; a moment after it stops,
   what is on screen is made again from the file's own pixels at exactly the size shown, in linear light, on whole
   screen pixels.
@@ -95,7 +98,8 @@ are sibling checkouts, installed to the local Maven repository (`mvn install`) b
 ## Looking at it without a person
 
 The debug edition has the framework's automation socket. Every control has a landmark (`name`, `count`, `info`, `open`,
-`previous`, `next`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
+`previous`, `next`, `turn` and its menu's `turn.left`, `turn.right`, `turn.mirror-across`, `turn.mirror-down` and
+`turn.upright`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
 `frame-on`, `seek`, `loop` and `position`, which reads like `0:01.8 / 0:04.8  48/120`), …:
 
 ```

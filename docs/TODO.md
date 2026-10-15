@@ -53,7 +53,12 @@
 - Show the file's pixels untouched at exactly 100%, whatever the filter: at that scale they are the honest answer.
 - The backdrop is forgotten on close.
 - Watch the folder: a file added, removed or renamed while Pix is open is not seen until it is opened again.
-- Delete, copy, rotate: nothing here changes a file yet.
+- ~~Turn and mirror controls~~ — done: the Turn menu and H and V, in `PictureViewer`, the mirror drawn by reading
+  the texture the other way (`ImageView.Pose`). What is left: at rest, a picture turned by a quarter or a half is made
+  again from the file but not laid on whole pixels, as an upright one is (`Lens.visible` snaps only at 0°), so it is a
+  little softer than the same picture upright. Mirrored and upright, it is snapped as usual.
+- Delete, copy, rotate: nothing here changes a file yet. A turn or mirror is only how it is looked at; saving it
+  (or writing the EXIF orientation) is not offered.
 - Drop a file on the window to open it. (~~An Open… for a file~~ — done: Ctrl+O, Ctrl+Shift+O and a
   click on the name.)
 - One dialog that picks a file or a folder, for the click on the name: it picks only a file.
