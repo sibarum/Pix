@@ -40,7 +40,7 @@ final class Recipes {
     /** The look, and the smallest window this UI is still coherent in — a floor, not the design size. */
     @Provides
     Appearance look() {
-        return Appearance.of(SuiteLook.THEME, Length.em(Pix.MIN_W_EM), Length.em(Pix.MIN_H_EM));
+        return Appearance.of(SuiteLook.THEME, Length.rem(Pix.MIN_W_EM), Length.rem(Pix.MIN_H_EM));
     }
 
     /** The one authoritative state, built before the tree because every control is a view onto it. */
