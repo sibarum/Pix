@@ -24,13 +24,24 @@ class FolderTest {
 
     @Test
     void onlyImagesInNaturalOrder(@TempDir Path dir) throws IOException {
-        for (String n : List.of("IMG_10.jpg", "notes.txt", "IMG_2.PNG", "IMG_1.webp", "clip.mp4")) {
+        for (String n : List.of("IMG_10.jpg", "notes.txt", "IMG_2.PNG", "IMG_1.webp", "song.mp3")) {
             Files.writeString(dir.resolve(n), "x");
         }
         Files.createDirectory(dir.resolve("album.png"));
         assertEquals(List.of("IMG_1.webp", "IMG_2.PNG", "IMG_10.jpg"),
                 Folder.images(dir).stream().map(p -> p.getFileName().toString()).toList(),
                 "a folder named like an image is still a folder");
+    }
+
+    @Test
+    void videosAreListedAmongTheImages(@TempDir Path dir) throws IOException {
+        for (String n : List.of("b.mkv", "a.jpg", "c.WEBM", "d.mov", "e.mp4", "subs.srt")) {
+            Files.writeString(dir.resolve(n), "x");
+        }
+        Files.createDirectory(dir.resolve("clips.mp4"));
+        assertEquals(List.of("a.jpg", "b.mkv", "c.WEBM", "d.mov", "e.mp4"),
+                Folder.images(dir).stream().map(p -> p.getFileName().toString()).toList(),
+                "by name, whatever the case of the extension; a folder named like a video is still a folder");
     }
 
     @Test

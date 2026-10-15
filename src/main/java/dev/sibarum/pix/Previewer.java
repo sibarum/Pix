@@ -3,8 +3,10 @@ package dev.sibarum.pix;
 import dev.sibarum.suite.pictures.Sizes;
 import dev.vexelray.codec.image.Decoded;
 import dev.vexelray.codec.image.Lru;
+import dev.vexelray.codec.image.Picture;
 import dev.vexelray.codec.image.Pictures;
 import dev.vexelray.codec.image.Stamp;
+import dev.vexelray.codec.video.Videos;
 import dev.vexelray.gui.core.Gui;
 
 import java.io.IOException;
@@ -35,6 +37,9 @@ import java.util.function.Consumer;
  * size, so stepping through finds them waiting; then, at the thumbnail's size only, the rest of what the filmstrip
  * shows ({@link #reach}), so its thumbnails fill in. Reading ahead stops the moment a real request arrives, and each
  * image it reads is announced to {@link #onRead}, since no model change says so.
+ *
+ * <p><b>A video is its poster</b> ({@link #decode}): one frame, read through FFmpeg, kept and read ahead like any
+ * picture. Nothing here plays it.
  *
  * <p>Vexplore's previewer, for a window that is only ever the viewer: every picture is wanted at both sizes.
  */
@@ -161,17 +166,41 @@ final class Previewer {
     private Decoded preview(Path path, boolean big) {
         try {
             Decoded kept = images.get(Stamp.of(path));
-            if (kept != null && (!big || kept.picture(1) != null)) {
+            if (kept != null && (!big || large(kept))) {
                 return kept;
             }
         } catch (IOException e) {
             // Gone or unreadable: Pictures says so.
         }
-        Decoded fresh = Pictures.of(path, Sizes.of(big));
+        Decoded fresh = decode(path, big);
         if (fresh.picture() != null) {
             images.put(fresh.picture().key(), fresh);
         }
         return fresh;
+    }
+
+    /**
+     * {@code path}'s picture: at the thumbnail's size, and the viewer's as well when {@code big}. A video is its poster,
+     * one still frame a tenth of the way in, at the one size wanted; it does not play here.
+     */
+    static Decoded decode(Path path, boolean big) {
+        if (Videos.named(path)) {
+            return Videos.poster(path, big ? Sizes.VIEW : Sizes.THUMBNAIL);
+        }
+        return Pictures.of(path, Sizes.of(big));
+    }
+
+    /**
+     * Whether {@code d} will do at the viewer's size: it has a picture at that size, or its one picture is as large as
+     * the viewer's would be, as a video's poster or a small image's thumbnail is.
+     */
+    static boolean large(Decoded d) {
+        if (d.picture(1) != null) {
+            return true;
+        }
+        Picture p = d.picture();
+        return p != null && !p.moves() && Math.max(p.frameWidth(), p.frameHeight())
+                >= Math.min(Sizes.VIEW, Math.max(p.sourceWidth(), p.sourceHeight()));
     }
 
     /** The images worth reading ahead of {@code at}, nearest first: next, previous, the one after next. */

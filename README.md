@@ -42,6 +42,11 @@ The file asked for is shown before its folder has been read; the count says *rea
   (a pause of your own stays). Its frames are decoded as it plays, a few ahead, each scaled to at most 2560 px with
   its mip chain, and streamed to the GPU; up to 512 MB of the frames already shown are kept, so seeking back within
   them is instant.
+- **Videos are shown by their poster**: an MP4, MKV, WebM, MOV (and AVI, M4V, TS and the others FFmpeg reads) is
+  listed among the pictures, and shown as one still frame from a tenth of the way in (no further than 5 s), with what
+  it is under the name: *H.264 video · 1920 × 1080 · 0:42*. It does not play: Pix looks through a folder of clips the
+  way it looks through photographs, and leaves playing them to a player. Decoded through
+  [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster`.
 - **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
   before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
   kept, so going back is instant. A picture slides in from the side it is on.
@@ -72,7 +77,7 @@ The file asked for is shown before its folder has been read; the count says *rea
 ## How it is put together
 
 ```
-files/     Folder: the images in a folder, in order. Blocking: run it on Gui.offload().
+files/     Folder: the images (and videos) in a folder, in order. Blocking: run it on Gui.offload().
 Doc        the one state: the folder, its images, which one is shown and its picture.
 Model      the only way to change it, and an onChange that never delivers an older document after a newer one.
 Previewer  reads the picture of whatever is shown: one worker, latest request wins, read-ahead, an LRU by bytes.
@@ -115,3 +120,8 @@ mvn -Pnative package -DskipTests           # target/pix-debug.exe  console, auto
 
 Both link `src/main/rc/pix.rc`, the executable's icon: `pix.svg` from the suite icon canvas, rendered to `pix.ico` by
 `vex-suite-common`'s `tools/Ico.java`. The window, file and light variants are beside it.
+
+**Video posters are not in a native build yet.** FFmpeg is six shared libraries (about 125 MB, `avcodec` most of it),
+not a static library to link in as imagelib is, so they would ship beside `pix.exe` rather than inside it. What that
+needs is in [docs/TODO.md](docs/TODO.md), *To ship*. A native build with video in it has not been made. The JVM run (`mvn exec:exec`) shows them, extracting the libraries from ffmpeg-wrapper's jar to a temp
+folder the first time a video is read.

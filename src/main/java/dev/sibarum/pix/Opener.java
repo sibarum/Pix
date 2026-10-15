@@ -2,12 +2,14 @@ package dev.sibarum.pix;
 
 import dev.sibarum.pix.files.Folder;
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.video.Videos;
 import dev.vexelray.framework.shell.Dialogs;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.nfd.FileDialog;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Opens a place: the one on the command line, or one picked in the OS's open dialog (Ctrl+O or a click
@@ -23,8 +25,11 @@ import java.util.List;
  */
 final class Opener {
 
-    private static final List<FileDialog.Filter> IMAGES =
-            List.of(new FileDialog.Filter("Images", Pictures.extensions()));
+    private static final List<FileDialog.Filter> IMAGES = List.of(
+            new FileDialog.Filter("Images and videos",
+                    Stream.concat(Pictures.extensions().stream(), Videos.extensions().stream()).toList()),
+            new FileDialog.Filter("Images", Pictures.extensions()),
+            new FileDialog.Filter("Videos", Videos.extensions()));
 
     private final Gui gui;
     private final Model model;

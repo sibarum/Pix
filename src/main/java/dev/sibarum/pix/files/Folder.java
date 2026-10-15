@@ -1,6 +1,7 @@
 package dev.sibarum.pix.files;
 
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.video.Videos;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -13,6 +14,9 @@ import java.util.List;
 /**
  * The images in a folder, in the order they are stepped through. The only place Pix lists a folder.
  *
+ * <p>Videos are listed among them and shown by their poster, a still, so a folder of clips is looked through the way
+ * a folder of photographs is. Both are guesses from the name; the decoder decides when the file is read.
+ *
  * <p>The order is by name, ignoring case, with runs of digits compared as numbers, so {@code IMG_9} comes before
  * {@code IMG_10} as it does in Explorer. Hidden files are left out. Blocking: run it on the offload lane.
  */
@@ -21,12 +25,12 @@ public final class Folder {
     private Folder() {
     }
 
-    /** The images in {@code folder}, in order; empty if it cannot be read. */
+    /** The images and videos in {@code folder}, in order; empty if it cannot be read. */
     public static List<Path> images(Path folder) {
         List<Path> out = new ArrayList<>();
         try (DirectoryStream<Path> in = Files.newDirectoryStream(folder)) {
             for (Path p : in) {
-                if (Pictures.named(p) && Files.isRegularFile(p) && !hidden(p)) {
+                if (shown(p) && Files.isRegularFile(p) && !hidden(p)) {
                     out.add(p);
                 }
             }
@@ -35,6 +39,11 @@ public final class Folder {
         }
         out.sort(Comparator.comparing(p -> p.getFileName().toString(), Folder::natural));
         return List.copyOf(out);
+    }
+
+    /** Whether {@code p} is named like something Pix shows: an image, or a video for its poster. */
+    public static boolean shown(Path p) {
+        return Pictures.named(p) || Videos.named(p);
     }
 
     private static boolean hidden(Path p) {

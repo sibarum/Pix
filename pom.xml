@@ -130,6 +130,14 @@
             <artifactId>vexelray-codec-image</artifactId>
             <version>${vexelray-codec.version}</version>
         </dependency>
+        <!-- A video's poster: one frame about a tenth of the way in, decoded through ffmpeg-wrapper's FFmpeg when a
+             video is selected, and shown as a still. No playback: Pix lists videos so a folder of them can be looked
+             through, and leaves playing them to a player. -->
+        <dependency>
+            <groupId>dev.vexelray.codec</groupId>
+            <artifactId>vexelray-codec-video</artifactId>
+            <version>${vexelray-codec.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
