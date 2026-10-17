@@ -48,7 +48,8 @@
         "name": "pix-ffmpeg",
         "source": "target/pix-ffmpeg-windows-x86_64.zip",
         "dir": "ffmpeg"
-      }
+      },
+      { "name": "notices", "source": "THIRD-PARTY-NOTICES.txt" }
     ]
   }
 }
