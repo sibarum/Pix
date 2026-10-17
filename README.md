@@ -49,7 +49,8 @@ The file asked for is shown before its folder has been read; the count says *rea
   [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster`.
 - **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
   before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
-  kept, so going back is instant. A picture slides in from the side it is on.
+  kept, so going back is instant. A picture is thrown in across the window from the side it is on, and the old one
+  flung out the other way.
 - **Look closely**: the wheel zooms about the pointer and a drag moves the picture. Smaller than the window, it stays
   inside it; larger, it always covers at least a quarter of it, and pulled further it gives against the hand and
   springs back with the momentum it had. **R** and **Shift+R** turn it a quarter (a fitted picture is fitted again the
