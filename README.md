@@ -45,12 +45,13 @@ The file asked for is shown before its folder has been read; the count says *rea
 - **Videos play the same way**: an MP4, MKV, WebM, MOV (and AVI, M4V, TS and the others FFmpeg reads) is listed among
   the pictures, with what it is under the name (*H.264 video · 1920 × 1080 · 0:42*), and played from its first frame
   with the same transport, keys and looping as an animated GIF, held while Pix is not in front, and zoomed, moved and
-  turned like any picture. A frame is a number at the rate the stream declares, so **,** and **.** step exactly one.
-  Frames are decoded a few ahead at no more than 2560 px, given their mips and streamed to the GPU; up to 256 MB of
-  those already shown are kept, so stepping back is instant, and a seek further off is FFmpeg's exact seek. No sound
-  yet: the stack has no audio output. In the filmstrip a video is a still from a tenth of the way in (no further than
-  5 s). A video that does not say how long it is or how fast it plays is shown by that still alone. Decoded through
-  [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
+  turned like any picture. Fitted, a video fills the window (or the screen), as players show it, however small the
+  clip; a picture is never enlarged past its own pixels. A frame is a number at the rate the stream declares, so
+  **,** and **.** step exactly one. Frames are decoded a few ahead at no more than 2560 px, given their mips and
+  streamed to the GPU; up to 256 MB of those already shown are kept, so stepping back is instant, and a seek further
+  off is FFmpeg's exact seek. No sound yet: the stack has no audio output. In the filmstrip a video is a still from a
+  tenth of the way in (no further than 5 s). A video that does not say how long it is or how fast it plays is shown by
+  that still alone. Decoded through [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
 - **Full screen**: a double click on the picture, or **F11**, gives Pix the whole screen, the title bar gone and the
   controls floating and fading over the picture as before; a double click, **F11** or **Esc** comes back to the window
   as it was, maximized if it was. A window closed full screen opens as the window it was. Borderless, not a change of
