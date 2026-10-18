@@ -38,8 +38,9 @@ import java.util.function.Consumer;
  * shows ({@link #reach}), so its thumbnails fill in. Reading ahead stops the moment a real request arrives, and each
  * image it reads is announced to {@link #onRead}, since no model change says so.
  *
- * <p><b>A video is its poster</b> ({@link #decode}): one frame, read through FFmpeg, kept and read ahead like any
- * picture. Nothing here plays it.
+ * <p><b>A video is a picture that plays</b> ({@link #decode}): its first frame, read through FFmpeg, kept and read
+ * ahead like any picture, and the motion the viewer plays it by. Its thumbnail is a poster, a still from a little way
+ * in.
  *
  * <p>Vexplore's previewer, for a window that is only ever the viewer: every picture is wanted at both sizes.
  */
@@ -166,7 +167,7 @@ final class Previewer {
     private Decoded preview(Path path, boolean big) {
         try {
             Decoded kept = images.get(Stamp.of(path));
-            if (kept != null && (!big || large(kept))) {
+            if (kept != null && (!big || viewable(path, kept))) {
                 return kept;
             }
         } catch (IOException e) {
@@ -180,14 +181,23 @@ final class Previewer {
     }
 
     /**
-     * {@code path}'s picture: at the thumbnail's size, and the viewer's as well when {@code big}. A video is its poster,
-     * one still frame a tenth of the way in, at the one size wanted; it does not play here.
+     * {@code path}'s picture: at the thumbnail's size, and the viewer's as well when {@code big}. A video at the
+     * viewer's size is its first frame and the motion that plays it, as an animated GIF is; as a thumbnail, its poster,
+     * one still frame a tenth of the way in.
      */
     static Decoded decode(Path path, boolean big) {
         if (Videos.named(path)) {
-            return Videos.poster(path, big ? Sizes.VIEW : Sizes.THUMBNAIL);
+            return big ? Videos.poster(path, Sizes.VIEW, true) : Videos.poster(path, Sizes.THUMBNAIL);
         }
         return Pictures.of(path, Sizes.of(big));
+    }
+
+    /**
+     * Whether {@code d}, kept for {@code path}, will do for the viewer: {@link #large}, and, for a video, the one that
+     * plays and not a thumbnail's poster, which a small video's would otherwise pass for.
+     */
+    static boolean viewable(Path path, Decoded d) {
+        return large(d) && (!Videos.named(path) || d.picture().plays());
     }
 
     /**
@@ -199,7 +209,7 @@ final class Previewer {
             return true;
         }
         Picture p = d.picture();
-        return p != null && !p.moves() && Math.max(p.frameWidth(), p.frameHeight())
+        return p != null && !p.animated() && Math.max(p.frameWidth(), p.frameHeight())
                 >= Math.min(Sizes.VIEW, Math.max(p.sourceWidth(), p.sourceHeight()));
     }
 

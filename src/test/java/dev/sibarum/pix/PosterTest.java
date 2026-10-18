@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PosterTest {
 
     @Test
-    void aVideoIsAStillFromItsFirstSecondAndSaysWhatItIs(@TempDir Path dir) throws IOException {
+    void aVideoPlaysFromItsFirstFrameAndSaysWhatItIs(@TempDir Path dir) throws IOException {
         Path clip = fixture(dir, "rgb.mp4");
         Decoded d = Previewer.decode(clip, true);
         assertTrue(d.image(), d.identity());
@@ -32,9 +32,22 @@ class PosterTest {
         Picture p = d.picture();
         assertEquals(64, p.frameWidth());
         assertEquals(48, p.frameHeight());
-        assertFalse(p.moves(), "a poster, not playback");
-        assertTrue(red(p), "a tenth of the way into three seconds is still the red second");
+        assertTrue(p.plays(), "a picture that plays, as an animated GIF is");
+        assertEquals(30, p.motion().frames());
+        assertEquals(3000, p.motion().durationMillis());
+        assertTrue(red(p), "the first frame: the red second");
         assertTrue(Previewer.large(d), "a small video's one frame is already the viewer's size");
+        assertTrue(Previewer.viewable(clip, d));
+    }
+
+    @Test
+    void aVideosThumbnailIsAStillAndWillNotDoForTheViewer(@TempDir Path dir) throws IOException {
+        Path clip = fixture(dir, "rgb.mp4");
+        Decoded d = Previewer.decode(clip, false);
+        assertFalse(d.picture().moves(), "a poster, not playback");
+        assertTrue(red(d.picture()), "a tenth of the way into three seconds is still the red second");
+        assertTrue(Previewer.large(d), "as large as the video");
+        assertFalse(Previewer.viewable(clip, d), "but it does not play, so the viewer reads the video again");
     }
 
     @Test

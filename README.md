@@ -42,11 +42,19 @@ The file asked for is shown before its folder has been read; the count says *rea
   (a pause of your own stays). Its frames are decoded as it plays, a few ahead, each scaled to at most 2560 px with
   its mip chain, and streamed to the GPU; up to 512 MB of the frames already shown are kept, so seeking back within
   them is instant.
-- **Videos are shown by their poster**: an MP4, MKV, WebM, MOV (and AVI, M4V, TS and the others FFmpeg reads) is
-  listed among the pictures, and shown as one still frame from a tenth of the way in (no further than 5 s), with what
-  it is under the name: *H.264 video · 1920 × 1080 · 0:42*. It does not play: Pix looks through a folder of clips the
-  way it looks through photographs, and leaves playing them to a player. Decoded through
-  [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster`.
+- **Videos play the same way**: an MP4, MKV, WebM, MOV (and AVI, M4V, TS and the others FFmpeg reads) is listed among
+  the pictures, with what it is under the name (*H.264 video · 1920 × 1080 · 0:42*), and played from its first frame
+  with the same transport, keys and looping as an animated GIF, held while Pix is not in front, and zoomed, moved and
+  turned like any picture. A frame is a number at the rate the stream declares, so **,** and **.** step exactly one.
+  Frames are decoded a few ahead at no more than 2560 px, given their mips and streamed to the GPU; up to 256 MB of
+  those already shown are kept, so stepping back is instant, and a seek further off is FFmpeg's exact seek. No sound
+  yet: the stack has no audio output. In the filmstrip a video is a still from a tenth of the way in (no further than
+  5 s). A video that does not say how long it is or how fast it plays is shown by that still alone. Decoded through
+  [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
+- **Full screen**: a double click on the picture, or **F11**, gives Pix the whole screen, the title bar gone and the
+  controls floating and fading over the picture as before; a double click, **F11** or **Esc** comes back to the window
+  as it was, maximized if it was. A window closed full screen opens as the window it was. Borderless, not a change of
+  display mode, so switching away is instant.
 - **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
   before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
   kept, so going back is instant. A picture is thrown in across the window from the side it is on, and the old one
@@ -57,8 +65,8 @@ The file asked for is shown before its folder has been read; the count says *rea
   new way round); **Ctrl+drag** turns it to any angle with the pointer, and **Shift+wheel** a few degrees at a time.
   **H** mirrors it left and right and **V** top and bottom, as it is seen, whichever way it is turned. **Turn** (the
   tile beside Background) has the quarter turns and the mirrors as a menu, and *As the file is*: upright, not
-  mirrored, fitted. A double click fits it again. The next picture starts fitted, upright and not mirrored. Nothing
-  is written to the file.
+  mirrored, fitted. **0** fits it again (a double click is full screen). The next picture starts fitted, upright and
+  not mirrored. Nothing is written to the file.
 - **The touchpad, read finger by finger** (a precision touchpad, on Windows), not through the wheel the OS makes of
   it, which Pix ignores while fingers are down:
   - **Two fingers are always a pan**: they carry the picture with them, 16 px for each millimetre, against the same
@@ -94,7 +102,7 @@ The file asked for is shown before its folder has been read; the count says *rea
 - **Ctrl+O**, or a click on the name (the words beside Close, which say *Open a picture…* while nothing is open)
   opens a picture, among the images in its folder;
   **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
-- **Esc** closes the background menu, or Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
+- **Esc** closes the background menu, leaves full screen, or closes Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
 - **Every key and gesture can be changed**: the keyboard in the title bar opens the key bindings, where each command
   lists its keys and touchpad gestures together. Click one and press a key or make a gesture on the touchpad to change
   it, and × removes it. What changes is kept in `~/.pix/keys.properties` (only what differs from the defaults, by

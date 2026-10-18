@@ -16,6 +16,7 @@ import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.WindowInstrument;
 import dev.vexelray.gui.core.app.AppHome;
+import dev.vexelray.gui.core.app.GuiApp;
 import dev.vexelray.gui.core.app.Settings;
 import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.core.layout.Length;
@@ -119,14 +120,20 @@ final class Recipes {
     /**
      * Switches the viewer on once its textures have the device, and off on close. Taking the binding is what puts
      * this after it: {@code ImageStarter} binds the {@code Textures} to the window, and a viewer shown before then
-     * would have nothing to upload into.
+     * would have nothing to upload into. Full screen is the window's, so it is wired here too: asked for on an input
+     * thread, done on the main thread, which owns the window.
      */
     @Provides
     @MainThread
     AutoCloseable windowBinding(Textures.Binding textures, Viewer viewer, Shell shell, Keymap keys) {
         keyBindingsButton(shell, keys);
+        GuiApp app = shell.app();
+        viewer.screen(on -> app.post(() -> app.window().fullscreen(on)));
         viewer.active(true);
-        return () -> viewer.active(false);
+        return () -> {
+            viewer.screen(null);
+            viewer.active(false);
+        };
     }
 
     /**

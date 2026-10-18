@@ -14,6 +14,7 @@ import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
 
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 /**
  * The window: the suite's {@link PictureViewer} as the application's whole tree, on the framework's {@code Gui} and
@@ -37,6 +38,8 @@ final class Viewer {
     private final Previewer previewer;
     private final PictureViewer view;
     private final Window main;
+    /** What puts the window full screen, and back: nothing until there is a window ({@link #screen}). */
+    private volatile Consumer<Boolean> screen = on -> { };
 
     Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar, Opener opener,
            Window main, Settings settings, Keymap keys) {
@@ -70,6 +73,16 @@ final class Viewer {
             }
 
             @Override
+            public boolean fullscreens() {
+                return true;
+            }
+
+            @Override
+            public void fullscreen(boolean on) {
+                screen.accept(on);
+            }
+
+            @Override
             public void scaled(ImageFilter moving, ImageFilter resting) {
                 settings.putString(MOVING, moving.name()).putString(RESTING, resting.name()).save();
             }
@@ -83,6 +96,14 @@ final class Viewer {
     /** Main thread: whether there is a device to draw pictures with. False on the way out. */
     void active(boolean on) {
         view.active(on);
+    }
+
+    /**
+     * What puts the window full screen and back, once there is a window: a double click on the picture, F11, and
+     * Escape to come back. Called on input threads.
+     */
+    void screen(Consumer<Boolean> fullscreen) {
+        screen = fullscreen == null ? on -> { } : fullscreen;
     }
 
     /** Close the window, which is quitting. From any thread; before there is a window, quitting as soon as there is. */

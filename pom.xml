@@ -136,9 +136,9 @@
             <artifactId>vexelray-codec-image</artifactId>
             <version>${vexelray-codec.version}</version>
         </dependency>
-        <!-- A video's poster: one frame about a tenth of the way in, decoded through ffmpeg-wrapper's FFmpeg when a
-             video is selected, and shown as a still. No playback: Pix lists videos so a folder of them can be looked
-             through, and leaves playing them to a player. -->
+        <!-- Videos, through ffmpeg-wrapper's FFmpeg: played from the first frame by the same transport as an animated
+             GIF (a poster whose Motion opens a Footage), and a still about a tenth of the way in for the filmstrip.
+             Video only: the stack has no sound yet. -->
         <dependency>
             <groupId>dev.vexelray.codec</groupId>
             <artifactId>vexelray-codec-video</artifactId>
