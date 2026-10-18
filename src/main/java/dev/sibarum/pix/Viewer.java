@@ -9,6 +9,7 @@ import dev.vexelray.codec.image.gui.Textures;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.app.Settings;
 import dev.vexelray.framework.shell.Window;
+import dev.vexelray.gui.keymap.Keymap;
 import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
 
@@ -38,7 +39,7 @@ final class Viewer {
     private final Window main;
 
     Viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar bar, Opener opener,
-           Window main, Settings settings) {
+           Window main, Settings settings, Keymap keys) {
         this.model = model;
         this.previewer = previewer;
         this.main = main;
@@ -72,7 +73,7 @@ final class Viewer {
             public void scaled(ImageFilter moving, ImageFilter resting) {
                 settings.putString(MOVING, moving.name()).putString(RESTING, resting.name()).save();
             }
-        }, "");
+        }, "", keys);
         view.scaling(filter(settings, MOVING, ImageFilter.BILINEAR), filter(settings, RESTING, ImageFilter.LANCZOS));
         model.onChange(this::show);
         previewer.onRead(p -> view.film());

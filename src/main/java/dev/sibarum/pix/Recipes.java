@@ -11,16 +11,23 @@ import dev.vexelray.framework.core.Launch;
 import dev.vexelray.framework.shell.Appearance;
 import dev.vexelray.framework.shell.Apps;
 import dev.vexelray.framework.shell.Dialogs;
+import dev.vexelray.framework.shell.Shell;
 import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
+import dev.vexelray.gui.core.WindowInstrument;
+import dev.vexelray.gui.core.app.AppHome;
 import dev.vexelray.gui.core.app.Settings;
+import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.core.layout.Length;
+import dev.vexelray.gui.keymap.Keymap;
+import dev.vexelray.gui.keymap.KeymapWindow;
 import dev.vexelray.gui.krono.KronoGui;
 import dev.vexelray.gui.widget.TitleBar;
 import sibarum.tactroller.api.Key;
 import sibarum.tactroller.api.Modifier;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -71,14 +78,26 @@ final class Recipes {
      */
     @Provides
     Viewer viewer(Gui gui, KronoGui krono, Model model, Previewer previewer, Textures textures, TitleBar titleBar,
-                  Opener opener, Launch launch, Windows windows, Settings settings) {
-        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener, windows.main(), settings);
-        zoomShortcuts(gui);
-        gui.shortcut(Key.O, opener::file, Modifier.CONTROL);
-        gui.shortcut(Key.O, opener::folder, Modifier.CONTROL, Modifier.SHIFT);
+                  Opener opener, Launch launch, Windows windows, Settings settings, Keymap keys) {
+        Viewer viewer = new Viewer(gui, krono, model, previewer, textures, titleBar, opener, windows.main(), settings,
+                keys);
+        zoomKeys(gui, keys);
+        keys.action("file.open", "Open a picture", Shortcut.of(Key.O, Modifier.CONTROL)).on(opener::file);
+        keys.action("file.open-folder", "Open a folder", Shortcut.of(Key.O, Modifier.CONTROL, Modifier.SHIFT))
+                .on(opener::folder);
         opener.open(Startup.place(launch.rest()));
         updates(gui, model, viewer);
         return viewer;
+    }
+
+    /**
+     * Every command, by name, on the keys and touchpad gestures the user gives it: the viewer's and Pix's own. What
+     * the user changes is kept in a store of its own ({@code keys}), beside the settings, so neither writes back
+     * over the other.
+     */
+    @Provides
+    Keymap keys(Gui gui) {
+        return new Keymap(gui).persist(AppHome.of(Pix.APP).settings("keys"));
     }
 
     /**
@@ -104,18 +123,33 @@ final class Recipes {
      */
     @Provides
     @MainThread
-    AutoCloseable windowBinding(Textures.Binding textures, Viewer viewer) {
+    AutoCloseable windowBinding(Textures.Binding textures, Viewer viewer, Shell shell, Keymap keys) {
+        keyBindingsButton(shell, keys);
         viewer.active(true);
         return () -> viewer.active(false);
     }
 
+    /**
+     * The key-bindings button in the title bar, after the look's own tools: it opens the editor where every command
+     * can be given other keys or gestures. Here, with the shell, because the framework puts the look's tools in the
+     * bar once the window exists, and this has to come after.
+     */
+    private static void keyBindingsButton(Shell shell, Keymap keys) {
+        if (!shell.appearance().drawsOwnFrame()) {
+            return;
+        }
+        List<WindowInstrument> tools = new ArrayList<>(shell.appearance().instruments());
+        tools.add(KeymapWindow.instrument(shell.app(), shell.gui(), keys));
+        shell.titleBar().instruments(List.copyOf(tools));
+    }
+
     /** Ctrl+= / Ctrl+- / Ctrl+0, and the numpad's three: the controls' size, not the picture's. */
-    private static void zoomShortcuts(Gui gui) {
-        gui.shortcut(Key.EQUAL, gui::zoomIn, Modifier.CONTROL);
-        gui.shortcut(Key.MINUS, gui::zoomOut, Modifier.CONTROL);
-        gui.shortcut(Key.DIGIT_0, gui::resetZoom, Modifier.CONTROL);
-        gui.shortcut(Key.NUMPAD_ADD, gui::zoomIn, Modifier.CONTROL);
-        gui.shortcut(Key.NUMPAD_SUBTRACT, gui::zoomOut, Modifier.CONTROL);
-        gui.shortcut(Key.NUMPAD_0, gui::resetZoom, Modifier.CONTROL);
+    private static void zoomKeys(Gui gui, Keymap keys) {
+        keys.action("ui.zoom-in", "Larger controls", Shortcut.of(Key.EQUAL, Modifier.CONTROL),
+                Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL)).on(gui::zoomIn);
+        keys.action("ui.zoom-out", "Smaller controls", Shortcut.of(Key.MINUS, Modifier.CONTROL),
+                Shortcut.of(Key.NUMPAD_SUBTRACT, Modifier.CONTROL)).on(gui::zoomOut);
+        keys.action("ui.zoom-reset", "Controls at their own size", Shortcut.of(Key.DIGIT_0, Modifier.CONTROL),
+                Shortcut.of(Key.NUMPAD_0, Modifier.CONTROL)).on(gui::resetZoom);
     }
 }

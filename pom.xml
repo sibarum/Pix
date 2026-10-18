@@ -122,6 +122,12 @@
             <artifactId>vex-suite-common</artifactId>
             <version>${vex-suite-common.version}</version>
         </dependency>
+        <!-- The key map: every command by name, on the keys and touchpad gestures the user gives it, and its editor. -->
+        <dependency>
+            <groupId>dev.vexelray.gui</groupId>
+            <artifactId>vexelray-gui-keymap</artifactId>
+            <version>${vexelray-gui.version}</version>
+        </dependency>
         <!-- Pictures from any image file (PNG, JPEG, GIF, WebP, SVG and the rest), decoded through imagelib, packed
              for the GPU and shown on a node: the picture Pix shows. ImageStarter, named in PixApp, builds the textures
              and binds them to the window. The GUI decodes nothing itself, by design. -->

@@ -59,6 +59,20 @@ The file asked for is shown before its folder has been read; the count says *rea
   tile beside Background) has the quarter turns and the mirrors as a menu, and *As the file is*: upright, not
   mirrored, fitted. A double click fits it again. The next picture starts fitted, upright and not mirrored. Nothing
   is written to the file.
+- **The touchpad, read finger by finger** (a precision touchpad, on Windows), not through the wheel the OS makes of
+  it, which Pix ignores while fingers are down:
+  - **Two fingers** carry the picture with them, 16 px for each millimetre, against the same give at the edges as a
+    drag, and let go of it at the speed they were going.
+  - **Pinching** zooms and **twisting** turns it, both about the pointer and both at once, live under the fingers with
+    no easing. Pinched past the zoom limits it gives a little and comes back. Let go within 8° of a quarter turn, it
+    settles onto the quarter; within 6% of its fitted size, it is fitted and centred.
+  - **Three fingers swiping** left go to the next picture and right to the previous, as a page turns. The step happens
+    once the fingers have gone 12 mm, while they are still moving, or on a quick flick.
+  - **A two-finger double tap** goes from fitted to the picture's own pixels about the pointer (twice its size if it
+    already fits at that), and from anything else back to fitted.
+
+  Windows uses three-finger swipes to switch applications unless *Settings → Bluetooth & devices → Touchpad* says
+  otherwise. Pix sees the fingers either way, but Windows acts on them too.
 - **Sharp at rest**: while the picture moves it is drawn from a copy at most 2560 px across; a moment after it stops,
   what is on screen is made again from the file's own pixels at exactly the size shown, in linear light, on whole
   screen pixels.
@@ -77,6 +91,10 @@ The file asked for is shown before its folder has been read; the count says *rea
   opens a picture, among the images in its folder;
   **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
 - **Esc** closes the background menu, or Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
+- **Every key and gesture can be changed**: the keyboard in the title bar opens the key bindings, where each command
+  lists its keys and touchpad gestures together. Click one and press a key or make a gesture on the touchpad to change
+  it, and × removes it. What changes is kept in `~/.pix/keys.properties` (only what differs from the defaults, by
+  command: `view.next = Right ThreeFingerSwipeLeft`).
 
 ## How it is put together
 
