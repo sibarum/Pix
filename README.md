@@ -65,10 +65,11 @@ The file asked for is shown before its folder has been read; the count says *rea
     give at the edges as a drag, and a pan lets go of it at the speed they were going. The picture follows them
     a few hundredths of a second behind, so a pad's jitter never reaches it.
   - **A zoom joins** once the fingers' spread has changed by half as much as they have travelled, and **a turn** once
-    they have twisted an eighth of a turn; until then a wobbling hand only pans. Each catches up as it joins, so the
-    picture is zoomed and turned as far as the fingers are, about the pointer. Zoomed past the limits it gives a
-    little and comes back. Let go within 8° of a quarter turn, it settles onto the quarter; zoomed to within 6% of
-    its fitted size, it is fitted and centred.
+    they have twisted 30°; until then a wobbling hand only pans. A picture already turned off a quarter (by
+    Ctrl+drag or Shift+wheel) turns with the fingers from the start. Each catches up as it joins, so the picture is
+    zoomed and turned as far as the fingers are, about the pointer. Zoomed past the limits it gives a little and
+    comes back. Turned by the fingers, it settles onto the nearest quarter turn when they lift, still about the
+    point they were at; zoomed to within 6% of its fitted size, it is fitted and centred.
   - **Three fingers swiping** left go to the next picture and right to the previous, as a page turns. The step happens
     once the fingers have gone 12 mm, while they are still moving, or on a quick flick.
   - **A two-finger double tap** goes from fitted to the picture's own pixels about the pointer (twice its size if it
