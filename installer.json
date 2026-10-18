@@ -3,7 +3,7 @@
   "name": "Pix",
   "publisher": "sibarum",
   "description": "An image viewer: one picture, as large as the window allows, and the rest of its folder a key press away.",
-  "version": "0.1.0",
+  "version": "0.1.1",
 
   "repo": "sibarum/vexelray-dist",
   "branch": "main",
