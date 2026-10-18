@@ -130,15 +130,16 @@ final class Recipes {
     }
 
     /**
-     * The key-bindings button in the title bar, after the look's own tools: it opens the editor where every command
-     * can be given other keys or gestures. Here, with the shell, because the framework puts the look's tools in the
-     * bar once the window exists, and this has to come after.
+     * The key-bindings button in the title bar, after whatever the bar already shows: it opens the editor where every
+     * command can be given other keys or gestures. Here, with the shell, because the framework puts the look's tools in
+     * the bar once the window exists, and this has to come after. From the bar and not the look, so the debug
+     * edition's automation button, which joins the strip the same way, is kept rather than replaced.
      */
     private static void keyBindingsButton(Shell shell, Keymap keys) {
         if (!shell.appearance().drawsOwnFrame()) {
             return;
         }
-        List<WindowInstrument> tools = new ArrayList<>(shell.appearance().instruments());
+        List<WindowInstrument> tools = new ArrayList<>(shell.titleBar().instruments());
         tools.add(KeymapWindow.instrument(shell.app(), shell.gui(), keys));
         shell.titleBar().instruments(List.copyOf(tools));
     }
