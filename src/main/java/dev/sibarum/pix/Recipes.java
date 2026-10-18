@@ -39,8 +39,8 @@ import java.util.List;
  * takes. So the look and the model exist before the {@code Gui} does, the tree waits for the {@code Gui} and its title
  * bar, and the binding waits for the window.
  *
- * <p>The driving socket is not here either: it comes from {@code AutomationStarter}, which {@link PixApp} names in its
- * {@code @VexelApp} (debug edition only).
+ * <p>The automation sockets are not here either: they come from {@code AutomationStarter}, which {@link PixApp} names
+ * in its {@code @VexelApp}.
  */
 @Configuration
 final class Recipes {
@@ -139,8 +139,8 @@ final class Recipes {
     /**
      * The key-bindings button in the title bar, after whatever the bar already shows: it opens the editor where every
      * command can be given other keys or gestures. Here, with the shell, because the framework puts the look's tools in
-     * the bar once the window exists, and this has to come after. From the bar and not the look, so the debug
-     * edition's automation button, which joins the strip the same way, is kept rather than replaced.
+     * the bar once the window exists, and this has to come after. From the bar and not the look, so the automation
+     * button, which joins the strip the same way, is kept rather than replaced.
      */
     private static void keyBindingsButton(Shell shell, Keymap keys) {
         if (!shell.appearance().drawsOwnFrame()) {

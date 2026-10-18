@@ -127,9 +127,38 @@ textures are built and bound to the window. [`vex-suite-common`](../vex-suite-co
 sizes they are decoded at, `PictureViewer` (the tree and its bar), `Filmstrip`, `Tile`, `Icons` and the palette. Both
 are sibling checkouts, installed to the local Maven repository (`mvn install`) before this one builds.
 
+## Automation
+
+Pix can be driven and read from outside, by a script, a macro or an agent, through the framework's two loopback
+sockets: **remote control** (the keys, clicks and reads a person has) and **diagnostics** (the flight recorder, the
+log, the Inspector). Both are in every build and both start off.
+
+- **Switched on by hand**: the plug in the title bar opens the switches, one per socket, each with a port (blank for
+  a free one).
+- **Switched on at launch**, for an agent that means to: `--automation=0` (both, on a free port),
+  `--automation.control=<port>`, `--automation.diagnostics=<port>`, or `VEXELRAY_AUTOMATION=0` in the environment.
+- **Not there at all**: `--automation.available=none` (or `control`, or `diagnostics`), or
+  `VEXELRAY_AUTOMATION_AVAILABLE` in the environment. A socket that is not available cannot be switched on by
+  anything, and with neither available the plug is gone.
+
+Whatever turned it on, **the plug's lamps say what each socket is doing**, remote control's (red) left of the plug and
+diagnostics' (blue) right:
+
+| Lamp | Means |
+| --- | --- |
+| none | off, and nothing has connected to it this session |
+| ring | open, and nothing has connected yet |
+| filled ring | open, and something is connected now |
+| ring with a grey dot | open; something was connected and has gone |
+| grey dot | off, after something had connected to it this session |
+
+The plug's tooltip and the switches' window say the same in words, with the port and how many are connected. In full
+screen the title bar, and so the lamps, are hidden with the rest of it.
+
 ## Looking at it without a person
 
-The debug edition has the framework's automation socket. Every control has a landmark (`name`, `count`, `info`, `open`,
+Every build, the release one too, has the framework's automation sockets, off until asked for (see
+[Automation](#automation)). Every control has a landmark (`name`, `count`, `info`, `open`,
 `previous`, `next`, `turn` and its menu's `turn.left`, `turn.right`, `turn.mirror-across`, `turn.mirror-down` and
 `turn.upright`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
 `frame-on`, `seek`, `loop` and `position`, which reads like `0:01.8 / 0:04.8  48/120`), …:
@@ -150,9 +179,11 @@ picture on its first frame until Pix is in front again.
 As Vexplore's: GraalVM 25 as `JAVA_HOME`, from a Visual Studio developer prompt.
 
 ```
-mvn -Pnative-release package -DskipTests   # target/pix.exe        GUI subsystem, no automation
-mvn -Pnative package -DskipTests           # target/pix-debug.exe  console, automation present
+mvn -Pnative-release package -DskipTests   # target/pix.exe        GUI subsystem
+mvn -Pnative package -DskipTests           # target/pix-debug.exe  console: prints the automation port line
 ```
+
+Both carry the automation sockets ([Automation](#automation)).
 
 Both link `src/main/rc/pix.rc`, the executable's icon: `pix.svg` from the suite icon canvas, rendered to `pix.ico` by
 `vex-suite-common`'s `tools/Ico.java`. The window, file and light variants are beside it.
