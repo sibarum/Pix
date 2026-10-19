@@ -59,7 +59,11 @@ The file asked for is shown before its folder has been read; the count says *rea
   (`sound.volume` and `sound.muted` in `~/.pix/settings.properties`); muted, the pictures keep time as before.
   **While a video is in front the arrows are its**: **←** and **→** seek 5 s back and on, **↑** and **↓** turn it up
   and down 5% (up unmutes it); **PgUp/PgDn** still step through the folder, and on a picture or an animated GIF the
-  arrows step as before. Like every key they can be changed in the key bindings (*Seek a video back*, and so on). In the
+  arrows step as before. Like every key they can be changed in the key bindings (*Seek a video back*, and so on).
+  **With the pointer on a video's seek bar, the frame there shows above it**, with its time, following the pointer
+  along the bar and through a drag, so you can see where a click would go before you click. Those frames come from the
+  file opened a second time, small (at most 400 px), so looking never moves what is playing. Moving right decodes up
+  to the next frame, and anywhere else is sought. The last 64 frames shown are kept. An animated GIF shows no preview. In the
   filmstrip a video is a still from a
   tenth of the way in (no further than 5 s). A video that does not say how long it is or how fast it plays is shown by
   that still alone. Decoded through [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
@@ -178,7 +182,8 @@ Every build, the release one too, has the framework's automation sockets, off un
 [Automation](#automation)). Every control has a landmark (`name`, `count`, `info`, `open`,
 `previous`, `next`, `turn` and its menu's `turn.left`, `turn.right`, `turn.mirror-across`, `turn.mirror-down` and
 `turn.upright`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
-`frame-on`, `seek`, `loop`, `mute`, `volume` and `position`, which reads like `0:01.8 / 0:04.8  48/120`), …:
+`frame-on`, `seek`, `loop`, `mute`, `volume` and `position`, which reads like `0:01.8 / 0:04.8  48/120`, and for a
+video `glance`, the frame over the seek bar, which reads as the time under the pointer, like `0:05.0`), …:
 
 ```
 java -jar ../vexelray-gui/vexelray-gui-automation-cli/target/vexelray-gui-automation-cli-0.1.0-SNAPSHOT.jar \
