@@ -56,7 +56,10 @@ The file asked for is shown before its folder has been read; the count says *rea
   plays silently as before. `-Dvexelray.sound=off` (or `nowhere`, which drains it to no device in real time) keeps it
   quiet. **A video with sound has Mute and a volume slider** after Loop in the transport, and **M** mutes and unmutes;
   dragging the slider unmutes it. The level and the mute carry from one video to the next and are kept between runs
-  (`sound.volume` and `sound.muted` in `~/.pix/settings.properties`); muted, the pictures keep time as before. In the
+  (`sound.volume` and `sound.muted` in `~/.pix/settings.properties`); muted, the pictures keep time as before.
+  **While a video is in front the arrows are its**: **←** and **→** seek 5 s back and on, **↑** and **↓** turn it up
+  and down 5% (up unmutes it); **PgUp/PgDn** still step through the folder, and on a picture or an animated GIF the
+  arrows step as before. Like every key they can be changed in the key bindings (*Seek a video back*, and so on). In the
   filmstrip a video is a still from a
   tenth of the way in (no further than 5 s). A video that does not say how long it is or how fast it plays is shown by
   that still alone. Decoded through [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
@@ -64,7 +67,7 @@ The file asked for is shown before its folder has been read; the count says *rea
   controls floating and fading over the picture as before; a double click, **F11** or **Esc** comes back to the window
   as it was, maximized if it was. A window closed full screen opens as the window it was. Borderless, not a change of
   display mode, so switching away is instant.
-- **←/→, PgUp/PgDn, Home/End** step through the folder, in name order with numbers compared as numbers (`IMG_9`
+- **←/→, PgUp/PgDn, Home/End** step through the folder (on a video, ←/→ seek it instead, and PgUp/PgDn step), in name order with numbers compared as numbers (`IMG_9`
   before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
   kept, so going back is instant. A picture is thrown in across the window from the side it is on, and the old one
   flung out the other way.
