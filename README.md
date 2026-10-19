@@ -81,12 +81,18 @@ The file asked for is shown before its folder has been read; the count says *rea
   - **Two fingers are always a pan**: they carry the picture with them, 16 px for each millimetre, against the same
     give at the edges as a drag, and a pan lets go of it at the speed they were going. The picture follows them
     a few hundredths of a second behind, so a pad's jitter never reaches it.
-  - **A zoom joins** once the fingers' spread has changed by half as much as they have travelled, and **a turn** once
-    they have twisted 30°; until then a wobbling hand only pans. A picture already turned off a quarter (by
-    Ctrl+drag or Shift+wheel) turns with the fingers from the start. Each catches up as it joins, so the picture is
-    zoomed and turned as far as the fingers are, about the pointer. Zoomed past the limits it gives a little and
-    comes back. Turned by the fingers, it settles onto the nearest quarter turn when they lift, still about the
-    point they were at; zoomed to within 6% of its fitted size, it is fitted and centred.
+  - **A zoom joins** once the fingers' spread has changed by half as much as they have travelled, and catches up as
+    it joins, so the picture is zoomed as far as the fingers are, about the pointer. Zoomed past the limits it gives
+    a little and comes back.
+  - **A turn is locked** until the fingers have twisted 30°: short of that the picture leans with them, a few degrees
+    and less the further they go, and springs back upright when they lift. Past it the lock gives, the picture
+    swings round to where the fingers are and turns freely with them. A picture already turned off a quarter (by
+    Ctrl+drag, Shift+wheel or the fingers) turns with them from the start.
+  - **Quarter turns and the fitted size are magnets** while the fingers are down. Within 7° of a quarter turn the
+    picture is pulled onto it and held, giving only a little, until the fingers are 10° away and it lets go with a
+    jump; within 10% of its fitted size, it is pulled to that size and towards the centre, until 14% away. What it
+    shows is what lifting does: held on a quarter it settles there, still about the point the fingers were at; held
+    at its fitted size it is fitted and centred; anywhere else it stays as it was left.
   - **Three fingers swiping** left go to the next picture and right to the previous, as a page turns. The step happens
     once the fingers have gone 12 mm, while they are still moving, or on a quick flick.
   - **A two-finger double tap** goes from fitted to the picture's own pixels about the pointer (twice its size if it
