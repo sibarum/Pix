@@ -33,6 +33,9 @@ final class Viewer {
     /** Where the Settings menu's choices are kept: how pictures are scaled moving, and at rest. */
     static final String MOVING = "scaling.moving";
     static final String RESTING = "scaling.resting";
+    /** Where the transport's sound is kept: how loud a video is heard, and whether it is muted. */
+    static final String VOLUME = "sound.volume";
+    static final String MUTED = "sound.muted";
 
     private final Model model;
     private final Previewer previewer;
@@ -86,8 +89,14 @@ final class Viewer {
             public void scaled(ImageFilter moving, ImageFilter resting) {
                 settings.putString(MOVING, moving.name()).putString(RESTING, resting.name()).save();
             }
+
+            @Override
+            public void sounded(float volume, boolean muted) {
+                settings.putFloat(VOLUME, volume).putBoolean(MUTED, muted).save();
+            }
         }, "", keys);
         view.scaling(filter(settings, MOVING, ImageFilter.BILINEAR), filter(settings, RESTING, ImageFilter.LANCZOS));
+        view.sound(settings.getFloat(VOLUME, 1f), settings.getBoolean(MUTED, false));
         model.onChange(this::show);
         previewer.onRead(p -> view.film());
         show(model.doc());

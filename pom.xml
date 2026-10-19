@@ -128,7 +128,7 @@
         </dependency>
         <!-- Videos, through ffmpeg-wrapper's FFmpeg: played from the first frame by the same transport as an animated
              GIF (a poster whose Motion opens a Footage), and a still about a tenth of the way in for the filmstrip.
-             Video only: the stack has no sound yet. -->
+             With its sound, through ffmpeg-wrapper's Audio. -->
         <dependency>
             <groupId>dev.vexelray.codec</groupId>
             <artifactId>vexelray-codec-video</artifactId>

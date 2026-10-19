@@ -54,7 +54,10 @@ The file asked for is shown before its folder has been read; the count says *rea
   Pix is not in front,
   and goes wherever a seek or the loop sends the picture. A video with no sound, or a machine with no sound device,
   plays silently as before. `-Dvexelray.sound=off` (or `nowhere`, which drains it to no device in real time) keeps it
-  quiet. There is no volume control yet. In the filmstrip a video is a still from a
+  quiet. **A video with sound has Mute and a volume slider** after Loop in the transport, and **M** mutes and unmutes;
+  dragging the slider unmutes it. The level and the mute carry from one video to the next and are kept between runs
+  (`sound.volume` and `sound.muted` in `~/.pix/settings.properties`); muted, the pictures keep time as before. In the
+  filmstrip a video is a still from a
   tenth of the way in (no further than 5 s). A video that does not say how long it is or how fast it plays is shown by
   that still alone. Decoded through [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
 - **Full screen**: a double click on the picture, or **F11**, gives Pix the whole screen, the title bar gone and the
@@ -166,7 +169,7 @@ Every build, the release one too, has the framework's automation sockets, off un
 [Automation](#automation)). Every control has a landmark (`name`, `count`, `info`, `open`,
 `previous`, `next`, `turn` and its menu's `turn.left`, `turn.right`, `turn.mirror-across`, `turn.mirror-down` and
 `turn.upright`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
-`frame-on`, `seek`, `loop` and `position`, which reads like `0:01.8 / 0:04.8  48/120`), …:
+`frame-on`, `seek`, `loop`, `mute`, `volume` and `position`, which reads like `0:01.8 / 0:04.8  48/120`), …:
 
 ```
 java -jar ../vexelray-gui/vexelray-gui-automation-cli/target/vexelray-gui-automation-cli-0.1.0-SNAPSHOT.jar \
