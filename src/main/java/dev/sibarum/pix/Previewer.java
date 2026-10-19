@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
@@ -29,6 +30,11 @@ import java.util.function.Consumer;
  * so holding an arrow key through a folder of photographs decodes the one it stops on when the worker comes free, not
  * every one passed on the way. The decode already running is not abandoned (imagelib has no cancel); it lands, is
  * dropped as stale, and the worker goes straight to the newest request.
+ *
+ * <p><b>The file shown always gets an answer.</b> It is asked for whenever it is shown with no picture and is not
+ * already being read: a step to it, or the same file opened again (a file replaced on disk, reopened to see the new
+ * one), which nothing moving would otherwise miss. A read that fails anyway lands its reason, rather than leaving the
+ * file reading for good.
  *
  * <p><b>Decoded images are kept</b>, least recently used first out, so going back finds them without decoding again.
  * The key is the file's {@link Stamp}, so a file changed since it was decoded is decoded again.
@@ -49,13 +55,15 @@ final class Previewer {
     /** Decoded pixels kept for going back: a few photographs at the viewer's size, many thumbnails. */
     static final long BUDGET = 256L * 1024 * 1024;
 
-    private final Gui gui;
+    private final Executor offload;
     private final Lru<Object, Decoded> images = new Lru<>(BUDGET, Decoded::bytes, p -> { });
 
     // Guarded by this.
     private Path last;
     private List<Path> lastPictures;
     private Path wanted;
+    /** The file shown, asked for and not landed yet: a document that still has no picture of it waits for that one. */
+    private Path asking;
     private boolean running;
     private final Deque<Ahead> ahead = new ArrayDeque<>();
 
@@ -67,7 +75,12 @@ final class Previewer {
     }
 
     Previewer(Gui gui, Model model) {
-        this.gui = gui;
+        this(gui.offload(), model);
+    }
+
+    /** Reading on {@code offload}: the {@code Gui}'s lane, or a test's own. */
+    Previewer(Executor offload, Model model) {
+        this.offload = offload;
         this.model = model;
         model.onChange(this::follow);
     }
@@ -98,9 +111,11 @@ final class Previewer {
         }
         synchronized (this) {
             // A picture arriving changes neither; the listing landing changes only who the neighbours are, so the
-            // picture already asked for is not asked for again.
+            // picture already asked for is not asked for again. Opening the file shown again clears its picture
+            // without moving, so that is asked for too.
             boolean moved = !Objects.equals(want, last);
-            if (!moved && doc.pictures() == lastPictures) {
+            boolean ask = moved || want != null && doc.preview() == null && !want.equals(asking);
+            if (!ask && doc.pictures() == lastPictures) {
                 return;
             }
             last = want;
@@ -109,10 +124,12 @@ final class Previewer {
             ahead.addAll(next);
             if (want == null) {
                 wanted = null;
+                asking = null;
                 return;
             }
-            if (moved) {
+            if (ask) {
                 wanted = want;
+                asking = want;
             }
             start();
         }
@@ -124,7 +141,7 @@ final class Previewer {
             return;
         }
         running = true;
-        gui.offload().execute(this::work);
+        offload.execute(this::work);
     }
 
     /** Drain the slot, then read ahead, until there is nothing to do. */
@@ -149,10 +166,24 @@ final class Previewer {
                         return;
                     }
                 }
-                Decoded p = preview(path, big);
                 if (real) {
+                    Decoded p;
+                    try {
+                        p = preview(path, big);
+                    } catch (RuntimeException e) {
+                        // The codec gives a reason rather than throwing. Should something under it throw anyway, the
+                        // file shown says so, instead of reading for good with the worker gone.
+                        p = Decoded.none(path, "unreadable: " + e.getClass().getSimpleName());
+                    }
+                    // Before it lands, so the file opened again meanwhile is asked for again rather than lost.
+                    synchronized (this) {
+                        if (path.equals(asking)) {
+                            asking = null;
+                        }
+                    }
                     model.previewed(path, p);
                 } else {
+                    preview(path, big);
                     read.accept(path);
                 }
             }
