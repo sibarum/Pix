@@ -35,8 +35,9 @@ The file asked for is shown before its folder has been read; the count says *rea
 
 - **Every format imagelib decodes**: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG, ICO and the rest, animated where the file
   is. A file that is not a picture, or will not decode, says why in place of the picture.
-- **An animated GIF, WebP or APNG plays like a movie**, of any length and size: a transport over the picture has play
-  and pause, a frame back and on, a seek bar to drag, the clock and frame, and loop. **Space** plays and pauses,
+- **An animated GIF, WebP or APNG plays like a movie**, of any length and size: a transport takes the filmstrip's place in
+  the bar, with Previous and Next moved out to the window's sides so the picture keeps its height, and has play and
+  pause, a frame back and on, a seek bar to drag, the clock and frame, and loop. **Space** plays and pauses,
   **,** and **.** step a frame (with **Shift**, a second), **L** turns looping off and on. It plays as soon as it is
   shown, round and round, and pauses where it is while Pix is not the window in front, playing on when it is again
   (a pause of your own stays). Its frames are decoded as it plays, a few ahead, each scaled to at most 2560 px with
