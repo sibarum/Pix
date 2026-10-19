@@ -21,8 +21,11 @@
   - *The size*: about 55 MB more to download, beside `pix.exe`. A custom FFmpeg configured with
     `--disable-everything` and only the decoders and demuxers wanted is a fraction of that, and changes nothing above
     ffmpeg-wrapper's `build.sh`.
-  - *File associations* for `.mp4`, `.mkv`, `.webm`, `.mov`: deliberately not added. Pix shows a poster, not the
-    film, so it should not become what double-clicking a video opens.
+  - ~~*File associations* for videos~~ — done, now that Pix plays them rather than showing a poster: every extension
+    in `Videos.EXTENSIONS` (`.mp4 .m4v .mov .mkv .webm .avi .wmv .flv .mpg .mpeg .ts .m2ts .mts .3gp .ogv`), with the
+    video family's icon, `file-video.ico`. Pix becomes the default only where nothing else has claimed the type, so
+    a `.ts` already opened by an editor stays with it. A trimmed FFmpeg must keep the demuxers for all of these, or
+    the list here and in `installer.json` shrinks with it.
 - ~~The first release~~ — done: `pix.exe` 0.1.0 is published from
   [`vexelray-dist`](https://github.com/sibarum/vexelray-dist) (`apps/pix/`, release `pix-v0.1.0`). Its
   [DEPLOYING.md](https://github.com/sibarum/vexelray-dist/blob/main/DEPLOYING.md) says how the next one goes out;

@@ -41,7 +41,22 @@
           { "extension": ".ppm", "description": "Portable Pixmap Image", "icon": "src/main/rc/file-images.ico" },
           { "extension": ".dds", "description": "DirectDraw Surface", "icon": "src/main/rc/file-images.ico" },
           { "extension": ".exr", "description": "OpenEXR Image", "icon": "src/main/rc/file-images.ico" },
-          { "extension": ".hdr", "description": "Radiance HDR Image", "icon": "src/main/rc/file-images.ico" }
+          { "extension": ".hdr", "description": "Radiance HDR Image", "icon": "src/main/rc/file-images.ico" },
+          { "extension": ".mp4", "description": "MP4 Video", "contentType": "video/mp4", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".m4v", "description": "MPEG-4 Video", "contentType": "video/x-m4v", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".mov", "description": "QuickTime Movie", "contentType": "video/quicktime", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".mkv", "description": "Matroska Video", "contentType": "video/x-matroska", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".webm", "description": "WebM Video", "contentType": "video/webm", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".avi", "description": "AVI Video", "contentType": "video/x-msvideo", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".wmv", "description": "Windows Media Video", "contentType": "video/x-ms-wmv", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".flv", "description": "Flash Video", "contentType": "video/x-flv", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".mpg", "description": "MPEG Video", "contentType": "video/mpeg", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".mpeg", "description": "MPEG Video", "contentType": "video/mpeg", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".ts", "description": "MPEG Transport Stream", "contentType": "video/mp2t", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".m2ts", "description": "MPEG-2 Transport Stream", "contentType": "video/mp2t", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".mts", "description": "AVCHD Video", "contentType": "video/mp2t", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".3gp", "description": "3GPP Video", "contentType": "video/3gpp", "icon": "src/main/rc/file-video.ico" },
+          { "extension": ".ogv", "description": "Ogg Video", "contentType": "video/ogg", "icon": "src/main/rc/file-video.ico" }
         ]
       },
       {
