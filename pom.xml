@@ -154,6 +154,7 @@
                 <directory>src/main/rc</directory>
                 <includes>
                     <include>pix.ico</include>
+                    <include>pix-background.ico</include>
                 </includes>
             </resource>
         </resources>
