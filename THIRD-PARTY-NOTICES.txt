@@ -2,7 +2,7 @@ Pix: third-party software notices
 
 Pix contains the third-party software listed below. Each item names its licence; the full texts of the licences are at the end of this file. The rest of the program is VexelRay's own code.
 
-The ffmpeg folder next to Pix holds FFmpeg's libraries, which Pix uses to show a frame of a video. They are not part of pix.exe. FFmpeg is licensed under the GNU Lesser General Public License; its licence and where to get its source are in ffmpeg\FFMPEG-LICENSE.txt and ffmpeg\FFMPEG-SOURCE.txt.
+The ffmpeg folder next to Pix holds FFmpeg's libraries, which Pix uses to show a frame of a video and play its sound. They are not part of pix.exe. FFmpeg is licensed under the GNU Lesser General Public License; its licence and where to get its source are in ffmpeg\FFMPEG-LICENSE.txt and ffmpeg\FFMPEG-SOURCE.txt. The same folder's ffwrap.dll has miniaudio (https://miniaud.io, by David Reid) built in, which plays the sound; it is offered as public domain or under MIT No Attribution, and asks for no notice.
 
 ===============================================================================
 1. Oracle GraalVM Native Image runtime and Java class library 25.0.3

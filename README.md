@@ -49,7 +49,12 @@ The file asked for is shown before its folder has been read; the count says *rea
   clip; a picture is never enlarged past its own pixels. A frame is a number at the rate the stream declares, so
   **,** and **.** step exactly one. Frames are decoded a few ahead at no more than 2560 px, given their mips and
   streamed to the GPU; up to 256 MB of those already shown are kept, so stepping back is instant, and a seek further
-  off is FFmpeg's exact seek. No sound yet: the stack has no audio output. In the filmstrip a video is a still from a
+  off is FFmpeg's exact seek. **Its sound plays with it**, out of the system's default output, and the pictures keep
+  time by what is being heard, so they never drift from it; the sound stops with a pause, a step, the end, and while
+  Pix is not in front,
+  and goes wherever a seek or the loop sends the picture. A video with no sound, or a machine with no sound device,
+  plays silently as before. `-Dvexelray.sound=off` (or `nowhere`, which drains it to no device in real time) keeps it
+  quiet. There is no volume control yet. In the filmstrip a video is a still from a
   tenth of the way in (no further than 5 s). A video that does not say how long it is or how fast it plays is shown by
   that still alone. Decoded through [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
 - **Full screen**: a double click on the picture, or **F11**, gives Pix the whole screen, the title bar gone and the
