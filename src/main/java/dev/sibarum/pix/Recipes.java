@@ -106,7 +106,7 @@ final class Recipes {
      * closes Pix, lets the installer's updater replace it, and opens it again on the picture that was shown.
      */
     private static void updates(Gui gui, Model model, Viewer viewer) {
-        Updates.of(Apps.registryDir(), Pix.APP).ifPresent(u -> {
+        Apps.registryDir().flatMap(dir -> Updates.of(dir, Pix.APP)).ifPresent(u -> {
             UpdateNotice notice = new UpdateNotice(gui, u, viewer::close, () -> {
                 Doc d = model.doc();
                 Path place = d.at() != null ? d.at() : d.folder();
