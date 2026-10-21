@@ -433,6 +433,70 @@
                 </plugins>
             </build>
         </profile>
+        <!-- Linux: mvn -Pnative-linux package -DskipTests  ->  target-linux/pix. No linker options and no rc.exe;
+             a Linux executable has no subsystem and no icon of its own. -->
+        <profile>
+            <id>native-linux</id>
+            <properties>
+                <native.imageName>pix</native.imageName>
+            </properties>
+            <build>
+                <plugins>
+                    <!-- FFmpeg beside the executable, as on Windows: ffmpeg-wrapper-linux's libraries, flat in
+                         target-linux/ffmpeg, where its loader looks beside a pix run from target-linux/. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ffmpeg-beside</id>
+                                <configuration>
+                                    <includeArtifactIds>ffmpeg-wrapper-linux</includeArtifactIds>
+                                    <includes>natives/linux-x86_64/**</includes>
+                                    <outputDirectory>${project.build.directory}/ffmpeg</outputDirectory>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <buildArgs combine.self="override">
+                                <!-- imagelib comes as a resource that imagelib-wrapper-linux's metadata declares:
+                                     there is no static library for Linux to link in, as Windows does. -->
+                                <buildArg>--no-fallback</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+                    <!-- target-linux/ffmpeg packed as pix-ffmpeg-linux-x86_64.tar.gz, the codecs an installer
+                         unpacks into the install's own ffmpeg folder: Linux's form of ffmpeg-zip, which this profile
+                         cannot reuse (antrun's managed executions run rc.exe). Names in order, fixed times, owners
+                         and modes, and gzip without a name or time, so the same libraries make the same archive and
+                         an installer that already has its hash skips the download. -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ffmpeg-tar</id>
+                                <phase>package</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>sh</executable>
+                                    <workingDirectory>${project.build.directory}/ffmpeg</workingDirectory>
+                                    <commandlineArgs>-c "LC_ALL=C tar --sort=name --mtime=2026-01-01T00:00:00Z --owner=0 --group=0 --numeric-owner --mode=a=r,u+w -cf - * | gzip -n > ../pix-ffmpeg-linux-x86_64.tar.gz"</commandlineArgs>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <!-- Build-time platform selection: exactly one activates from the host OS, adding VexelRay's
              matching provider module and tactroller's input backend (both found by ServiceLoader). -->
         <profile>
