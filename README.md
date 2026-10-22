@@ -36,7 +36,7 @@ The file asked for is shown before its folder has been read; the count says *rea
 - **Every format imagelib decodes**: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG, ICO and the rest, animated where the file
   is. A file that is not a picture, or will not decode, says why in place of the picture.
 - **An animated GIF, WebP or APNG plays like a movie**, of any length and size: a transport takes the filmstrip's place in
-  the bar, with Previous and Next moved out to the window's sides so the picture keeps its height, and has play and
+  the bar, so the picture keeps its height, and has play and
   pause, a frame back and on, a seek bar to drag, the clock and frame, and loop. **Space** plays and pauses,
   **,** and **.** step a frame (with **Shift**, a second), **L** turns looping off and on. It plays as soon as it is
   shown, round and round, and pauses where it is while Pix is not the window in front, playing on when it is again
@@ -117,11 +117,16 @@ The file asked for is shown before its folder has been read; the count says *rea
   B-spline, Mitchell and Lanczos, each with its icon from the icon set. Bilinear and Lanczos at first; the choice is
   kept in Pix's settings (`scaling.moving`, `scaling.resting`).
 - **The filmstrip** shows the neighbours as they are read; a click shows one.
-- **Background**: dark, light, checker, magenta or green behind the picture, across the whole window.
-- **The picture has the whole window**, and the controls float over it and fade when the pointer rests; moving the
-  mouse, a click or Tab brings them back. **Keep shown** (the pin) pins them: they stop fading and take room of their
-  own, so none of them covers the picture. In a narrow window Previous and Next move to its sides, and what does not
-  fit is hidden.
+- **Background**: Auto, dark, light, checker, magenta or green behind the picture, across the whole window. **Auto**,
+  the first, is the picture's own: behind a picture with any transparency the checkerboard, and behind an opaque one
+  the colour of the room it is in — its pixels averaged in Oklab, the edges counting most, then dimmed and its colour
+  tempered, so the picture seems lit by itself. It fades from one picture's room to the next as you step.
+- **The picture has the whole window**, and the controls float over it and fade when the pointer rests, wherever it
+  rests, on them too; moving the mouse, a click or Tab brings them back. Only an open menu (Turn, Background,
+  Settings) keeps them up until it is closed. **Keep shown** (the pin) pins them: they stop fading and take room of
+  their own, so none of them covers the picture. **Previous and Next are always at the window's left and right
+  sides**, halfway up, so the filmstrip has the bar's middle to itself; in a narrow window what does not fit is
+  hidden.
 - **Ctrl+O**, or a click on the name (the words beside Close, which say *Open a picture…* while nothing is open)
   opens a picture, among the images in its folder;
   **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
@@ -182,7 +187,7 @@ screen the title bar, and so the lamps, are hidden with the rest of it.
 Every build, the release one too, has the framework's automation sockets, off until asked for (see
 [Automation](#automation)). Every control has a landmark (`name`, `count`, `info`, `open`,
 `previous`, `next`, `turn` and its menu's `turn.left`, `turn.right`, `turn.mirror-across`, `turn.mirror-down` and
-`turn.upright`, `background`, `keep`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
+`turn.upright`, `background`, `keep`, `backdrop.auto`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
 `frame-on`, `seek`, `loop`, `mute`, `volume` and `position`, which reads like `0:01.8 / 0:04.8  48/120`, and for a
 video `glance`, the frame over the seek bar, which reads as the time under the pointer, like `0:05.0`), …:
 
