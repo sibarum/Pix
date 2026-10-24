@@ -72,6 +72,7 @@
     "binaries": [
       {
         "name": "pix",
+        "appId": "dev.sibarum.pix",
         "source": "target-linux/pix",
         "icon": "src/main/rc/pix.ico",
         "addToPath": true,
