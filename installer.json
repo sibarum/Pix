@@ -64,6 +64,11 @@
         "source": "target/pix-ffmpeg-windows-x86_64.zip",
         "dir": "ffmpeg"
       },
+      {
+        "name": "pix-ffmpeg-record",
+        "source": "target/pix-ffmpeg-record-windows-x86_64.zip",
+        "dir": "ffmpeg-record"
+      },
       { "name": "notices", "source": "THIRD-PARTY-NOTICES.txt" }
     ]
   },
@@ -121,6 +126,11 @@
         "name": "pix-ffmpeg",
         "source": "target-linux/pix-ffmpeg-linux-x86_64.tar.gz",
         "dir": "ffmpeg"
+      },
+      {
+        "name": "pix-ffmpeg-record",
+        "source": "target-linux/pix-ffmpeg-record-linux-x86_64.tar.gz",
+        "dir": "ffmpeg-record"
       },
       { "name": "notices", "source": "THIRD-PARTY-NOTICES.txt" }
     ]
