@@ -66,6 +66,11 @@ final class Viewer {
             }
 
             @Override
+            public boolean closes() {
+                return false;
+            }
+
+            @Override
             public boolean opens() {
                 return true;
             }
