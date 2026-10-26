@@ -1,6 +1,7 @@
 # Pix
 
-An image viewer: one picture, as large as the window allows, and the rest of its folder a key press away. Built on
+Pictures, animations and video, with sound: one at a time, as large as the window allows, and the rest of the folder a key
+press away. Video is decoded a few frames ahead and streamed to the GPU, so it plays smoothly at any size. Built on
 [vexelray-gui](../vexelray-gui) through [vexelray-framework](../vexelray-framework), and the third member of the suite
 with [Vex](../text-editor-vexel-demo) and [Vexplore](../vexplore).
 
