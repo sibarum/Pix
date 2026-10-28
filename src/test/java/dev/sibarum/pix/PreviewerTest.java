@@ -61,6 +61,33 @@ class PreviewerTest {
         }
     }
 
+    @Test
+    void aReadAheadThatThrowsDoesNotStrandTheFileShown(@TempDir Path dir) throws Exception {
+        Path a = Files.write(dir.resolve("a.ppm"), RED);
+        Path b = Files.write(dir.resolve("b.ppm"), RED);
+        Path c = Files.write(dir.resolve("c.ppm"), RED);
+        ExecutorService offload = Executors.newSingleThreadExecutor();
+        try {
+            Model m = new Model();
+            Previewer previewer = new Previewer(offload, m);
+            // The first read ahead lands, a step is taken while the worker is still busy with it, and then it throws:
+            // the step is the worker's to read, and must not wait behind a worker that has gone.
+            boolean[] once = {true};
+            previewer.onRead(p -> {
+                if (once[0]) {
+                    once[0] = false;
+                    m.change(d -> d.showing(c));
+                    throw new IllegalStateException("a listener's own bug");
+                }
+            });
+            m.open(dir, a);
+            m.listed(dir, List.of(a, b, c));
+            assertTrue(landed(m, c).image(), "the file stepped to is read");
+        } finally {
+            offload.shutdownNow();
+        }
+    }
+
     /** The picture of {@code p} once it lands, failing after a while if it never does. */
     private static Decoded landed(Model m, Path p) throws InterruptedException {
         for (int i = 0; i < 1000; i++) {

@@ -5,9 +5,11 @@ import dev.vexelray.codec.image.Decoded;
 import dev.vexelray.codec.image.Lru;
 import dev.vexelray.codec.image.Picture;
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.image.Reasons;
 import dev.vexelray.codec.image.Stamp;
 import dev.vexelray.codec.video.Videos;
 import dev.vexelray.gui.core.Gui;
+import sibarum.probe.Log;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -17,6 +19,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Consumer;
 
 /**
@@ -54,6 +57,8 @@ final class Previewer {
 
     /** Decoded pixels kept for going back: a few photographs at the viewer's size, many thumbnails. */
     static final long BUDGET = 256L * 1024 * 1024;
+
+    private static final Log LOG = Log.of("pix");
 
     private final Executor offload;
     private final Lru<Object, Decoded> images = new Lru<>(BUDGET, Decoded::bytes, p -> { });
@@ -141,7 +146,11 @@ final class Previewer {
             return;
         }
         running = true;
-        offload.execute(this::work);
+        try {
+            offload.execute(this::work);
+        } catch (RejectedExecutionException e) {
+            running = false;   // shutting down: there is nothing left to read for
+        }
     }
 
     /** Drain the slot, then read ahead, until there is nothing to do. */
@@ -170,10 +179,12 @@ final class Previewer {
                     Decoded p;
                     try {
                         p = preview(path, big);
-                    } catch (RuntimeException e) {
-                        // The codec gives a reason rather than throwing. Should something under it throw anyway, the
-                        // file shown says so, instead of reading for good with the worker gone.
-                        p = Decoded.none(path, "unreadable: " + e.getClass().getSimpleName());
+                    } catch (RuntimeException | LinkageError | OutOfMemoryError | StackOverflowError e) {
+                        // The codec gives a reason rather than throwing. Should something under it throw anyway (a
+                        // decoder that will not load, a file too large or too deep for it), the file shown says so,
+                        // instead of reading for good with the worker gone.
+                        LOG.warn("{} did not decode: {}", path, e.toString());
+                        p = Decoded.none(path, Reasons.failed(e));
                     }
                     // Before it lands, so the file opened again meanwhile is asked for again rather than lost.
                     synchronized (this) {
@@ -183,13 +194,21 @@ final class Previewer {
                     }
                     model.previewed(path, p);
                 } else {
-                    preview(path, big);
-                    read.accept(path);
+                    try {
+                        preview(path, big);
+                        read.accept(path);
+                    } catch (RuntimeException | LinkageError | OutOfMemoryError | StackOverflowError e) {
+                        // Only a guess at what is wanted next: passed over, and the file shown, which may be waiting
+                        // behind it, is still read. If it is stepped to, it is read again and says why.
+                        LOG.debug("{} was not read ahead: {}", path, e.toString());
+                    }
                 }
             }
         } catch (RuntimeException | Error e) {
             synchronized (this) {
                 running = false;
+                // Whatever is still asked for is not stranded behind a worker that is gone: a new one takes it.
+                start();
             }
             throw e;
         }
