@@ -139,12 +139,13 @@ as Vexplore is for a declared drop zone.
 
 **Ruled 2026-10-29: the codec's views are a widget library** (`ImageView`, `VideoView`, `Playback`), like
 vexelray-gui-widget, and the application says `Play`, `Pause` and `Seek` and hears `Position` and `Ended`. **How a
-video is paced is proposed, not ruled:** vexelray-gui's `docs/plans/pacers.md` (on the `v0.2` checkout). Neither
-reading offered here survived: keeping the loop behind `Seams` keeps the unchecked polling code, and a frame on the
-bus each frame lets the logic tick hold a video back. Instead, the decoder writes stamped frames into a feed, a
-*pacer* (an SPI after `RenderTechnique`, checked by the processor, allocating nothing) picks the frame due at the
-predicted present time on the render thread, and the view declares a *pace* on the node, after `Look`. The plan's
-*What it replaces* maps each `KronoGui` site above.
+video is paced is proposed, not ruled:** vexelray-gui's `docs/plans/frame-contract.md` (on the `v0.2` checkout).
+Neither reading offered here survived: keeping the loop behind `Seams` keeps the unchecked polling code, and a frame
+on the bus each frame lets the logic tick hold a video back. Instead, drawing, presentation and pacing become one
+contract: a part's state changes only by declared steps when it is *told* something (`Play`, `Seek`), and a declared,
+checked, allocation-free draw is *asked* at emit what to show at the predicted present time (the due slot). The
+decoder writes stamped frames into a feed the draw picks from. The plan's *What moves onto it* maps each `KronoGui`
+site above.
 
 **Infrastructure, not an offence:** the decoder threads (`Reel:49`, `Movie:96`, `Footage:127`, `VideoGlimpses:75`,
 `Recorder:91`) and their locks, `Sound` and `Track`, `Lru`, and `Textures`' posts to the main thread
@@ -163,7 +164,7 @@ port, written now:
 - **vex-suite-common:** `PictureViewer.Host` written as a list of message records beside the interface, so both
   owners can be ported against the same list.
 - **Rulings, before any code:** that `suite.view` and the codec's views are widget libraries is ruled (2026-10-29);
-  how a video is paced waits on `pacers.md` being accepted.
+  how a video is paced waits on `frame-contract.md` being accepted.
 
 Do not move Pix's poms to `0.2.0-SNAPSHOT` before the merge: the spike installs `vexelray-framework` and
 `vexelray-gui` at that version into the shared `~/.m2`, and codec and suite-common have no `0.2` build to resolve.
