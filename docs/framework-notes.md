@@ -87,12 +87,11 @@ its pixels.
 
 ### vex-suite-common: the shared viewer
 
-**A ruling is needed first: is `dev.sibarum.suite.view` a widget library or application code?** It decides almost
-everything below. `Tile` and `Choice` are widgets in all but name, and `PictureViewer` is a composite widget with
-its own landmarks. If it is a widget library, it may use `Seams` the way vexelray-gui's widgets do (step 10). It
-then has to say what happened as messages, as `Button.PRESSED` does, rather than calling the code it was given. If
-it is application code, it may not use `Seams` at all. The first is the smaller port and the right reading. Either
-way, `PictureViewer.Host` is exactly the callback form 0.2 removes:
+**Ruled 2026-10-29: `dev.sibarum.suite.view` is a widget library.** `Tile` and `Choice` are widgets in all but
+name, and `PictureViewer` is a composite widget with its own landmarks. So it may use `Seams` the way
+vexelray-gui's widgets do (step 10), and it says what happened as messages, as `Button.PRESSED` does, rather than
+calling the code it was given. Where the tables below give two replacements, the `Seams` one is the one to take.
+`PictureViewer.Host` is exactly the callback form 0.2 removes:
 
 | `Host` method (`PictureViewer:128–175`) | Becomes |
 | --- | --- |
@@ -136,14 +135,16 @@ and idles (`PictureViewer:1033, 1541`). Gui step 18 took `KronoGui` from applica
 on the tree's `Clock`, and a view's own motion is a `Tween`. The ramps and fades map onto that directly. **A video
 does not**: it is code that runs on every frame while playing, decides which decoded frame is due, and hands it to
 `Textures`. Nothing in 0.2 says how a widget does that. **Pix and the codec's own player are the witness for it**,
-as Vexplore is for a declared drop zone. Two readings, for the author to rule on:
+as Vexplore is for a declared drop zone.
 
-- **The codec's views are a widget library** (`ImageView`, `VideoView`, `Playback`), like vexelray-gui-widget. They
-  take the clock through `Seams` and keep their loop, and the application says `Play`, `Pause` and `Seek` and hears
-  `Position` and `Ended`. This is the smaller change, and matches what they already are.
-- **Time is a message source** (step 18, part 6 began this), and a player is a component that hears the frame tick.
-  This is more 0.2-shaped, but it puts a decoded frame on the bus each frame, and phase 7's latency measurement
-  would have to be repeated for video.
+**Ruled 2026-10-29: the codec's views are a widget library** (`ImageView`, `VideoView`, `Playback`), like
+vexelray-gui-widget, and the application says `Play`, `Pause` and `Seek` and hears `Position` and `Ended`. **How a
+video is paced is proposed, not ruled:** vexelray-gui's `docs/plans/pacers.md` (on the `v0.2` checkout). Neither
+reading offered here survived: keeping the loop behind `Seams` keeps the unchecked polling code, and a frame on the
+bus each frame lets the logic tick hold a video back. Instead, the decoder writes stamped frames into a feed, a
+*pacer* (an SPI after `RenderTechnique`, checked by the processor, allocating nothing) picks the frame due at the
+predicted present time on the render thread, and the view declares a *pace* on the node, after `Look`. The plan's
+*What it replaces* maps each `KronoGui` site above.
 
 **Infrastructure, not an offence:** the decoder threads (`Reel:49`, `Movie:96`, `Footage:127`, `VideoGlimpses:75`,
 `Recorder:91`) and their locks, `Sound` and `Track`, `Lru`, and `Textures`' posts to the main thread
@@ -161,8 +162,8 @@ port, written now:
   thumbnail a read lands carried in the reply, so the filmstrip stops reaching into the cache.
 - **vex-suite-common:** `PictureViewer.Host` written as a list of message records beside the interface, so both
   owners can be ported against the same list.
-- **Rulings, before any code:** whether `suite.view` and the codec's views are widget libraries, and how a video is
-  paced.
+- **Rulings, before any code:** that `suite.view` and the codec's views are widget libraries is ruled (2026-10-29);
+  how a video is paced waits on `pacers.md` being accepted.
 
 Do not move Pix's poms to `0.2.0-SNAPSHOT` before the merge: the spike installs `vexelray-framework` and
 `vexelray-gui` at that version into the shared `~/.m2`, and codec and suite-common have no `0.2` build to resolve.
