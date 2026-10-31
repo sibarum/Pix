@@ -1,15 +1,15 @@
 # Working in Pix
 
 Pix is a VexelRay desktop application, generated from `vexelray-framework`'s `vexel-desktop` template. It
-started as the template's reference application, a small tabbed text editor with a file navigator, and is being
-turned into something else. [README.md](README.md) is the tour: read its *How it is put together* section before
+is a picture viewer, rebuilt on the 0.2 message model from the template (branch `v0.2`); `docs/TODO.md` lists what
+of Pix 0.1 is still to come back. [README.md](README.md) is the tour: read its *How it is put together* section before
 changing anything, and `Messages.java` before adding a part.
 
 ## Where things are
 
-- **Two modules.** `pix-core` is the controller: `Editor.java`, which makes every decision as declared steps
+- **Two modules.** `pix-core` is the controller: `Viewer.java`, which makes every decision as declared steps
   on one state, and the jobs that touch the disk. `pix-gui` is the view and the framework integration:
-  `View.java`, a `@View` on the GUI thread that shows what the editor decides and tells it what the person did, and
+  `View.java`, a `@View` on the GUI thread that shows what the viewer decides and tells it what the person did, and
   everything about the window. Run every `mvn` command from this folder, the parent of both.
 - **The parts talk by messages, and nothing else.** Every message is a record in `-core`'s `Messages.java`. A part
   never holds another part across lanes (the processor refuses it), so a new feature is a message, a mailbox
@@ -21,18 +21,18 @@ changing anything, and `Messages.java` before adding a part.
   it, the components and the jobs by an annotation processor while `-gui` compiles. Nobody writes it, so never create
   or edit a file of that name. After a build it is in `pix-gui/target/generated-sources/annotations/`, and it
   shows what is built in which phase.
-- **The editor's state changes only by its steps.** Everything it knows is one immutable `Editor.State` on a ledger,
-  and a step is a static method `(state, message, out) → next state`, declared in `Editor`'s constructor and run on
+- **The viewer's state changes only by its steps.** Everything it knows is one immutable `Viewer.State` on a ledger,
+  and a step is a static method `(state, message, out) → next state`, declared in `Viewer`'s constructor and run on
   each message it hears (`.on(topic, step)`). A step sends through its `Out` and never touches the disk, waits,
   or reads anything but its state and its message: the processor refuses one that does, and says what to do instead.
-  A new decision is a new step; a new thing the editor is in the middle of is a field of `State`, not a field of
-  `Editor`. Something that waits on the person or the disk is a chain (closing is the example): its step holds the
+  A new decision is a new step; a new thing the viewer is in the middle of is a field of `State`, not a field of
+  `Viewer`. Something that waits on the person or the disk is a chain (the template's closing is the example): its step holds the
   run and a later step resumes it.
 - **`-core`'s `Core.java` lists its components and jobs.** The processor compiling `-gui` cannot see `-core`'s
   sources, so a component or job missing from that list is never built, with no error. Add every new one there. A
   component that takes an `Inbox` runs on the framework's logic lane and hears through it, never through `@Subscribe`.
-- **`Doc.java`** is the session's shape, part of the editor's state, replaced and never mutated. `Ui.java` holds no
-  state.
+- **A picture reaches the screen as a `Feed`** (vexelray-gui), written by a job and named by the view on a node;
+  its pixels never cross the bus. The view closes a feed when it stops showing it. `Ui.java` holds no state.
 - **`-core` builds against no widget**, so its tests need no window. Code with no `Gui` in it goes there.
 - **`Landmarks.java`** names everything an automation script may refer to. A new control a test needs to reach gets
   a landmark there, not a string literal.
@@ -53,7 +53,7 @@ them even when a shortcut looks harmless:
 - **Nothing reflects.** No `Class.forName`, no runtime annotation reads, no reflective serialization. This compiles to
   a GraalVM native image, and the framework's wiring is generated at compile time so that nothing needs reflection.
 - **Nothing in the frame loop allocates, logs or blocks.** No disk, no network, no locks there.
-- **Vulkan, the window and present stay on the main thread.** The editor runs on the logic lane, the view (a
+- **Vulkan, the window and present stay on the main thread.** The viewer runs on the logic lane, the view (a
   `@View`) on the GUI thread in each frame, and disk work is a job on the offload lane. The view only shows and tells:
   a widget says what it did as a message, and a chord or menu item is declared with the message it sends, so no code
   of yours runs at a click. README's *Threading, in one paragraph* is the whole model. Jobs are in no order at all,

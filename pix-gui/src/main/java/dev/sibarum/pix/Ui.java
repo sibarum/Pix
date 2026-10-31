@@ -1,111 +1,87 @@
 package dev.sibarum.pix;
 
-import dev.sibarum.pix.core.Markdown;
-import dev.vexelray.canvas.Color;
+import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
+import dev.vexelray.gui.core.Node;
+import dev.vexelray.gui.core.layout.LayoutEnums.AlignItems;
 import dev.vexelray.gui.core.layout.LayoutEnums.Direction;
+import dev.vexelray.gui.core.layout.LayoutEnums.Justify;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.core.style.Role;
-import dev.vexelray.gui.widget.Cue;
-import dev.vexelray.gui.widget.SplitPane;
 import dev.vexelray.gui.widget.StatusBar;
 import dev.vexelray.gui.widget.TitleBar;
 
 /**
- * The window: the framework's title bar, the navigator beside the open files, and a status line under both.
+ * The window: the framework's title bar, the stage the picture is fitted into, and a status line under both.
  *
- * <h2>It holds no state</h2>
- *
- * <p>Every label here says what the editor last told the view, and the view tells it ({@link #caption},
- * {@link #status}). Nothing is remembered here to be shown later, which is the rule worth keeping as this grows: a
- * label that remembers a value can disagree with the session, and a header that says a file is saved when it is not
- * is the application lying.
- *
- * <p>Built in the {@code TREE} phase, before there is a window, and needing none: that is what lets a test build the
- * real tree headless. Written to from the view's lane, which is the framework's own idiom: a prop written off the GUI
- * thread is queued and applied by the next drain.
- *
- * <p>The title bar is the framework's. Chrome placement belongs to whoever owns the window, so that the screenshot
- * instrument in it means the same thing in every window on the desk; this application places the node and
- * supplies every colour in it through {@link Look}.
+ * <p>It holds no state. The picture shown is the view's to know, and what each label says is what the viewer last
+ * told the view. Built in the {@code TREE} phase, before there is a window, and needing none, so a test can build the
+ * real tree headless.
  */
 final class Ui {
 
-    /** The navigator's width on a first run. Type-relative, so it grows with the zoom like the text in it. */
-    private static final Length NAVIGATOR = Length.rem(16);
-
     private final TitleBar titleBar;
     private final StatusBar status;
-    private final Workspace workspace;
-    private final Navigator navigator;
-    private final Motion motion;
-    private final Color danger;
+    private final Node stage;
+    private final Node picture;
+    private final Node note;
 
-    Ui(Gui gui, Motion motion, TitleBar titleBar) {
+    Ui(Gui gui, TitleBar titleBar) {
         this.titleBar = titleBar;
-        this.motion = motion;
-        this.danger = gui.theme().color(Role.DANGER);
+
+        picture = gui.box();
+        gui.landmark(Landmarks.PICTURE, picture);
+        note = gui.text("").textColor(gui.theme().color(Role.DIM)).visible(false);
+        gui.landmark(Landmarks.NOTE, note);
+
+        stage = gui.box()
+                .width(Length.FILL).height(Length.grow(1f))
+                .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
+                .clip(true)
+                .children(picture, note);
+        gui.landmark(Landmarks.STAGE, stage);
 
         status = new StatusBar(gui)
-                .slot(Landmarks.STATUS_FILE, StatusBar.Side.LEFT, "")
-                .slot(Landmarks.STATUS_MESSAGE, StatusBar.Side.LEFT, "")
-                .slot(Landmarks.STATUS_POSITION, StatusBar.Side.RIGHT, "")
-                .minWidth(Landmarks.STATUS_POSITION, Length.rem(7));
+                .slot(Landmarks.STATUS_NAME, StatusBar.Side.LEFT, "")
+                .slot(Landmarks.STATUS_PLACE, StatusBar.Side.RIGHT, "")
+                .minWidth(Landmarks.STATUS_PLACE, Length.rem(7));
         gui.landmark(Landmarks.STATUS, status.node());
-        for (String slot : new String[] {Landmarks.STATUS_FILE, Landmarks.STATUS_MESSAGE, Landmarks.STATUS_POSITION}) {
-            gui.landmark(slot, status.slot(slot));
-        }
-
-        // Markdown's colours are the theme's roles, and one of this application's own (Look.EMPHASIS). Resolved
-        // once, here, because a role resolves at the moment it is asked and the theme does not change under us.
-        Markdown.Style markup = new Markdown.Style(
-                gui.theme().color(Role.ACCENT),
-                gui.theme().color(Role.FAINT),
-                Look.EMPHASIS,
-                gui.theme().color(Role.ACCENT),
-                gui.theme().color(Role.DIM),
-                gui.theme().color(Role.INK),
-                gui.theme().color(Role.PANEL));
-
-        workspace = new Workspace(gui, motion, markup);
-        navigator = new Navigator(gui, motion);
-
-        SplitPane split = new SplitPane(gui, SplitPane.Orientation.SIDE_BY_SIDE, navigator.node(), workspace.node())
-                .size(NAVIGATOR);
-        split.node().width(Length.FILL).height(Length.grow(1f));
+        gui.landmark(Landmarks.STATUS_NAME, status.slot(Landmarks.STATUS_NAME));
+        gui.landmark(Landmarks.STATUS_PLACE, status.slot(Landmarks.STATUS_PLACE));
 
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
-                .children(titleBar.node(), split.node(), status.node());
+                .children(titleBar.node(), stage, status.node());
     }
 
-    Workspace workspace() {
-        return workspace;
+    Node stage() {
+        return stage;
     }
 
-    Navigator navigator() {
-        return navigator;
-    }
-
-    /** The front file's title, dot and all, in the title bar and the status line; empty when nothing is open. */
-    void caption(String file) {
-        titleBar.title(file.isEmpty() ? Pix.TITLE : file + " — " + Pix.TITLE);
-        status.text(Landmarks.STATUS_FILE, file);
-        if (file.isEmpty()) {
-            status.text(Landmarks.STATUS_POSITION, "");
+    /**
+     * Show {@code feed}, drawn {@code widthPercent} by {@code heightPercent} of the stage and centred in it, or, with no
+     * feed, {@code why} in its place.
+     */
+    void picture(Feed feed, float widthPercent, float heightPercent, String why) {
+        if (feed != null) {
+            picture.image(feed).width(Length.percent(widthPercent)).height(Length.percent(heightPercent))
+                    .visible(true);
+            note.visible(false);
+        } else {
+            picture.image((Feed) null).visible(false);
+            note.text(why).visible(true);
         }
     }
 
-    /** Where the caret is in the front file, on the status line. */
-    void position(String where) {
-        status.text(Landmarks.STATUS_POSITION, where);
+    /** Draw the picture at a new size, the stage having changed under it. */
+    void fit(float widthPercent, float heightPercent) {
+        picture.width(Length.percent(widthPercent)).height(Length.percent(heightPercent));
     }
 
-    /** Say something on the status line, and when {@code alert}, draw the eye to it: something was refused or failed. */
-    void status(String message, boolean alert) {
-        status.text(Landmarks.STATUS_MESSAGE, message);
-        if (alert) {
-            motion.cues.play(status.node(), Cue.ring(danger, 2));
-        }
+    /** The picture's name in the title bar and the status line, and its place in its folder. */
+    void caption(String name, String place) {
+        titleBar.title(name.isEmpty() ? Pix.TITLE : name + " — " + Pix.TITLE);
+        status.text(Landmarks.STATUS_NAME, name);
+        status.text(Landmarks.STATUS_PLACE, place);
     }
 }

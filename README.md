@@ -2,10 +2,11 @@
 
 Pictures, one at a time, as large as the window allows, and the rest of the folder a key press away.
 
-A VexelRay desktop application, generated from the `vexel-desktop` template: a small text editor with tabs, a file
-navigator and Markdown in colour. It is the reference implementation of this stack, so every seam the framework
-offers is wired in the tree you are reading — and it is a working editor, so it is also something to change into
-whatever you are actually building.
+A VexelRay desktop application on the 0.2 message model, generated from the `vexel-desktop` template and rebuilt as
+a picture viewer. This branch (`v0.2`) is the port: it starts again from the template rather than from Pix 0.1, and
+the 0.1 viewer's features come back one slice at a time ([docs/TODO.md](docs/TODO.md) lists what is still to come).
+Pix is the first application of vexelray-gui's **feed** (`frame-contract.md` D): a job decodes a picture into a
+feed, and the feed, not its pixels, is what crosses to the view.
 
 ## Run it
 
@@ -13,18 +14,22 @@ From this folder, the parent of the two modules:
 
 ```
 mvn compile exec:exec
-```
-
-`exec:exec` rather than `exec:java`, so native access can be enabled for Panama FFM. The window comes up where you
-last left it, at 1180x720 the first time, with the folder and the files you last had open. The first time,
-the navigator shows the working directory.
-
-```
-mvn compile exec:exec "-Dapp.args=C:/notes"               # open a folder (or files) named on the command line
-mvn compile exec:exec -Dapp.args=120                      # 120 frames and quit
+mvn compile exec:exec "-Dapp.args=C:/Users/me/Pictures/holiday/IMG_0412.jpg"
+mvn compile exec:exec "-Dapp.args=C:/Users/me/Pictures/holiday"
 mvn compile exec:exec -Dautomation=0                      # a driving socket on a free port (see Taking a screenshot)
-mvn test                                                  # the editor, the jobs, Markdown, the real tree headless
+mvn test                                                  # the viewer, the jobs, the fit
 ```
+
+`exec:exec` rather than `exec:java`, so native access can be enabled for Panama FFM.
+
+| Command | Opens |
+| --- | --- |
+| `pix <file>` | that picture, stepping through the pictures in its folder |
+| `pix <folder>` | the folder's first picture |
+| `pix` | the first picture in the person's Pictures folder, or their home |
+
+The file asked for is shown before its folder has been read; the status line says *reading the folder…* until it
+has.
 
 ## A native executable
 
@@ -61,7 +66,7 @@ only the entries that name this program.
 `pix-gui/src/main/rc/pix.ico` is the application's mark, and it is one file read three ways: the window and its
 taskbar button wear it (`@VexelApp(icon = Pix.ICON)`; the pom puts it on the class path), and so does the
 title bar the framework draws; the `.exe` links it (`src/main/rc/pix.rc`), and so Explorer, a shortcut and a
-pinned button show it too. It starts as the framework's "new app" mark, whose source is `pix.svg` beside it.
+pinned button show it too. Its source is `pix.svg` beside it, the suite icon canvas's Pix mark.
 
 A second window — a viewer, a settings window — wears the window mark, on the taskbar and in its title bar, with
 nothing to write: declare it in a recipe with `windows.named(...)`, and the framework builds its tree and claims it
@@ -82,102 +87,56 @@ groups the button with other Java programs, and pinning it pins Java. The native
 
 | Keys | Does |
 | --- | --- |
-| Ctrl+L | the path bar: type a folder to show it, a file to open it, a new name to create it; Enter goes |
-| Ctrl+S | save |
-| Ctrl+W | close the tab (asks if it is unsaved) |
-| Ctrl+Tab, Ctrl+PageDown / Ctrl+Shift+Tab, Ctrl+PageUp | next / previous tab |
-| Ctrl+Shift+E | put the keyboard in the navigator |
-| Ctrl+F | find in the file (Enter / Shift+Enter step, Escape closes) |
-| Ctrl+Z / Ctrl+Y | undo / redo |
-| Ctrl+= / Ctrl+- / Ctrl+0 | zoom |
+| → / ← and Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends |
+| Home / End | the folder's first picture / its last |
 
-Selecting a file in the navigator opens it — a click, or walking the tree with the arrow keys, which keep the
-keyboard in the tree. A tab's menu has Save, Close, Close others, Close all and Reveal in navigator. A bullet in
-front of a tab's name means unsaved changes; closing anything unsaved asks first, and so does quitting.
-
-There is no file dialog, by choice: the path bar is the whole of "open", and it works the same in a test as in use. The
-framework brings native pickers (a `PickFile` message, answered by `Picked`) for a project that wants them.
+The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
+imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
+file shows its first frame for now. A file that is not a picture, or will not decode, says why in its place. Holding
+an arrow key decodes the picture it stops on and at most one on the way.
 
 ## How it is put together
 
 Two modules under this folder, split where the dependency edge falls, and four kinds of part that never hold each
-other: **components** (logic, reached only by messages: the editor runs on the framework's logic lane), **views**
+other: **components** (logic, reached only by messages: the viewer runs on the framework's logic lane), **views**
 (presentation, run on the GUI thread in each frame, `@View`), **jobs** (slow work on the offload lane, a request in
-and a reply out), and **recipes** (a part built once and handed to whoever takes it). The parts talk by messages, and every message is in one file. Read these in this order.
+and a reply out), and **recipes** (a part built once and handed to whoever takes it). The parts talk by messages, and
+every message is in one file. Read these in this order.
 
 **`pix-core`, the controller.** It builds against no widget, so its tests need no window.
 
 | File | What belongs in it |
 | --- | --- |
-| `Messages.java` | **every message the parts send each other**, grouped by who sends it to whom, each record beside its topic. A record crosses as itself, so it holds only immutable values; a list it holds is copied in its constructor. |
-| `Editor.java` | **the controller**: every decision (what a typed path names, whether a file is already open, when closing needs a question, what the status line says, what comes back next time) as a declared step on one immutable state, held by a ledger. Each message it hears runs one step; closing is a chain of them that waits on the person and the disk without anything waiting on a thread. It needs no lock, because only its steps change its state and they run one at a time. |
-| `Doc.java` | the shape of the session (which files, which in front, which unsaved, which folder) as one immutable value, part of the editor's state. |
-| `ReadFile.java`, `WriteFile.java`, `FindPath.java`, `CreateFile.java`, `ReadSession.java`, `WriteSession.java`, `ListFolder.java`, `MarkText.java` | the jobs: every touch of the disk, on the offload lane. What can go wrong is part of the reply. |
-| `TextFile.java`, `Markdown.java` | the policy between bytes and text, and Markdown as spans: pure functions. |
+| `Messages.java` | **every message the parts send each other**, grouped by who sends it to whom, each record beside its topic. A record crosses as itself, so it holds only immutable values, and one handle: a `Feed`. |
+| `Viewer.java` | **the controller**: which picture is wanted and when it is read, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops. |
+| `Begin.java`, `ListPictures.java`, `ReadPicture.java` | the jobs: where to start, a folder's pictures in order, and a picture decoded into a feed. What can go wrong is part of the reply. |
 | `Core.java` | the list of this module's component and jobs. The processor compiling `-gui` sees only `-gui`'s sources, so this list, named among `PixApp`'s starters, is how the wiring hears of them. A new component or job goes on it. |
 
 **`pix-gui`, the view and the framework integration.**
 
 | File | What belongs in it |
 | --- | --- |
-| `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. A part's phase is the latest phase of anything it takes, so there is none to declare. |
-| `View.java` | **the view**, a `@View`: run on the GUI thread in each frame, hearing the editor, its jobs and the widgets as messages; the editor's messages shown (`AddTab` is a tab) and the person's gestures told (`Open`, `Close`, `Save`). It decides nothing. |
-| `Intent.java` | what a key chord asks of the view: the message the gesture was declared to send. |
+| `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
+| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It owns the feed it shows, and closes the old one when the next arrives. It decides nothing. |
+| `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
 | `Ui.java` | the window. Holds no state; it shows what the view hands it. |
-| `Workspace.java`, `Buffer.java` | the tab bar and one `Buffer` per tab: a `TextField`, its spans, its save bookkeeping. |
-| `Navigator.java` | the path bar and the file tree. The tree asks for each level by message, and the view asks `ListFolder`, so the disk is read off the frame. |
-| `Motion.java` | the one tempo every widget moves at, on the framework's clock. |
 
 `Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
 clipboard, window memory, the clock, the frame loop with its wakes and its pacing, the dialogs, the command line and
-the shutdown order — is `vexelray-framework`'s. `Look.java`, `Type.java` and `Landmarks.java` are the three
-vocabularies: colour, size, and the names an automation script is allowed to depend on.
-
-### Phases
-
-A phase is a **correctness** constraint rather than a scheduling detail, and having them as a type is what makes the
-constraints structural instead of remembered:
-
-| phase | what exists by then |
-| --- | --- |
-| `CONFIG` | the settings store and the look — values, before there is a `Gui` to apply them to |
-| `MODEL` | what the application knows, before there is anything to draw it with |
-| `GUI` | the `Gui` and the clock; the theme applied and the zoom range set, before the first widget |
-| `TREE` | the widgets: the first phase a part is handed the `Gui`, so anything taking it lands here. Buildable with no window, which is what lets a test build it with no GPU |
-| `WINDOW` | the device and the window handle. Main-thread from here on |
-| `ATTACH` | anything that needed the handle: chrome controls, the close gate, the driving socket |
-
-Open `pix-gui/target/generated-sources/annotations/.../PixAppWiring.java` after a build to see which part landed where.
+the shutdown order — is `vexelray-framework`'s. `Look.java` and `Landmarks.java` are the vocabularies: colour, and
+the names an automation script is allowed to depend on.
 
 ### Threading, in one paragraph
 
 The GUI loop runs on the main thread, which owns Vulkan, the window and present, and nothing of this application's
-runs there but the view, which is presentation and nothing else (threading.md, T7.4). The editor runs on the
-framework's logic lane and the view on the GUI thread, in each frame's widget tick; each handles one message at a
-time and owns its state outright, so there is no lock anywhere in the application. The editor's state is changed only
-by its declared steps, which the processor reads: a step that touches the disk, waits or reaches outside itself does
-not compile. A widget says what it did as a message, which the view hears in the frame the input arrived, and a key
-chord or a menu item is declared with the message it sends, so nothing of the application's runs at the click. Every
-read and write of a file is a job on the offload lane, so a slow disk is a slow reply and never a frozen window (the
-lanes are named in the framework's `docs/threading.md`).
-
-Two things follow from messages, and both are written where they bite. **One sender's messages to one receiver keep
-their order**: so the view says a tab went unsaved before it asks to close it, and the editor already knows when the
-`Close` arrives. **Jobs are in no order at all**: so the restored session asks for one file at a time. The processor
-checks every message it can see: a mailbox's payload is deeply immutable, a topic carries one type, and no cycle of
-sends can block.
-
-### Spans
-
-`Markdown.spans` is a pure function from text to `Span`s (foreground, background, underline). After each edit
-the view asks `MarkText` for them on the offload lane, and applies the answer only if the field still says the text it
-was computed for. The text is never changed; the field draws the colours and moves each span with its text as you type. A `.txt` file gets none.
-
-### Motion
-
-The widgets animate only when handed a ramp, and without one they cut — so leaving the clock out costs no error,
-only a stiffer window. `Motion` makes the ramps from the framework's clock: the tabs slide, folders open, and a cue
-rings a tab you asked to open that was already open, or the status line when something was refused.
+runs there but the view, which is presentation and nothing else. The viewer runs on the framework's logic lane, one
+message at a time, and its state changes only by its declared steps, which the processor reads: a step that touches
+the disk, waits or reaches outside itself does not compile. Every read of the disk is a job on the offload lane, so a
+slow disk is a slow reply and never a frozen window. **A picture reaches the screen as a feed**: `ReadPicture`
+decodes it, builds its mip chain and writes it into a one-slot `Feed` on the offload lane, and answers with the feed;
+the view names it on a node, and the renderer uploads it the first time it is drawn. The pixels are written once and
+never cross the bus. **Jobs are in no order at all**, which is why the viewer keeps one read out at a time and drops
+an answer it no longer wants.
 
 ## The stack
 
@@ -239,8 +198,8 @@ ottermate --zoom 1.5 --dpi 2 --size 1600x900 shot big.png --launch ...   # pixel
 ottermate --size 36emx20em shot smallest.png --launch ...                # the minimum, in em
 ```
 
-The landmarks in `Landmarks.java` are the names a script uses: `await status.file notes.md` waits for a file to be in
-front, and `await path <folder>` for the navigator to be showing one. `ottermate help` lists every verb.
+The landmarks in `Landmarks.java` are the names a script uses: `await status.name IMG_0412.jpg` waits for a picture
+to be wanted, and `await status.place 3 of` for its folder to be listed. `ottermate help` lists every verb.
 
 ## Logging
 

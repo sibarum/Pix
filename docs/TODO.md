@@ -6,15 +6,35 @@ if the fix belongs upstream, it goes there instead.
 
 Keep an entry short enough that it does not need editing, and delete it when it is done rather than ticking it.
 
+The v0.2 port starts from the template, and Pix 0.1's features come back one slice at a time. 0.1's README
+(`develop`) says what each did; this list is what is still to bring back, roughly in order.
+
 ## Next
 
-- [ ] Decide what this application is. It starts as an editor because an editor reaches every seam; keep the parts
-      yours needs and delete the rest. `Messages` is the place to start, since every way the parts talk is a record there.
-- [ ] Replace the palette anchors in `Look.java` with the design's, measured in Oklab. See the note in that file
-      about which authored colours the construction can reproduce and which have to be declared.
+- [ ] **Read ahead, and keep recent ones.** The next pictures read while idle, and recent ones kept, so going back
+      is instant. The viewer's one read out at a time stays; what is read next when nothing is wanted becomes its
+      choice. Kept pictures are feeds, so the view keeps them and closes those it lets go.
+- [ ] **Look closely.** Wheel zoom about the pointer, drag to move, R / Shift+R and Ctrl+drag to turn, H and V to
+      mirror, 0 to fit, with the give at the edges and the momentum. The pose is the view's state and an asked half
+      draws it (frame-contract.md B: offset, scale); `Drawn` has offset and stretch, so a scale and a turn are owed.
+- [ ] **The filmstrip.** The neighbours as they are read; a click shows one. Its thumbnails are feeds of their own.
+- [ ] **A picture thrown in across the window** from the side it came from, the old one flung out.
+- [ ] **Full screen**: a double click, F11, Esc. Phase 5 moved window state to messages.
+- [ ] **Open**: Ctrl+O, Ctrl+Shift+O and a click on the name, through `PickFile` / `Picked`.
+- [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
+- [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
+- [ ] The touchpad, read finger by finger: pan, zoom, the turn lock, the magnets, the swipes, the double tap.
+
+## Waiting on the stack
+
+- [ ] **Animated GIF, WebP and APNG**, played: a feed of three slots, paced by an asked half
+      (`frame-contract.md` step 5, the codec on it). Shown by their first frame until then.
+- [ ] **Video and its sound**, the transport, the seek preview, the poster in the filmstrip: the same step.
+- [ ] **Recording from the camera** (`vexelray-codec-record`, still in `pix-gui`'s pom from 0.1's).
 
 ## Later
 
-- [ ] Automation coverage: `--automation=0` (or `-Dautomation=0`) opens a driving socket on a free port and prints it, and the landmarks in `Landmarks.java` are
-      already the names a script would use. One scripted run through the main path is worth more than several
-      unit tests of the view.
+- [ ] Packaging, as 0.1 had it: `installer.json` (carried over, still at 0.1.2) with its `appId` checked against the
+      build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
+- [ ] Vexplore's hand-off (`pix <file>`), and one Pix per picture rather than one per hand-off.
+- [ ] Replace the palette anchors in `Look.java` with Pix's own, measured in Oklab.

@@ -14,16 +14,18 @@ import dev.vexelray.framework.shell.VexelApplication;
  * its wakes and its pacing, installing the dialogs, parsing the command line and closing everything in the right
  * order are all done for you.
  *
- * <p>What this application builds — a text editor with tabs and a file navigator — is in two modules. This one,
- * {@code -gui}, is the view: {@link Recipes}, one method per part, and the {@link View}, which shows what the editor
- * decides. {@code -core} is the controller: the editor, which decides, and the jobs that touch the disk. They talk by
+ * <p>What this application builds — a picture viewer, one picture at a time and the rest of its folder a key press
+ * away — is in two modules. This one, {@code -gui}, is the view: {@link Recipes}, one method per part, and the
+ * {@link View}, which shows what the viewer decides. {@code -core} is the controller: the viewer, which decides, and
+ * the jobs that touch the disk. They talk by
  * messages and nothing else ({@code Messages}, in {@code -core}). {@code PixAppWiring}, which builds all of it
  * in order, is generated from them and from the {@code @VexelApp} on {@code PixApp} while this module
  * compiles — so the facts below are stated once, here, and the wiring reads them.
  *
  * <pre>
- * Pix                     the editor, on the folder it was last showing (or the working directory)
- * Pix &lt;path&gt;...          open these: a folder becomes the navigator's root, a file a tab
+ * Pix                     the first picture in the person's Pictures folder, or their home
+ * Pix &lt;file&gt;              that picture, stepping through the pictures in its folder
+ * Pix &lt;folder&gt;            the folder's first picture
  * Pix &lt;frames&gt;            run a fixed number of frames and quit (a script, not a session)
  * Pix --key=value         override a setting for this launch
  * </pre>

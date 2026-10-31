@@ -32,5 +32,51 @@ The markers are a filter, not decoration:
 
 ## Findings
 
-*(none yet)*
+## FN-1 · A decoded picture had no way to the screen 🔬
 
+*Resolved upstream, 2026-10-31.* Pix's whole job is a picture decoded off the GUI thread and drawn on it, and 0.2
+had no form for that. A job's reply could not carry the codec's `Picture` (a `byte[]`, refused by the processor as
+an array anyone holding can change), and a view could not show one: `Node.image` takes a device texture only
+`GuiApp` can make, the codec's `Textures` hands one back through a `Consumer` (the callback form 0.2 removes), and
+`Pixels`, the one device-free handle, is kept until the device goes, which is right for an icon atlas and a leak for
+a folder of photographs. The answer was already planned (vexelray-gui's `frame-contract.md` D, the feed) and not
+built, so it was built: `Feed` in vexelray-gui-core, `Node.image(Feed)`, `Drawn.show`, and the processor accepting a
+feed as a handle (frame-contract.md step 4 has the shape and why it is device-free). `ReadPicture` now answers with
+the feed it wrote; nothing in Pix works around anything. **What would have saved the time:** a port's first question
+is how its pixels, sound and files reach the screen in 0.2, and nothing asked it until the viewer was being written.
+
+## FN-2 · An exception that ends the application under automation is not in its log 🔬
+
+The first live run stopped during `settle`, and `ottermate` said only that the application closed the connection.
+`pix.log`, at trace level, ended with the automation sockets switching off and no error. Run again without
+automation, the console said why at once: an `IllegalArgumentException` from `StreamTexture` on the main thread
+("a stream needs a slot to show and one to write: 1"), a bug in the feed's first draft. So under automation an
+uncaught exception on the main thread reaches neither the log file nor the driver. It cost one run here; for an agent
+driving an application it is the difference between a finding and a mystery. The framework could log it before the
+shutdown it starts, and `ottermate` could print the application's last error with "closed the connection".
+
+## FN-3 · The template is an editor, so a port starts by deleting it 🔬
+
+Generated, the project is a tabbed Markdown editor: of its 50 files, 30 were the editor's (`Editor`, `Doc`,
+`TextFile`, `Markdown`, eight jobs, `Workspace`, `Buffer`, `Navigator`, their tests), deleted before Pix's first
+line. What was kept (`Recipes`, `PixApp`, `Pix`, `Look`, the poms, `native-build.cmd`, the icon) is the part every
+application needs, and some of it still described the editor: `Pix.java`'s usage, `PixApp`'s and `Recipes`' javadoc
+(which also called the `View` a `@Component` with a lane of its own, a 0.1 description), and `Look.EMPHASIS`, a
+Markdown colour. The generator has no slot for the project's version either, so it started at `0.1.0-SNAPSHOT`.
+A `--shape blank` (one window, one view, one component, one job, no editor), and a `--version`, would make
+"regenerate and rebuild" the short path it should be for every port still to come.
+
+## FN-4 · Fitting a picture is a size heard and a percentage set 💡
+
+The layout has no aspect-ratio length, so a picture fitted to its stage needs the stage's size (`NodeEvent.RESIZE`,
+heard by the view) and its own, and sets its node's width and height as percentages of the stage on every resize
+(`Fit`). The codec's `ImageView` said the same in 0.1. Every application that shows a picture writes this; a length
+that keeps an aspect inside what it is given would remove it.
+
+## FN-5 · Every run in the spike opens with a wall of "the stack is not the one it was built against" 🔬
+
+With the spike's `v0.2` checkouts installed beside 0.1's in one `~/.m2`, `framework.stack` warns on every start, in one
+line some 4,000 characters long, listing every pair of modules whose build ids differ. Each pair is true and none
+was the cause of anything here, so the warning is read once and then skipped, which is when it will be missed. It
+could name only the repository furthest upstream that differs, which is what its own advice ("reinstall from the
+first repository behind these") needs.
