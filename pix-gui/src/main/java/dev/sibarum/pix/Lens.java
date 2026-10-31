@@ -109,6 +109,23 @@ record Lens(Pose from, Pose to, long since, float fitW, float fitH, float stageW
         return toward(at, held(new Pose(zoom, px - (px - at.x()) * k, py - (py - at.y()) * k)), now);
     }
 
+    /**
+     * A pinch, the fingers' spread changed by {@code factor} (above one spreading), with the pointer at {@code (px, py)}
+     * from the stage's centre: zoomed about the pointer at once, as far as the fingers went, since the hand is on the
+     * picture and an ease would trail it. From where the picture is drawn now, so a pinch begun while the wheel's zoom
+     * eases takes over from there.
+     */
+    Lens pinched(float factor, float px, float py, long now) {
+        if (!(factor > 0f) || factor == 1f || !(fitW > 0f) || !(fitH > 0f)) {
+            return this;
+        }
+        Pose at = at(now);
+        float zoom = clamp(at.zoom() * factor, MIN_ZOOM, MAX_ZOOM);
+        float k = zoom / at.zoom();
+        Pose p = held(new Pose(zoom, px - (px - at.x()) * k, py - (py - at.y()) * k));
+        return new Lens(p, p, AT_REST, fitW, fitH, stageW, stageH);
+    }
+
     /** Moved by a drag, {@code (dx, dy)} layout px: at once, and still held. A gesture under way goes on from there. */
     Lens moved(float dx, float dy) {
         Pose a = held(new Pose(from.zoom(), from.x() + dx, from.y() + dy));

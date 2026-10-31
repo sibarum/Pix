@@ -136,3 +136,13 @@ half, and sets the strip's width as a percentage of the bar. For that it needs a
 the density in `Seams`, where an application should not reach; so the view measures the Keep shown button, which is
 two rem wide, and divides. It works, a frame late after a zoom. **Not fixed**: a `minWidth` /
 `maxWidth` (or a shrink factor) would let the layout do it, and a public `Gui.remPx()` would retire the measuring.
+
+## FN-12 · A pinch reached an application only as the whole window's raw gestures 🔬
+
+The wheel reaches the node under the pointer (`NodeEvent.WHEEL`); a pinch reached nothing but the tree's gesture topic
+(`Gui.gestures()`), tactroller's `GestureEvent` for the whole window, pans and taps among it, in millimetres and with
+the pointer in window coordinates. A view would have subscribed to that topic through `Gui.mailbox`, which says it is
+for the framework's widgets, filtered it for pinches, and hit-tested the pointer itself to know whether the pinch was
+over its stage. **Added upstream** (vexelray-gui): `NodeEvent.PINCH` with `PinchEvent(phase, scale)`, given whole to
+the nearest node under the pointer that asked, chosen when the pinch starts and kept until it ends. The twist and the
+drift stay on the gesture topic.

@@ -210,3 +210,21 @@ At 1000×640, nine cells, the picture in the middle and marked, `broken.png` an 
 a click on the cell after it showed 5 of 7, and one three before showed 2 of 7. At 640 px five cells, at 440 px three,
 and with the controls two steps smaller five again, smaller. Not checked live: a folder long enough for thumbnails to
 be let go, which the viewer's tests cover.
+
+## Pinch to zoom · 2026-10-31
+
+The count: 1 finding (FN-12, the pinch only on the window's raw gesture topic), fixed upstream with `NodeEvent.PINCH`.
+
+### What changed shape
+- **0.1 read the touchpad's whole repertoire; v0.2 reads the spread and nothing else.** No pan, no turn, no swipes,
+  no taps: the person asked for pinch alone. Two fingers swiping still zoom, as the wheel the OS makes of them.
+- **A pinch is not eased.** The wheel's zoom eases because a notch is a jump; a pinch is the hand on the picture, and
+  an ease would trail it. `Lens.pinched` lands at once, from where the picture is drawn, so a pinch begun while the
+  wheel's zoom eases takes over without a jump.
+
+### Checked live
+Through ottermate's pretend touchpad, raw contacts and not a ready-made gesture: two fingers spread 2.5× over the
+picture zoomed in about the pointer; pinched 0.4× it came back to fitted, and 0.5× more took it to half. Not checked:
+a real Windows touchpad, which may also send the pinch as Ctrl+wheel. The view ignores the wheel while a pinch is in
+flight for that, but a wheel arriving just after the pinch ends would still zoom; the pretend touchpad sends no wheel,
+so whether that happens needs a real pad.

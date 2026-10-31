@@ -62,7 +62,8 @@ and the sizes (controls in rem, words in dp, Ctrl+= / Ctrl+- / Ctrl+0, the windo
 over the picture, and it and the arrows fade once the pointer has rested two seconds (`Fade`, drawn through
 `Drawn.opacity`, FN-10); they are shown at the start, while the pointer is on one of them, and for a rest after a
 step, so a new name is seen. Keep shown is the pin at the bar's right. The filmstrip is the bar's middle: at most half
-of it, three to fifteen cells, none below three, so it gives way before the name (`Strip`). Not yet:
+of it, three to fifteen cells, none below three, so it gives way before the name (`Strip`). Pinch zooms about the pointer
+through `NodeEvent.PINCH` (FN-12), at once rather than eased, and the wheel is ignored while a pinch is in flight. Not yet:
 
 - **The transport and the tools** come with what they are for: the transport in the filmstrip's place for a
   picture that plays, Turn, Background, Settings. The ⋯ fold comes with the tools.

@@ -90,6 +90,7 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | → / ← and Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends |
 | Home / End | the folder's first picture / its last |
 | The wheel | zoom in (up) or out, about the pointer |
+| Two fingers spread or pinched on the touchpad | zoom in (spread) or out, about the pointer, as far as the fingers go. Nothing else on the touchpad does anything but the wheel the OS makes of two fingers swiping |
 | Drag | move the picture; it stays where at least a quarter of the window still shows it |
 | 0 | fit the picture again, in the middle (every picture arrives fitted) |
 | ‹ and › at the window's sides | the picture before / the next one, as ← and → |

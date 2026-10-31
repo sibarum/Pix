@@ -24,6 +24,7 @@ import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
 import dev.vexelray.gui.core.input.DragEvent;
+import dev.vexelray.gui.core.input.PinchEvent;
 import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.core.layout.NodeLayout;
 import dev.vexelray.gui.widget.Button;
@@ -136,6 +137,9 @@ final class View {
     private float pointerX;
     private float pointerY;
 
+    /** Whether a pinch is in flight on the stage, which the wheel then leaves alone. */
+    private boolean pinching;
+
     /** Whether the pointer is on each of {@link Ui#controls}, and whether Keep shown is on. */
     private final boolean[] over = new boolean[3];
     private boolean kept;
@@ -192,8 +196,16 @@ final class View {
             pointerX = p.localX() - p.nodeW() / 2f;
             pointerY = p.localY() - p.nodeH() / 2f;
         });
-        gui.hear(ui.stage(), NodeEvent.WHEEL, w ->
-                look(state.lens().wheel(-w.dy() / NOTCH_PX, pointerX, pointerY, System.nanoTime())));
+        gui.hear(ui.stage(), NodeEvent.WHEEL, w -> {
+            // Windows may hand a pinch to the window as Ctrl+wheel as well: while one is in flight, it zooms once.
+            if (!pinching) {
+                look(state.lens().wheel(-w.dy() / NOTCH_PX, pointerX, pointerY, System.nanoTime()));
+            }
+        });
+        gui.hear(ui.stage(), NodeEvent.PINCH, p -> {
+            pinching = p.phase() != PinchEvent.Phase.END;
+            look(state.lens().pinched(p.scale(), pointerX, pointerY, System.nanoTime()));
+        });
         gui.hear(ui.stage(), NodeEvent.DRAG, d -> {
             if (d.phase() == DragEvent.Phase.MOVE) {
                 look(state.lens().moved(d.dx(), d.dy()));

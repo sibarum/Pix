@@ -22,8 +22,6 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **Open**: Ctrl+O, Ctrl+Shift+O and a click on the name, through `PickFile` / `Picked`.
 - [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
 - [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
-- [ ] **Pinch to zoom**, about the fingers' centre, the wheel ignored while a pinch is in flight. Nothing else from the
-      touchpad: 0.1's two-finger pan, turn lock, magnets, three-finger swipes and double tap are not coming back.
 
 ## Waiting on the stack
 

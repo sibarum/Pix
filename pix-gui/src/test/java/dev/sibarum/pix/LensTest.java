@@ -119,4 +119,29 @@ class LensTest {
         Lens l = Lens.fitted(0f, 0f, 0f, 0f);
         assertEquals(l, l.wheel(1f, 0f, 0f, T));
     }
+    /** A pinch follows the fingers at once, about the pointer, and its steps multiply. */
+    @Test
+    void aPinchZoomsAboutThePointerAtOnceAndItsStepsMultiply() {
+        float px = 200f;
+        float py = -100f;
+        Lens l = lens().pinched(1.5f, px, py, T).pinched(1.2f, px, py, T + 10_000_000L);
+        assertFalse(l.moving(T + 10_000_000L), "no ease to trail the hand");
+        Pose at = l.at(T + 10_000_000L);
+        assertEquals(1.8f, at.zoom(), CLOSE);
+        assertEquals(px, (px - at.x()) / at.zoom(), CLOSE, "the point under the pointer stays under it");
+        assertEquals(py, (py - at.y()) / at.zoom(), CLOSE);
+
+        Lens back = l.pinched(1f / 1.8f, px, py, T + 20_000_000L);
+        assertEquals(1f, back.at(T + 20_000_000L).zoom(), CLOSE, "pinching together undoes spreading");
+    }
+
+    @Test
+    void aPinchStopsAtTheZoomsLimitsAndTakesOverAWheelsEase() {
+        assertEquals(Lens.MAX_ZOOM, lens().pinched(1000f, 0f, 0f, T).to().zoom(), CLOSE);
+        assertEquals(Lens.MIN_ZOOM, lens().pinched(0.001f, 0f, 0f, T).to().zoom(), CLOSE);
+        Lens easing = lens().wheel(3f, 0f, 0f, T);
+        float drawn = easing.at(T + Lens.EASE).zoom();
+        assertEquals(drawn * 2f, easing.pinched(2f, 0f, 0f, T + Lens.EASE).to().zoom(), CLOSE,
+                "from where it is drawn, not where the wheel was going");
+    }
 }
