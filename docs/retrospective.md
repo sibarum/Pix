@@ -59,3 +59,27 @@ The count: 5 findings (FN-1 to FN-5), one architectural (FN-1, resolved upstream
   locks and its executor; `ViewerTest` holds the arrow-key case with no thread in sight.
 - **The job answers with the feed.** Decode, mip chain and the copy into the slot happen on the offload lane, and the
   view only names the feed, so nothing about a picture is the GUI thread's until it is drawn.
+
+## Read ahead · 2026-10-31
+
+The count: no new findings. The slice needed nothing from the stack: the feed carried it, and the ordering the bus
+already promises (one sender's messages reach a subscriber in the order sent) let the viewer tell the view to hold
+a picture and then show it without a handshake.
+
+### What changed shape
+- **The view holds pictures; the viewer decides about them by path.** A component's state may not hold a feed, which
+  is right: the viewer's decisions (what to read, show, keep, let go) are about paths and sizes, and stay testable
+  with no window. `Hold`, `Show` and `Release` are the whole of the view's side.
+- **0.1's previewer is gone into three fields.** Its slot, its queue of reads ahead, its LRU and its locks are now
+  `reading`, `held` and the order in `AHEAD`, decided in the steps that already existed.
+
+### My own mistakes
+- **A test helper threw away the message under test.** `startedOn` cleared everything sent, which now included the
+  read ahead the listing started, so five tests failed for the helper's sake. Rule: a helper that forgets what was
+  sent forgets only what no test asks about.
+
+### What to keep exactly as it is
+- **A step never waits behind more than one read.** Reading ahead uses the one read slot only when nothing is
+  wanted, so the arrow-key case is unchanged and `ViewerTest` still holds it.
+- **The budget spares the neighbourhood.** Never letting go of the picture shown, the one wanted or its neighbours
+  means reading ahead can never chase its own tail; the neighbourhood at its largest is well under the budget.

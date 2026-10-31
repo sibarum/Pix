@@ -95,6 +95,10 @@ imagelib decodes is shown, fitted to the window at its own aspect and never larg
 file shows its first frame for now. A file that is not a picture, or will not decode, says why in its place. Holding
 an arrow key decodes the picture it stops on and at most one on the way.
 
+While you look, Pix reads ahead: the next picture, then the previous, then the one after next, so a step finds its
+picture waiting. Every picture read is kept, up to 256 MB of pixels, the least recently shown let go first, so going
+back is instant too.
+
 ## How it is put together
 
 Two modules under this folder, split where the dependency edge falls, and four kinds of part that never hold each
@@ -108,7 +112,7 @@ every message is in one file. Read these in this order.
 | File | What belongs in it |
 | --- | --- |
 | `Messages.java` | **every message the parts send each other**, grouped by who sends it to whom, each record beside its topic. A record crosses as itself, so it holds only immutable values, and one handle: a `Feed`. |
-| `Viewer.java` | **the controller**: which picture is wanted and when it is read, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops. |
+| `Viewer.java` | **the controller**: which picture is wanted, what is read and when, and which pictures are kept, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops; idle, that read goes ahead to the neighbours. Its state names pictures by path; the view holds them. |
 | `Begin.java`, `ListPictures.java`, `ReadPicture.java` | the jobs: where to start, a folder's pictures in order, and a picture decoded into a feed. What can go wrong is part of the reply. |
 | `Core.java` | the list of this module's component and jobs. The processor compiling `-gui` sees only `-gui`'s sources, so this list, named among `PixApp`'s starters, is how the wiring hears of them. A new component or job goes on it. |
 
@@ -117,7 +121,7 @@ every message is in one file. Read these in this order.
 | File | What belongs in it |
 | --- | --- |
 | `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
-| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It owns the feed it shows, and closes the old one when the next arrives. It decides nothing. |
+| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing. |
 | `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
 | `Ui.java` | the window. Holds no state; it shows what the view hands it. |
 

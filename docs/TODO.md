@@ -11,9 +11,6 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 
 ## Next
 
-- [ ] **Read ahead, and keep recent ones.** The next pictures read while idle, and recent ones kept, so going back
-      is instant. The viewer's one read out at a time stays; what is read next when nothing is wanted becomes its
-      choice. Kept pictures are feeds, so the view keeps them and closes those it lets go.
 - [ ] **Look closely.** Wheel zoom about the pointer, drag to move, R / Shift+R and Ctrl+drag to turn, H and V to
       mirror, 0 to fit, with the give at the edges and the momentum. The pose is the view's state and an asked half
       draws it (frame-contract.md B: offset, scale); `Drawn` has offset and stretch, so a scale and a turn are owed.
@@ -36,5 +33,8 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 
 - [ ] Packaging, as 0.1 had it: `installer.json` (carried over, still at 0.1.2) with its `appId` checked against the
       build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
+- [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read
+      shows as it was until it is let go. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
+      compare it. Matters once Open can reopen the file shown.
 - [ ] Vexplore's hand-off (`pix <file>`), and one Pix per picture rather than one per hand-off.
 - [ ] Replace the palette anchors in `Look.java` with Pix's own, measured in Oklab.

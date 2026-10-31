@@ -40,12 +40,24 @@ public final class Messages {
     // ------------------------------------------------------------------ the viewer tells the view
 
     /**
-     * Show this picture: its feed, already handed its pixels, and its size in them. With no feed, the file is not a
-     * picture Pix can show, and {@code identity} says why ("not an image").
+     * Keep this picture, read, until told to let it go: the one wanted, or one read ahead. Its feed is already handed
+     * its pixels; with no feed, the file is not a picture Pix can show, and its {@code identity} says why.
      */
+    public static final Topic<Hold> HOLD_TOPIC = Topic.edge(Hold.class);
+
+    public record Hold(Pictured picture) {
+    }
+
+    /** Show the picture held for this path. It is always held first: both travel from the viewer, in order. */
     public static final Topic<Show> SHOW_TOPIC = Topic.edge(Show.class);
 
-    public record Show(Path path, Optional<Feed> feed, int width, int height, String identity) {
+    public record Show(Path path) {
+    }
+
+    /** Let go of the picture held for this path, closing its feed. Never the one shown. */
+    public static final Topic<Release> RELEASE_TOPIC = Topic.edge(Release.class);
+
+    public record Release(Path path) {
     }
 
     /** What the window's title and status line say: the picture's name, and where it is in its folder. */
@@ -86,7 +98,10 @@ public final class Messages {
         }
     }
 
-    /** Read a picture and put it in a feed. One at a time: the viewer asks for the next only once this is answered. */
+    /**
+     * Read a picture and put it in a feed: the one wanted, or, when that is shown, one read ahead. One at a time: the
+     * viewer asks for the next only once this is answered.
+     */
     public static final Topic<Read> READ_TOPIC = Topic.edge(Read.class);
 
     public record Read(Path path) {
