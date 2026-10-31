@@ -148,3 +148,32 @@ The count: 2 findings (FN-8, no ellipsis; FN-9, the window following the zoom), 
 ### What to keep exactly as it is
 - **The rule for what goes is a function of widths** (`Details.shown`), tested alone, and the view only measures and
   applies it.
+
+## The floating bar · 2026-10-31
+
+The count: 1 finding (FN-10, no opacity for an asked half, and a faded node still hit), fixed upstream with a member
+(`Drawn.opacity`) and a rule in the hit test. One more the build caught for me, which is not a finding: a `@Draw`
+state holding an array was refused at compile time with the reason, and a `List` was the fix.
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-10 | the asked half draws whatever changes with time | it could move, stretch and scale, not fade; and faded, a control still took the click | the fade would have needed a timer in the told half, and a click on the picture could have pressed an invisible Next |
+
+### What changed shape
+- **The fade is a value of time, not a timer.** `Fade` says, from when the pointer last moved, how opaque the controls
+  are at any moment, and when the next change is due; the asked half draws it and asks to be woken then. Nothing runs
+  while the pointer rests, until the moment the fade starts.
+- **The bar is the root's last child whichever way it is shown.** Floating it puts it over the stage; unfloating it
+  for Keep shown puts it below. Nothing moves between parents, and the stage refits from the resize it already hears.
+
+### What to keep exactly as it is
+- **The pointer is heard on the root, and the controls each say the pointer is on them.** The root hears it anywhere
+  in the window and that it left; the order the two arrive in within a frame does not matter, because each recomputes
+  the fade from both.
+
+### Checked live
+At 1000×640, the bar and the arrows shown after a move, gone after a rest with the picture whole; a move onto where
+the faded bar was brought it back, and resting on it kept it; Keep shown moved the bar off the picture (the stage
+608 → 555 px tall, the picture refitted) and kept it through a rest; off again, it floated and faded; a key step showed
+the new name. Not checked live: the pointer leaving the window, which ottermate cannot do, and reduced motion.

@@ -13,9 +13,11 @@ import dev.vexelray.gui.icons.Icon;
 import dev.vexelray.gui.widget.IconButton;
 import dev.vexelray.gui.widget.TitleBar;
 
+import java.util.List;
+
 /**
  * The window: the framework's title bar, the stage the picture is fitted into with Previous and Next at its sides, and
- * the bar along the bottom (docs/layout.md).
+ * the bar floating over its bottom, or below it with Keep shown (docs/layout.md).
  *
  * <h2>Controls in rem, words in dp</h2>
  *
@@ -46,6 +48,10 @@ final class Ui {
     /** Between the window's edges and the controls along them. */
     static final Length MARGIN = Length.rem(0.75f);
 
+    /** A tool in the bar: the button, and its icon. */
+    static final Length TOOL = Length.rem(2f);
+    static final Length TOOL_ICON = Length.rem(1.25f);
+
     /** Between the details: a dot with a space each side, so the gap is part of what is measured. */
     static final String DOT = " · ";
 
@@ -55,7 +61,11 @@ final class Ui {
     private final Node note;
     private final IconButton previous;
     private final IconButton next;
+    /** The columns Previous and Next are in, which fade with the bar. */
+    private final Node previousSide;
+    private final Node nextSide;
     private final Node bar;
+    private final IconButton keep;
     private final Node name;
     private final Node details;
     /** The details in {@link Details}'s order, and the dot before each but the first. */
@@ -77,11 +87,13 @@ final class Ui {
         gui.landmark(Landmarks.PREVIOUS, previous.node());
         gui.landmark(Landmarks.NEXT, next.node());
 
+        previousSide = side(gui, previous, Length.ZERO);
+        nextSide = side(gui, next, Length.percent(100f));
         stage = gui.box()
                 .width(Length.FILL).height(Length.grow(1f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(picture, note, side(gui, previous, Length.ZERO), side(gui, next, Length.percent(100f)));
+                .children(picture, note, previousSide, nextSide);
         gui.landmark(Landmarks.STAGE, stage);
 
         name = gui.text("").wordWrap(false).ellipsis(Ellipsis.MIDDLE).width(Length.FILL)
@@ -102,10 +114,17 @@ final class Ui {
         }
         Node words = gui.column().width(Length.grow(1f)).gap(LINE_GAP).scroll(false, false).children(name, details);
 
-        bar = gui.row().width(Length.FILL).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
+        keep = new IconButton(gui, Icon.PIN_UP, "Keep shown").toggle(true).size(TOOL, TOOL_ICON)
+                .tip("Keep shown");
+        gui.landmark(Landmarks.KEEP, keep.node());
+
+        // The bar is the root's last child, so floating it puts it over the bottom of the stage, which then has the
+        // whole window under the title bar; unfloated, it takes room of its own below the stage (keep).
+        bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words);
+                .children(words, keep.node());
         gui.landmark(Landmarks.BAR, bar);
+        keep(false);
 
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
@@ -145,6 +164,31 @@ final class Ui {
     /** The dot before the {@code i}th detail; there is none before the first. */
     Node dot(int i) {
         return dots[i];
+    }
+
+    /** What fades when the pointer rests: the bar, and the columns Previous and Next are in. */
+    List<Node> faded() {
+        return List.of(bar, previousSide, nextSide);
+    }
+
+    /** What the pointer may rest on without the controls fading: the bar, Previous and Next. */
+    Node[] controls() {
+        return new Node[] {bar, previous.node(), next.node()};
+    }
+
+    /** The address Keep shown presses with. */
+    String keepAddress() {
+        return keep.address();
+    }
+
+    /** Keep shown on: the bar in the window's flow, below the picture; off, floating over the picture's bottom. */
+    void keep(boolean kept) {
+        keep.on(kept).icon(kept ? Icon.PIN_DOWN : Icon.PIN_UP);
+        if (kept) {
+            bar.unfloat();
+        } else {
+            bar.floatAt(Length.ZERO, Length.percent(100f));
+        }
     }
 
     /** The address Previous presses with. */

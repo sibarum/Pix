@@ -53,15 +53,15 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
 
 - Whether a sideways two-finger swipe (the wheel's `dx`) does anything.
 - Whether a click on the name still opens a picture (0.1's Open).
-- Whether the controls fade from the start, or are shown until the pointer rests, now the bar is slim.
+- Whether Keep shown is remembered between runs. It is not yet: Pix has no settings of its own (TODO).
 
 ## Where it stands
 
 Built: the bar's words (the name cut in the middle, the details going whole), Previous and Next at the stage's sides,
-and the sizes (controls in rem, words in dp, Ctrl+= / Ctrl+- / Ctrl+0, the window keeping its size). Not yet:
+and the sizes (controls in rem, words in dp, Ctrl+= / Ctrl+- / Ctrl+0, the window keeping its size). The bar floats
+over the picture, and it and the arrows fade once the pointer has rested two seconds (`Fade`, drawn through
+`Drawn.opacity`, FN-10); they are shown at the start, while the pointer is on one of them, and for a rest after a
+step, so a new name is seen. Keep shown is the pin at the bar's right. Not yet:
 
-- **The bar floats and fades.** It takes room of its own for now, as Keep shown would. Fading needs a per-frame
-  opacity the frame contract does not have (`Drawn` sets an offset, a stretch, a scale); sliding the bar out with
-  `Drawn.offset` would do without one.
 - **The middle and the tools** come with what they are for: the filmstrip and the transport, Turn, Background,
-  Settings, Keep shown. The ⋯ fold comes with the tools.
+  Settings. The ⋯ fold comes with the tools.

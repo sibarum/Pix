@@ -27,6 +27,7 @@ import sibarum.tactroller.api.Modifier;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,6 +61,13 @@ import java.util.Map;
  * ({@link Details}), which needs their widths: each is heard as it is laid out, and kept while it is hidden, so a bar
  * that widens again knows what fits without showing anything to find out. New words are all shown at once and given
  * way a frame later, once they have been measured.
+ *
+ * <h2>It fades the controls</h2>
+ *
+ * <p>The bar and the arrows fade once the pointer has rested, and come back when it moves or a step shows another name
+ * ({@link Fade}). The root hears the pointer anywhere in the window and that it left; each control, that the pointer is
+ * on it, which holds them. Drawn by the asked half beside the lens, so nothing runs while the pointer rests until the
+ * moment the fade starts. Keep shown holds them and moves the bar off the picture.
  */
 @dev.vexelray.framework.api.View
 final class View {
@@ -70,8 +78,11 @@ final class View {
      */
     static final float NOTCH_PX = 48f;
 
-    /** What the asked half draws: the picture's node, and how it is looked at. */
-    record Drawing(Node picture, Lens lens) {
+    /**
+     * What the asked half draws: the picture's node and how it is looked at, and the controls and how far they are
+     * shown.
+     */
+    record Drawing(Node picture, Lens lens, List<Node> faded, Fade fade) {
     }
 
     private final Gui gui;
@@ -102,11 +113,32 @@ final class View {
     private float pointerX;
     private float pointerY;
 
+    /** Whether the pointer is on each of {@link Ui#controls}, and whether Keep shown is on. */
+    private final boolean[] over = new boolean[3];
+    private boolean kept;
+
     View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey) {
         this.gui = gui;
         this.ui = ui;
         this.step = step;
-        this.state = new Drawing(ui.picture(), Lens.fitted(0f, 0f, 0f, 0f));
+        this.state = new Drawing(ui.picture(), Lens.fitted(0f, 0f, 0f, 0f), ui.faded(),
+                Fade.shown(System.nanoTime()));
+        // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
+        gui.hear(gui.root(), NodeEvent.POINTER, p -> {
+            if (p.over()) {
+                wake();
+            } else {
+                fade(kept ? state.fade().held(System.nanoTime()) : state.fade().gone(System.nanoTime()));
+            }
+        });
+        Node[] controls = ui.controls();
+        for (int i = 0; i < controls.length; i++) {
+            int at = i;
+            gui.hear(controls[i], NodeEvent.POINTER, p -> {
+                over[at] = p.over();
+                wake();
+            });
+        }
         gui.hear(ui.stage(), NodeEvent.RESIZE, layout -> {
             stageW = layout.rect().w();
             stageH = layout.rect().h();
@@ -204,6 +236,7 @@ final class View {
         }
         say(Details.PLACE, m.place());
         showSaid();
+        wake();
     }
 
     @Subscribe
@@ -222,32 +255,59 @@ final class View {
         }
     }
 
-    /** Previous and Next, as ← and →. */
+    /** Previous and Next, as ← and →; Keep shown, on or off. */
     @Subscribe
     public void pressed(Button.Pressed p) {
         if (p.button().equals(ui.previousAddress())) {
             step.send(new Step(-1));
         } else if (p.button().equals(ui.nextAddress())) {
             step.send(new Step(1));
+        } else if (p.button().equals(ui.keepAddress())) {
+            kept = !kept;
+            ui.keep(kept);
+            wake();
         }
     }
 
     /**
-     * The asked half: the picture drawn at the lens's zoom, about its box's centre, and moved by its offset, at the
-     * frame's moment. Due again while a gesture eases; with motion reduced, drawn where it is going.
+     * The asked half: the picture drawn at the lens's zoom, about its box's centre, and moved by its offset, and the
+     * controls as far as they are shown, at the frame's moment. Due again while a gesture eases or the controls fade,
+     * and when the pointer has rested long enough for them to start; with motion reduced, drawn where each is going.
      */
     @Draw
     public static long draw(Drawing s, Frame frame, Drawn out) {
         Lens l = s.lens();
-        if (frame.reducedMotion()) {
+        Fade f = s.fade();
+        long t = frame.monoNanos();
+        boolean reduced = frame.reducedMotion();
+        float shown = reduced ? f.opacityReduced(t) : f.opacity(t);
+        for (Node n : s.faded()) {
+            out.opacity(n, shown);
+        }
+        long wait = f.next(t, reduced);
+        long fadeDue = wait == Fade.STILL ? Frame.NEVER : frame.presentNanos() + wait;
+        if (reduced) {
             out.scale(s.picture(), l.to().zoom());
             out.offset(s.picture(), l.to().x(), l.to().y());
-            return Frame.NEVER;
+            return fadeDue;
         }
-        long t = frame.monoNanos();
         out.scale(s.picture(), l.zoom(t));
         out.offset(s.picture(), l.x(t), l.y(t));
-        return l.moving(t) ? frame.presentNanos() : Frame.NEVER;
+        return l.moving(t) ? frame.presentNanos() : fadeDue;
+    }
+
+    /**
+     * The controls back: kept while Keep shown is on or the pointer is on one, else fading again once it has rested.
+     * A step wakes them too, so the new name is seen for a rest.
+     */
+    private void wake() {
+        long now = System.nanoTime();
+        boolean onOne = over[0] || over[1] || over[2];
+        fade(kept || onOne ? state.fade().held(now) : state.fade().woken(now));
+    }
+
+    private void fade(Fade fade) {
+        state = new Drawing(state.picture(), state.lens(), state.faded(), fade);
     }
 
     private void say(int detail, String text) {
@@ -281,7 +341,7 @@ final class View {
     }
 
     private void look(Lens lens) {
-        state = new Drawing(state.picture(), lens);
+        state = new Drawing(state.picture(), lens, state.faded(), state.fade());
     }
 
     private static void close(Pictured p) {

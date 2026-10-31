@@ -37,6 +37,9 @@ final class Landmarks {
     static final String BAR_BYTES = "bar.bytes";
     static final String BAR_PLACE = "bar.place";
 
+    /** Keep shown, in the bar's tools: the controls pinned, and given room of their own. */
+    static final String KEEP = "bar.keep";
+
     private Landmarks() {
     }
 }

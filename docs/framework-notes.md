@@ -117,3 +117,12 @@ Pix's Ctrl+- is meant to make the controls smaller so the picture has more room.
 client area by every zoom step (`ZoomSizing`), so Ctrl+- three times took a 1180×720 window to 604×369: the controls
 were smaller and the picture had less room than before. Right for a window sized to its content; wrong for one whose
 content is the room left over. **Added upstream**: `Gui.zoomSizesWindow(false)`, which Pix's `Ui` sets.
+
+## FN-10 · An asked half could move a node but not fade it, and a faded node was still under the pointer 🔬
+
+The bar fades when the pointer rests, which is a value of time: drawn by the view's asked half (`@Draw`) at each
+frame's moment, as the picture's zoom is. `Drawn` could set an offset, a stretch and a scale, not an opacity, and
+`Node.opacity` is the told half's, set at a message, not at a frame. And a node faded to nothing still took the click
+on what looks like the picture under it, unless it said `hitInert`, which an asked half cannot. **Added upstream**:
+`Drawn.opacity(node, opacity)`, multiplied with the node's own, and a node drawn at nothing by it is passed over by the
+hit test, subtree and all, so the pointer reaches what is behind it, and an ancestor still hears it move.

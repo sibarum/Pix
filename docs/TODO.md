@@ -15,8 +15,8 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       Ctrl+drag to turn, and Shift+wheel for a fine turn (FN-6), never a touch gesture, which need a `Drawn.turn`; H
       and V to mirror, a non-uniform scale the canvas cannot draw yet; and 0.1's feel: a drag past the limit against a
       rubber band that springs back, and a fling that glides. Each is a term in `Lens`'s closed form or a spring solved for its moment.
-- [ ] **The bar, the rest**: floating over the picture and fading when the pointer rests, Keep shown to pin it
-      ([layout.md](layout.md), *Where it stands*); the tools and their ⋯ fold come with the tools.
+- [ ] **The bar, the rest**: the tools and their ⋯ fold come with the tools ([layout.md](layout.md), *Where it stands*);
+      Keep shown remembered between runs comes with Pix's settings.
 - [ ] **The filmstrip.** The neighbours as they are read; a click shows one. Its thumbnails are feeds of their own.
 - [ ] **A picture thrown in across the window** from the side it came from, the old one flung out.
 - [ ] **Full screen**: a double click, F11, Esc. Phase 5 moved window state to messages.

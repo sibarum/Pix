@@ -94,6 +94,7 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | 0 | fit the picture again, in the middle (every picture arrives fitted) |
 | ‹ and › at the window's sides | the picture before / the next one, as ← and → |
 | Ctrl+= / Ctrl+- / Ctrl+0 | the controls larger / smaller / as they were. The words stay the size they are, and the window too: what the controls give up is the picture's |
+| the pin at the bar's right | Keep shown: the bar and the arrows stay, and the bar takes room of its own below the picture |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
@@ -107,6 +108,11 @@ back is instant too.
 The bar along the bottom says the picture's name, cut in the middle when it is too long so its start and its
 extension both show, and under it what the picture is and its own size, the file's size, and where it is in the folder
 (*12 of 340*). In a narrow window the file's size goes first, then what the picture is; the place stays.
+
+The picture has the whole window under the title bar: the bar floats over its bottom, and the bar and the arrows fade
+when the pointer has rested two seconds, coming back as soon as it moves, or a step shows another name. They stay
+while the pointer is on them. With Keep shown on, they never fade, and the bar moves off the picture into room of its
+own.
 
 ## How it is put together
 
@@ -130,11 +136,12 @@ every message is in one file. Read these in this order.
 | File | What belongs in it |
 | --- | --- |
 | `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
-| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its asked half (`@Draw`) draws that on every frame as a scale and an offset. |
+| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its asked half (`@Draw`) draws that on every frame as a scale and an offset, and the controls' `Fade` as an opacity. |
 | `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone. |
 | `Keys.java` | the chords that ask something of the view itself: 0, to fit, and Ctrl+= / Ctrl+- / Ctrl+0, the controls' size. |
+| `Fade.java` | how far the controls are shown, as a value: fading once the pointer has rested, in closed form, drawn by the view's asked half as the lens is. |
 | `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
-| `Ui.java` | the window: the stage, Previous and Next at its sides, and the bar along the bottom. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state; it shows what the view hands it. |
+| `Ui.java` | the window: the stage, Previous and Next at its sides, and the bar floating over its bottom, or below it with Keep shown. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state; it shows what the view hands it. |
 | `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |
 
 `Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
