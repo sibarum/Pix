@@ -11,9 +11,10 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 
 ## Next
 
-- [ ] **Look closely.** Wheel zoom about the pointer, drag to move, R / Shift+R and Ctrl+drag to turn, H and V to
-      mirror, 0 to fit, with the give at the edges and the momentum. The pose is the view's state and an asked half
-      draws it (frame-contract.md B: offset, scale); `Drawn` has offset and stretch, so a scale and a turn are owed.
+- [ ] **Look closely, the rest.** The wheel zoom, the drag and 0 are in (`Lens`). Still to come: R / Shift+R and
+      Ctrl+drag to turn, and Shift+wheel for a fine turn (FN-6), which need a `Drawn.turn`; H and V to mirror, a
+      non-uniform scale the canvas cannot draw yet; and 0.1's feel: a drag past the limit against a rubber band that
+      springs back, and a fling that glides. Each is a term in `Lens`'s closed form or a spring solved for its moment.
 - [ ] **The filmstrip.** The neighbours as they are read; a click shows one. Its thumbnails are feeds of their own.
 - [ ] **A picture thrown in across the window** from the side it came from, the old one flung out.
 - [ ] **Full screen**: a double click, F11, Esc. Phase 5 moved window state to messages.

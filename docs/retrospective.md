@@ -83,3 +83,35 @@ a picture and then show it without a handshake.
   wanted, so the arrow-key case is unchanged and `ViewerTest` still holds it.
 - **The budget spares the neighbourhood.** Never letting go of the picture shown, the one wanted or its neighbours
   means reading ahead can never chase its own tail; the neighbourhood at its largest is well under the budget.
+
+## Looking closely: zoom and move · 2026-10-31
+
+The count: 1 finding (FN-6, the wheel as a scroll distance), and one member added upstream: `Drawn.scale`, which
+frame-contract.md B had already named.
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-6 | a view hears what the person did to a node | the wheel arrives as the distance a scroller would move | a zoom per notch that changes with the UI zoom, and no Shift for a fine turn |
+
+### What would stop it
+1. FN-6: a wheel event that carries its notches, the pointer and the modifiers, as `DragEvent` carries its own.
+
+### What changed shape
+- **0.1's `Lens` stepped a spring on every frame under a lock; this one is a value read at a moment.** A gesture
+  records where it started, where it is going and when; the asked half computes the pose from those and the frame's
+  time, so it allocates nothing, keeps nothing, and is right on a late frame. Zoom and centre share one easing factor,
+  which is what keeps the point under the pointer still: a test reads every 10 ms of an ease and checks it.
+- **Nothing is laid out for a zoom.** The picture keeps its fitted box; the asked half draws it larger and elsewhere
+  (`Drawn.scale`, `Drawn.offset`). The engine's canvas already scaled and turned exactly; only the contract lacked
+  the words.
+
+### My own mistakes
+- **I drove the wheel backwards.** The first live script scrolled three notches down and zoomed out, when I meant in.
+  The geometry still checked out (the corner landed within a pixel of where the maths put it), so the run was not
+  wasted, but the slice's main case went unseen until a second run. Rule: before scripting an input, read which way
+  its sign goes in the reference, not the sign that feels natural.
+
+### What to keep exactly as it is
+- **The pose is the view's, not the viewer's.** Zoom and pan matter only to drawing, so they never touch the bus
+  beyond the chord that asks for a fit; `-core` stays a folder viewer that knows nothing of looking closely.

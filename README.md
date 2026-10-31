@@ -85,10 +85,13 @@ groups the button with other Java programs, and pinning it pins Java. The native
 
 ## Using it
 
-| Keys | Does |
+| Input | Does |
 | --- | --- |
 | → / ← and Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends |
 | Home / End | the folder's first picture / its last |
+| The wheel | zoom in (up) or out, about the pointer |
+| Drag | move the picture; it stays where at least a quarter of the window still shows it |
+| 0 | fit the picture again, in the middle (every picture arrives fitted) |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
@@ -121,7 +124,9 @@ every message is in one file. Read these in this order.
 | File | What belongs in it |
 | --- | --- |
 | `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
-| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing. |
+| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its asked half (`@Draw`) draws that on every frame as a scale and an offset. |
+| `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone. |
+| `Keys.java` | the chords that ask something of the view itself (0, to fit). |
 | `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
 | `Ui.java` | the window. Holds no state; it shows what the view hands it. |
 

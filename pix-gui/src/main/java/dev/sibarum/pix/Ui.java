@@ -58,6 +58,11 @@ final class Ui {
         return stage;
     }
 
+    /** The picture's node: laid out fitted, and drawn zoomed and moved by the view's asked half. */
+    Node picture() {
+        return picture;
+    }
+
     /**
      * Show {@code feed}, drawn {@code widthPercent} by {@code heightPercent} of the stage and centred in it, or, with no
      * feed, {@code why} in its place.

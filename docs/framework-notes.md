@@ -80,3 +80,14 @@ line some 4,000 characters long, listing every pair of modules whose build ids d
 was the cause of anything here, so the warning is read once and then skipped, which is when it will be missed. It
 could name only the repository furthest upstream that differs, which is what its own advice ("reinstall from the
 first repository behind these") needs.
+
+## FN-6 · The wheel reaches a view as a scroll distance, with no notches, no pointer and no modifiers 🔬
+
+Zooming about the pointer needs three things from a wheel turn: how many notches, where the pointer was, and whether
+Shift was held (0.1 turned the picture with Shift and the wheel). `NodeEvent.WHEEL`'s `WheelEvent(dx, dy)` carries
+only the distance a scroller would move, three em per notch at the turning node's em. So Pix divides by 48 px
+(`View.NOTCH_PX`, three em at 16 px), which zooms more or less per notch as the window's UI zoom changes the em; it
+hears `NodeEvent.POINTER` on the stage to know where the pointer last was; and it cannot tell Shift from none, so the
+fine turn waits. A wheel event that also carried the notches (fractional, for a touchpad), the pointer in client
+space and the node's box as `DragEvent` does, and the modifiers, would serve every view that is not a scroller: a
+picture, a map, a 3D camera, a timeline.
