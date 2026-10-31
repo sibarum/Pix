@@ -8,8 +8,9 @@ package dev.sibarum.pix;
  * through the view: a landmark is a published contract, so renaming one breaks a script somebody else wrote, and
  * the compiler should be the thing that notices.
  *
- * <p>State is carried in the accessible names where a driver waits on it: {@code await status.name IMG_0412.jpg} waits
- * for a picture to be wanted, and {@code await status.place 3 of} for the folder to be listed.
+ * <p>State is carried in the accessible names where a driver waits on it: {@code await bar.name IMG_0412.jpg} waits
+ * for a picture to be wanted, and {@code await bar.place 3 of} for the folder to be listed. A name cut to fit is cut
+ * only as drawn, so its accessible name is whole.
  */
 final class Landmarks {
 
@@ -22,10 +23,19 @@ final class Landmarks {
     /** What is said in the picture's place when a file is not a picture Pix can show. */
     static final String NOTE = "note";
 
-    /** The status line, and its slots: the picture's name, and where it is in its folder. */
-    static final String STATUS = "status";
-    static final String STATUS_NAME = "status.name";
-    static final String STATUS_PLACE = "status.place";
+    /** The buttons at the stage's sides. */
+    static final String PREVIOUS = "previous";
+    static final String NEXT = "next";
+
+    /**
+     * The bar along the bottom, and its words: the picture's name; what the picture shown is and its size; the file's
+     * size; and where it is in its folder.
+     */
+    static final String BAR = "bar";
+    static final String BAR_NAME = "bar.name";
+    static final String BAR_KIND = "bar.kind";
+    static final String BAR_BYTES = "bar.bytes";
+    static final String BAR_PLACE = "bar.place";
 
     private Landmarks() {
     }

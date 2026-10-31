@@ -107,9 +107,12 @@ public final class Messages {
     public record Read(Path path) {
     }
 
-    /** A picture read: its feed and size, or none and why. */
+    /**
+     * A picture read: its feed and size, or none and why. {@code identity} is what it is and its own size ("PNG image ·
+     * 1920 × 1080"), the feed's being at most what is drawn; {@code bytes} is the file's size on disk, or -1 unknown.
+     */
     public static final Topic<Pictured> PICTURED_TOPIC = Topic.edge(Pictured.class);
 
-    public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity) {
+    public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes) {
     }
 }

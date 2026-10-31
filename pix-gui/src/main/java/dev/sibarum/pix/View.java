@@ -1,6 +1,7 @@
 package dev.sibarum.pix;
 
 import dev.sibarum.pix.Keys.FitKey;
+import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
 import dev.sibarum.pix.core.Messages.Edge;
 import dev.sibarum.pix.core.Messages.Hold;
@@ -18,8 +19,11 @@ import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
 import dev.vexelray.gui.core.input.DragEvent;
 import dev.vexelray.gui.core.input.Shortcut;
+import dev.vexelray.gui.core.layout.NodeLayout;
+import dev.vexelray.gui.widget.Button;
 import sibarum.atchung.Sender;
 import sibarum.tactroller.api.Key;
+import sibarum.tactroller.api.Modifier;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -49,6 +53,13 @@ import java.util.Map;
  * replaces the lens in {@link #state}, and {@link #draw} reads it at every frame's moment and sets the picture's scale
  * and offset, due again while a gesture eases. Nothing is laid out again for a zoom: the picture keeps its fitted box,
  * drawn larger and elsewhere.
+ *
+ * <h2>It keeps the bar's words fitting</h2>
+ *
+ * <p>The name is cut in the middle by the layout itself ({@code Ellipsis}). The details go whole when they do not fit
+ * ({@link Details}), which needs their widths: each is heard as it is laid out, and kept while it is hidden, so a bar
+ * that widens again knows what fits without showing anything to find out. New words are all shown at once and given
+ * way a frame later, once they have been measured.
  */
 @dev.vexelray.framework.api.View
 final class View {
@@ -63,7 +74,16 @@ final class View {
     record Drawing(Node picture, Lens lens) {
     }
 
+    private final Gui gui;
     private final Ui ui;
+    private final Sender<Step> step;
+
+    /** What each detail says, its width as last laid out, and which are drawn; the dot's width; the room. */
+    private final String[] said = {"", "", ""};
+    private final float[] widths = new float[Details.COUNT];
+    private boolean[] drawn = new boolean[Details.COUNT];
+    private float dotW;
+    private float room;
 
     /** The view's drawn state, replaced at each gesture, read by {@link #draw} on every frame. */
     Drawing state;
@@ -82,8 +102,10 @@ final class View {
     private float pointerX;
     private float pointerY;
 
-    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<FitKey> fitKey) {
+    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey) {
+        this.gui = gui;
         this.ui = ui;
+        this.step = step;
         this.state = new Drawing(ui.picture(), Lens.fitted(0f, 0f, 0f, 0f));
         gui.hear(ui.stage(), NodeEvent.RESIZE, layout -> {
             stageW = layout.rect().w();
@@ -108,6 +130,32 @@ final class View {
         gui.shortcut(Shortcut.of(Key.HOME), edge, new Edge(false));
         gui.shortcut(Shortcut.of(Key.END), edge, new Edge(true));
         gui.shortcut(Shortcut.of(Key.DIGIT_0), fitKey, new FitKey());
+        gui.shortcut(Shortcut.of(Key.EQUAL, Modifier.CONTROL), zoomKey, new ZoomKey(1));
+        gui.shortcut(Shortcut.of(Key.MINUS, Modifier.CONTROL), zoomKey, new ZoomKey(-1));
+        gui.shortcut(Shortcut.of(Key.DIGIT_0, Modifier.CONTROL), zoomKey, new ZoomKey(0));
+        gui.shortcut(Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL), zoomKey, new ZoomKey(1));
+        gui.shortcut(Shortcut.of(Key.NUMPAD_SUBTRACT, Modifier.CONTROL), zoomKey, new ZoomKey(-1));
+        gui.shortcut(Shortcut.of(Key.NUMPAD_0, Modifier.CONTROL), zoomKey, new ZoomKey(0));
+
+        gui.hear(ui.details(), NodeEvent.RESIZE, layout -> {
+            room = layout.content().w();
+            giveWay();
+        });
+        for (int i = 0; i < Details.COUNT; i++) {
+            int at = i;
+            gui.hear(ui.item(i), NodeEvent.RESIZE, layout -> {
+                if (measured(layout)) {
+                    widths[at] = layout.rect().w();
+                    giveWay();
+                }
+            });
+        }
+        gui.hear(ui.dot(Details.BYTES), NodeEvent.RESIZE, layout -> {
+            if (measured(layout)) {
+                dotW = layout.rect().w();
+                giveWay();
+            }
+        });
     }
 
     @Subscribe
@@ -129,6 +177,9 @@ final class View {
         Fit fit = Fit.of(p.width(), p.height(), stageW, stageH);
         ui.picture(p.feed().orElse(null), fit.widthPercent(), fit.heightPercent(), p.identity());
         look(Lens.fitted(fitW(fit), fitH(fit), stageW, stageH));
+        say(Details.KIND, p.identity());
+        say(Details.BYTES, Details.bytes(p.bytes()));
+        showSaid();
     }
 
     @Subscribe
@@ -140,14 +191,45 @@ final class View {
         }
     }
 
+    /**
+     * The name wanted and its place. The details are the picture shown's, so a name wanted before its picture is read
+     * has none until it is.
+     */
     @Subscribe
     public void caption(Caption m) {
-        ui.caption(m.name(), m.place());
+        ui.name(m.name());
+        if (shown == null || !m.name().equals(String.valueOf(shown.path().getFileName()))) {
+            say(Details.KIND, "");
+            say(Details.BYTES, "");
+        }
+        say(Details.PLACE, m.place());
+        showSaid();
     }
 
     @Subscribe
     public void fitKey(FitKey k) {
         look(state.lens().fit(System.nanoTime()));
+    }
+
+    @Subscribe
+    public void zoomKey(ZoomKey k) {
+        if (k.direction() > 0) {
+            gui.zoomIn();
+        } else if (k.direction() < 0) {
+            gui.zoomOut();
+        } else {
+            gui.resetZoom();
+        }
+    }
+
+    /** Previous and Next, as ← and →. */
+    @Subscribe
+    public void pressed(Button.Pressed p) {
+        if (p.button().equals(ui.previousAddress())) {
+            step.send(new Step(-1));
+        } else if (p.button().equals(ui.nextAddress())) {
+            step.send(new Step(1));
+        }
     }
 
     /**
@@ -166,6 +248,36 @@ final class View {
         out.scale(s.picture(), l.zoom(t));
         out.offset(s.picture(), l.x(t), l.y(t));
         return l.moving(t) ? frame.presentNanos() : Frame.NEVER;
+    }
+
+    private void say(int detail, String text) {
+        said[detail] = text;
+        ui.detail(detail, text);
+    }
+
+    /** Every detail that says something drawn, to be measured; {@link #giveWay} takes away what does not fit. */
+    private void showSaid() {
+        for (int i = 0; i < Details.COUNT; i++) {
+            drawn[i] = !said[i].isEmpty();
+        }
+        ui.shown(drawn);
+    }
+
+    private void giveWay() {
+        boolean[] says = new boolean[Details.COUNT];
+        for (int i = 0; i < says.length; i++) {
+            says[i] = !said[i].isEmpty();
+        }
+        boolean[] next = Details.shown(widths, says, dotW, room);
+        if (!java.util.Arrays.equals(next, drawn)) {
+            drawn = next;
+            ui.shown(drawn);
+        }
+    }
+
+    /** Whether {@code layout} is of a node drawn: a hidden one is laid out at nothing, which is not its width. */
+    private static boolean measured(NodeLayout layout) {
+        return layout.present() && layout.rect().w() > 0f;
     }
 
     private void look(Lens lens) {

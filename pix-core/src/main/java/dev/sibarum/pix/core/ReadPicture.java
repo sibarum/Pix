@@ -9,6 +9,8 @@ import dev.vexelray.framework.api.Job;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.vulkan.present.MipChain;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Optional;
 
 /**
@@ -29,12 +31,21 @@ public final class ReadPicture {
         Decoded d = Pictures.of(r.path(), SIDE);
         Picture p = d.picture();
         if (p == null) {
-            return new Pictured(r.path(), Optional.empty(), 0, 0, d.identity());
+            return new Pictured(r.path(), Optional.empty(), 0, 0, d.identity(), bytes(r));
         }
         int w = p.frameWidth();
         int h = p.frameHeight();
         byte[][] chain = MipChain.of(firstFrame(p), w, h);
-        return new Pictured(r.path(), Optional.of(Feed.still(w, h, true, chain)), w, h, d.identity());
+        return new Pictured(r.path(), Optional.of(Feed.still(w, h, true, chain)), w, h, d.identity(), bytes(r));
+    }
+
+    /** The file's size on disk, or -1 when it cannot be asked: a picture is still shown without it. */
+    static long bytes(Read r) {
+        try {
+            return Files.size(r.path());
+        } catch (IOException | SecurityException e) {
+            return -1;
+        }
     }
 
     /** The sheet's first cell: the whole sheet for a still, the first frame of an animation packed into one. */

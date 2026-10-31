@@ -100,3 +100,20 @@ system's text size (Windows' *Accessibility → Text size*). Pix sizes its contr
 honours display density and not zoom ([layout.md](layout.md)); that keeps text readable, but at one size for everyone.
 A root em read from the system, and a text size that follows it and not the zoom, would serve every application whose
 controls and words want different knobs.
+
+## FN-8 · A one-line label could only be cut at its edge, through a glyph 🔬
+
+The bar's name has to fit whatever room is left, and a file's name says most at its start and its extension. A label
+kept to a line (`wordWrap(false)`) was cut where its box ended, through whatever glyph was there, and an application
+cannot cut it better itself: the glyph advances are the layout's, and a view reads them only a frame late
+(`Node.layout()`), from a resize that does not fire when only the text changes. **Added upstream** (vexelray-gui):
+`Node.ellipsis(Ellipsis.END | MIDDLE)`. The layout cuts what is drawn, between characters, at the width it settles
+on; the node's text, which is the accessible name and what a script awaits, stays whole. A cut label is drawn plain,
+since its spans index the whole text.
+
+## FN-9 · The window grew and shrank with the zoom, with no way to keep its size 🔬
+
+Pix's Ctrl+- is meant to make the controls smaller so the picture has more room. `GuiWindow` scaled the window's
+client area by every zoom step (`ZoomSizing`), so Ctrl+- three times took a 1180×720 window to 604×369: the controls
+were smaller and the picture had less room than before. Right for a window sized to its content; wrong for one whose
+content is the room left over. **Added upstream**: `Gui.zoomSizesWindow(false)`, which Pix's `Ui` sets.

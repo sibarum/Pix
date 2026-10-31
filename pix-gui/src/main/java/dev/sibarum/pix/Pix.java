@@ -2,7 +2,6 @@ package dev.sibarum.pix;
 
 import dev.vexelray.framework.shell.VexelApplication;
 
-
 /**
  * Pictures, one at a time, as large as the window allows, and the rest of the folder a key press away.
  *
@@ -58,15 +57,15 @@ public final class Pix {
     static final String ICON = "/pix.ico";
 
     /**
-     * The smallest this UI is still coherent at, in root ems — a floor, not the design size: a navigator and a
-     * document side by side, each still wide enough to read.
+     * The smallest this UI is still coherent at, in root ems — a floor, not the design size: the bar still shows the
+     * name and the place, and the picture still has room to be looked at. In ems, so it shrinks with the controls.
      *
      * <p>Named here rather than written at each use because it is read from two places that have to agree:
      * {@link Recipes#look} declares it to the framework, and a screenshot at exactly the minimum
-     * ({@code ottermate --size 36emx20em shot}) is the picture that shows a panel outgrowing it.
+     * ({@code ottermate --size 24emx16em shot}) is the picture that shows a panel outgrowing it.
      */
-    static final float MIN_W_EM = 36;
-    static final float MIN_H_EM = 20;
+    static final float MIN_W_EM = 24;
+    static final float MIN_H_EM = 16;
 
     /**
      * Entry point.

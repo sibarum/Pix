@@ -115,3 +115,36 @@ frame-contract.md B had already named.
 ### What to keep exactly as it is
 - **The pose is the view's, not the viewer's.** Zoom and pan matter only to drawing, so they never touch the bus
   beyond the chord that asks for a fit; `-core` stays a folder viewer that knows nothing of looking closely.
+
+## The bar · 2026-10-31
+
+The count: 2 findings (FN-8, no ellipsis; FN-9, the window following the zoom), both fixed upstream with a member each
+(`Node.ellipsis`, `Gui.zoomSizesWindow`), and FN-7 written the turn before. The layout was planned first
+([layout.md](layout.md)); this is its bar's words and sides.
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-8 | a label kept to one line is cut off at its edge | cut through a glyph, wherever the box ended | a long name that loses its extension, with half a letter at the end |
+| FN-9 | the zoom keeps a window's composition | the window shrank with the controls | Ctrl+- left less room for the picture, not more |
+
+### What would stop it
+1. FN-7: a root em read from the system's text size, so words in dp still follow a person who needs them larger.
+
+### What changed shape
+- **0.1 clipped its words in a column 10 rem wide; v0.2 gives them the bar.** The name is cut by the layout, in the
+  middle, only when the window really is too narrow, and the details go whole, one at a time, measured as they are
+  laid out and remembered while hidden, so widening the window again shows them without a frame of guessing.
+- **The zoom sizes the controls only.** Words in dp, controls in rem, the framework's own rule turned round on
+  purpose; and the window keeps its size, so the picture gets what the controls give up.
+
+### My own mistakes
+- **The template's minimum size came through the port unread**: 36 × 20 em, with a reason about a navigator and a
+  document side by side. It cut the bar at 420 px in the first live run. Now 24 × 16 em, with Pix's own reason.
+- **One narrow shot looked wrong and was not**: the place drawn 30 px late, past the edge. Read again after a pointer
+  move, the tree had it where it belongs; the first `tree` and `shot` had caught it sliding into place. Rule: when a
+  shot disagrees with the arithmetic, read the tree twice before believing either.
+
+### What to keep exactly as it is
+- **The rule for what goes is a function of widths** (`Details.shown`), tested alone, and the view only measures and
+  applies it.

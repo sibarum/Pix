@@ -91,7 +91,7 @@ class ViewerTest {
 
     /** A picture read, said to be {@code w} by {@code h}; its feed is small, since only the size is counted. */
     private static Pictured read(Path p, int w, int h) {
-        return new Pictured(p, Optional.of(Feed.of(2, 2, 1, false)), w, h, "PNG image");
+        return new Pictured(p, Optional.of(Feed.of(2, 2, 1, false)), w, h, "PNG image", 100);
     }
 
     /**
@@ -256,7 +256,7 @@ class ViewerTest {
     @Test
     void aFileThatIsNotAPictureIsHeldAndShownAsWhyNot() {
         tell(Messages.RECALLED_TOPIC, new Recalled(FOLDER, Optional.of(A)));
-        tell(Messages.PICTURED_TOPIC, new Pictured(A, Optional.empty(), 0, 0, "not an image"));
+        tell(Messages.PICTURED_TOPIC, new Pictured(A, Optional.empty(), 0, 0, "not an image", 100));
         Pictured held = took(Hold.class).getFirst().picture();
         assertTrue(held.feed().isEmpty());
         assertEquals("not an image", held.identity());

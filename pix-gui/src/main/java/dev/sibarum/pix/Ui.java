@@ -8,50 +8,119 @@ import dev.vexelray.gui.core.layout.LayoutEnums.Direction;
 import dev.vexelray.gui.core.layout.LayoutEnums.Justify;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.core.style.Role;
-import dev.vexelray.gui.widget.StatusBar;
+import dev.vexelray.gui.core.text.Ellipsis;
+import dev.vexelray.gui.icons.Icon;
+import dev.vexelray.gui.widget.IconButton;
 import dev.vexelray.gui.widget.TitleBar;
 
 /**
- * The window: the framework's title bar, the stage the picture is fitted into, and a status line under both.
+ * The window: the framework's title bar, the stage the picture is fitted into with Previous and Next at its sides, and
+ * the bar along the bottom (docs/layout.md).
  *
- * <p>It holds no state. The picture shown is the view's to know, and what each label says is what the viewer last
- * told the view. Built in the {@code TREE} phase, before there is a window, and needing none, so a test can build the
- * real tree headless.
+ * <h2>Controls in rem, words in dp</h2>
+ *
+ * <p>The window's zoom (Ctrl+= / Ctrl+-) scales rem and not dp. So everything that is a control — the buttons, the
+ * bar's padding, the room around them — is in rem, and every word Pix writes is in dp: making the controls smaller
+ * never makes the name too small to read. This is the framework's rule turned round on purpose (its own is type in rem,
+ * gutters in dp), because what the zoom is for here is room for the picture, not reading.
+ *
+ * <p>It holds no state. The picture shown is the view's to know, which details fit is the view's to decide
+ * ({@link Details}), and what each label says is what the viewer last told the view. Built in the {@code TREE} phase,
+ * before there is a window, and needing none, so a test can build the real tree headless.
  */
 final class Ui {
 
+    /** The name, and what is said in a picture's place. */
+    static final Length NAME_TEXT = Length.dp(14f);
+
+    /** The details under the name. */
+    static final Length DETAIL_TEXT = Length.dp(12f);
+
+    /** Between the name and the details. */
+    static final Length LINE_GAP = Length.dp(2f);
+
+    /** Previous and Next: the button, and the chevron in it. */
+    static final Length SIDE = Length.rem(2.5f);
+    static final Length SIDE_ICON = Length.rem(1.5f);
+
+    /** Between the window's edges and the controls along them. */
+    static final Length MARGIN = Length.rem(0.75f);
+
+    /** Between the details: a dot with a space each side, so the gap is part of what is measured. */
+    static final String DOT = " · ";
+
     private final TitleBar titleBar;
-    private final StatusBar status;
     private final Node stage;
     private final Node picture;
     private final Node note;
+    private final IconButton previous;
+    private final IconButton next;
+    private final Node bar;
+    private final Node name;
+    private final Node details;
+    /** The details in {@link Details}'s order, and the dot before each but the first. */
+    private final Node[] items;
+    private final Node[] dots;
 
     Ui(Gui gui, TitleBar titleBar) {
         this.titleBar = titleBar;
+        // The zoom sizes the controls, and what they give up is the picture's: the window keeps its size.
+        gui.zoomSizesWindow(false);
 
         picture = gui.box();
         gui.landmark(Landmarks.PICTURE, picture);
-        note = gui.text("").textColor(gui.theme().color(Role.DIM)).visible(false);
+        note = gui.text("").textSize(NAME_TEXT).textColor(gui.theme().color(Role.DIM)).visible(false);
         gui.landmark(Landmarks.NOTE, note);
+
+        previous = new IconButton(gui, Icon.CHEVRON_LEFT, "Previous").size(SIDE, SIDE_ICON).tip("Previous (←)");
+        next = new IconButton(gui, Icon.CHEVRON_RIGHT, "Next").size(SIDE, SIDE_ICON).tip("Next (→)");
+        gui.landmark(Landmarks.PREVIOUS, previous.node());
+        gui.landmark(Landmarks.NEXT, next.node());
 
         stage = gui.box()
                 .width(Length.FILL).height(Length.grow(1f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(picture, note);
+                .children(picture, note, side(gui, previous, Length.ZERO), side(gui, next, Length.percent(100f)));
         gui.landmark(Landmarks.STAGE, stage);
 
-        status = new StatusBar(gui)
-                .slot(Landmarks.STATUS_NAME, StatusBar.Side.LEFT, "")
-                .slot(Landmarks.STATUS_PLACE, StatusBar.Side.RIGHT, "")
-                .minWidth(Landmarks.STATUS_PLACE, Length.rem(7));
-        gui.landmark(Landmarks.STATUS, status.node());
-        gui.landmark(Landmarks.STATUS_NAME, status.slot(Landmarks.STATUS_NAME));
-        gui.landmark(Landmarks.STATUS_PLACE, status.slot(Landmarks.STATUS_PLACE));
+        name = gui.text("").wordWrap(false).ellipsis(Ellipsis.MIDDLE).width(Length.FILL)
+                .textSize(NAME_TEXT).textColor(gui.theme().color(Role.INK));
+        gui.landmark(Landmarks.BAR_NAME, name);
+        items = new Node[Details.COUNT];
+        dots = new Node[Details.COUNT];
+        String[] landmarks = {Landmarks.BAR_KIND, Landmarks.BAR_BYTES, Landmarks.BAR_PLACE};
+        details = gui.row().width(Length.FILL).alignItems(AlignItems.CENTER).clip(true).scroll(false, false);
+        for (int i = 0; i < items.length; i++) {
+            items[i] = detail(gui, "");
+            gui.landmark(landmarks[i], items[i]);
+            if (i > 0) {
+                dots[i] = detail(gui, DOT);
+                details.append(dots[i]);
+            }
+            details.append(items[i]);
+        }
+        Node words = gui.column().width(Length.grow(1f)).gap(LINE_GAP).scroll(false, false).children(name, details);
+
+        bar = gui.row().width(Length.FILL).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
+                .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
+                .children(words);
+        gui.landmark(Landmarks.BAR, bar);
 
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
-                .children(titleBar.node(), stage, status.node());
+                .children(titleBar.node(), stage, bar);
+    }
+
+    /** A column the stage's height, floating at {@code x}, with {@code button} halfway up it. */
+    private static Node side(Gui gui, IconButton button, Length x) {
+        return gui.column().width(Length.AUTO).height(Length.percent(100f)).justify(Justify.CENTER)
+                .padding(Length.ZERO, MARGIN).scroll(false, false).floatAt(x, Length.ZERO)
+                .children(button.node());
+    }
+
+    private static Node detail(Gui gui, String text) {
+        return gui.text(text).wordWrap(false).textSize(DETAIL_TEXT).textColor(gui.theme().color(Role.DIM));
     }
 
     Node stage() {
@@ -61,6 +130,31 @@ final class Ui {
     /** The picture's node: laid out fitted, and drawn zoomed and moved by the view's asked half. */
     Node picture() {
         return picture;
+    }
+
+    /** The row the details are in, whose width is the room they have. */
+    Node details() {
+        return details;
+    }
+
+    /** The {@code i}th detail, in {@link Details}'s order. */
+    Node item(int i) {
+        return items[i];
+    }
+
+    /** The dot before the {@code i}th detail; there is none before the first. */
+    Node dot(int i) {
+        return dots[i];
+    }
+
+    /** The address Previous presses with. */
+    String previousAddress() {
+        return previous.address();
+    }
+
+    /** The address Next presses with. */
+    String nextAddress() {
+        return next.address();
     }
 
     /**
@@ -83,10 +177,26 @@ final class Ui {
         picture.width(Length.percent(widthPercent)).height(Length.percent(heightPercent));
     }
 
-    /** The picture's name in the title bar and the status line, and its place in its folder. */
-    void caption(String name, String place) {
+    /** The picture's name in the title bar and the bar. */
+    void name(String name) {
         titleBar.title(name.isEmpty() ? Pix.TITLE : name + " — " + Pix.TITLE);
-        status.text(Landmarks.STATUS_NAME, name);
-        status.text(Landmarks.STATUS_PLACE, place);
+        this.name.text(name);
+    }
+
+    /** What the {@code i}th detail says. */
+    void detail(int i, String text) {
+        items[i].text(text);
+    }
+
+    /** Which details are drawn, and the dots between those that are. */
+    void shown(boolean[] shown) {
+        boolean before = false;
+        for (int i = 0; i < items.length; i++) {
+            items[i].visible(shown[i]);
+            if (dots[i] != null) {
+                dots[i].visible(shown[i] && before);
+            }
+            before |= shown[i];
+        }
     }
 }

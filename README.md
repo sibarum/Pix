@@ -28,7 +28,7 @@ mvn test                                                  # the viewer, the jobs
 | `pix <folder>` | the folder's first picture |
 | `pix` | the first picture in the person's Pictures folder, or their home |
 
-The file asked for is shown before its folder has been read; the status line says *reading the folder…* until it
+The file asked for is shown before its folder has been read; the bar says *reading the folder…* until it
 has.
 
 ## A native executable
@@ -92,6 +92,8 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | The wheel | zoom in (up) or out, about the pointer |
 | Drag | move the picture; it stays where at least a quarter of the window still shows it |
 | 0 | fit the picture again, in the middle (every picture arrives fitted) |
+| ‹ and › at the window's sides | the picture before / the next one, as ← and → |
+| Ctrl+= / Ctrl+- / Ctrl+0 | the controls larger / smaller / as they were. The words stay the size they are, and the window too: what the controls give up is the picture's |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
@@ -101,6 +103,10 @@ an arrow key decodes the picture it stops on and at most one on the way.
 While you look, Pix reads ahead: the next picture, then the previous, then the one after next, so a step finds its
 picture waiting. Every picture read is kept, up to 256 MB of pixels, the least recently shown let go first, so going
 back is instant too.
+
+The bar along the bottom says the picture's name, cut in the middle when it is too long so its start and its
+extension both show, and under it what the picture is and its own size, the file's size, and where it is in the folder
+(*12 of 340*). In a narrow window the file's size goes first, then what the picture is; the place stays.
 
 ## How it is put together
 
@@ -126,9 +132,10 @@ every message is in one file. Read these in this order.
 | `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
 | `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its asked half (`@Draw`) draws that on every frame as a scale and an offset. |
 | `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone. |
-| `Keys.java` | the chords that ask something of the view itself (0, to fit). |
+| `Keys.java` | the chords that ask something of the view itself: 0, to fit, and Ctrl+= / Ctrl+- / Ctrl+0, the controls' size. |
 | `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
-| `Ui.java` | the window. Holds no state; it shows what the view hands it. |
+| `Ui.java` | the window: the stage, Previous and Next at its sides, and the bar along the bottom. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state; it shows what the view hands it. |
+| `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |
 
 `Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
 clipboard, window memory, the clock, the frame loop with its wakes and its pacing, the dialogs, the command line and
@@ -156,7 +163,7 @@ happened at least once. If the build cannot resolve them, that is why.
 | --- | --- |
 | `vexelray-framework-api`, `vexelray-gui-core` | all `-core` builds against: the framework's annotations, and the values (a span, a colour, the settings store) and the bus that are safe from any thread |
 | `vexelray-framework-shell`, `-automation`, `-processor` | the application edge, the driving socket, and the processor that checks both modules and writes the wiring |
-| `vexelray-gui-widget` | the widgets: `Tabs`, `TreeView`, `TextField`, `SplitPane`, `StatusBar`, `Cues` |
+| `vexelray-gui-widget` | the widgets: the `TitleBar`, and the `IconButton`s at the stage's sides |
 | `vexelray-gui-krono` | the clock: every transition and cue |
 | `vexelray-gui-automation` | driving the running app the way a person does — a debugging instrument |
 | `tactroller-atchung` | keyboard and pointer input onto an atchung bus (brings `atchung-core`) |
@@ -204,11 +211,11 @@ Say what the picture is *of* with options, and `ottermate` sets it first and sto
 
 ```
 ottermate --zoom 1.5 --dpi 2 --size 1600x900 shot big.png --launch ...   # pixels
-ottermate --size 36emx20em shot smallest.png --launch ...                # the minimum, in em
+ottermate --size 24emx16em shot smallest.png --launch ...                # the minimum, in em
 ```
 
-The landmarks in `Landmarks.java` are the names a script uses: `await status.name IMG_0412.jpg` waits for a picture
-to be wanted, and `await status.place 3 of` for its folder to be listed. `ottermate help` lists every verb.
+The landmarks in `Landmarks.java` are the names a script uses: `await bar.name IMG_0412.jpg` waits for a picture
+to be wanted, and `await bar.place 3 of` for its folder to be listed. `ottermate help` lists every verb.
 
 ## Logging
 
