@@ -2,6 +2,7 @@ package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Read;
+import dev.sibarum.pix.core.Messages.Thumb;
 import dev.vexelray.codec.image.Decoded;
 import dev.vexelray.codec.image.Picture;
 import dev.vexelray.codec.image.Pictures;
@@ -11,6 +12,7 @@ import dev.vexelray.vulkan.present.MipChain;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 
 /**
@@ -18,8 +20,9 @@ import java.util.Optional;
  * all happen here, and the answer is the feed, a handle. The pixels stay where they were written, and the renderer
  * of whichever window shows the feed uploads them (vexelray-gui's frame-contract.md D).
  *
- * <p>Decoded at most {@link #SIDE} px on its longer side, which is what is drawn while the picture moves. A file that is
- * not a picture, or will not decode, is an answer with no feed and the reason, never a throw.
+ * <p>Decoded at most {@link #SIDE} px on its longer side, which is what is drawn while the picture moves, and at most
+ * {@link #THUMB} for the filmstrip, both from the one decode, which is the expensive part. A file that is not a picture,
+ * or will not decode, is an answer with no feed and the reason, never a throw.
  */
 @Job
 public final class ReadPicture {
@@ -27,22 +30,39 @@ public final class ReadPicture {
     /** The longest side a picture is shown from. */
     static final int SIDE = 2560;
 
+    /** The longest side of a thumbnail: a filmstrip cell a few em tall, at twice the density, with room to spare. */
+    static final int THUMB = 192;
+
     public Pictured run(Read r) {
-        Decoded d = Pictures.of(r.path(), SIDE);
+        Decoded d = Pictures.of(r.path(), SIDE, THUMB);
         Picture p = d.picture();
         if (p == null) {
-            return new Pictured(r.path(), Optional.empty(), 0, 0, d.identity(), bytes(r));
+            return new Pictured(r.path(), Optional.empty(), 0, 0, d.identity(), bytes(r.path()), none(r.path()));
         }
+        return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
+                bytes(r.path()), thumb(r.path(), d.picture(1)));
+    }
+
+    /** The thumbnail of {@code path} from {@code p}, decoded at {@link #THUMB}. */
+    static Thumb thumb(Path path, Picture p) {
+        return p == null ? none(path) : new Thumb(path, Optional.of(feed(p)), p.frameWidth(), p.frameHeight());
+    }
+
+    static Thumb none(Path path) {
+        return new Thumb(path, Optional.empty(), 0, 0);
+    }
+
+    /** {@code p}'s first frame in a still feed, with its mip chain. */
+    static Feed feed(Picture p) {
         int w = p.frameWidth();
         int h = p.frameHeight();
-        byte[][] chain = MipChain.of(firstFrame(p), w, h);
-        return new Pictured(r.path(), Optional.of(Feed.still(w, h, true, chain)), w, h, d.identity(), bytes(r));
+        return Feed.still(w, h, true, MipChain.of(firstFrame(p), w, h));
     }
 
     /** The file's size on disk, or -1 when it cannot be asked: a picture is still shown without it. */
-    static long bytes(Read r) {
+    static long bytes(Path path) {
         try {
-            return Files.size(r.path());
+            return Files.size(path);
         } catch (IOException | SecurityException e) {
             return -1;
         }

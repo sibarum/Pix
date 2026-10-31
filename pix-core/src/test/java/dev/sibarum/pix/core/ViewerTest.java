@@ -2,16 +2,24 @@ package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Caption;
 import dev.sibarum.pix.core.Messages.Edge;
+import dev.sibarum.pix.core.Messages.Filmstrip;
+import dev.sibarum.pix.core.Messages.Go;
+import dev.sibarum.pix.core.Messages.HoldThumb;
 import dev.sibarum.pix.core.Messages.Hold;
 import dev.sibarum.pix.core.Messages.ListFolder;
 import dev.sibarum.pix.core.Messages.Listed;
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Read;
+import dev.sibarum.pix.core.Messages.ReadThumb;
 import dev.sibarum.pix.core.Messages.Recall;
 import dev.sibarum.pix.core.Messages.Recalled;
 import dev.sibarum.pix.core.Messages.Release;
+import dev.sibarum.pix.core.Messages.ReleaseThumb;
 import dev.sibarum.pix.core.Messages.Show;
+import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
+import dev.sibarum.pix.core.Messages.Thumb;
+import dev.sibarum.pix.core.Messages.Thumbnailed;
 import dev.vexelray.framework.core.WindowOpened;
 import dev.vexelray.gui.core.Feed;
 import org.junit.jupiter.api.AfterEach;
@@ -60,7 +68,9 @@ class ViewerTest {
         new Viewer(tick.inbox("viewer"));
         Inbox heard = tick.inbox("heard");
         for (Topic<?> t : List.of(Messages.RECALL_TOPIC, Messages.LIST_FOLDER_TOPIC, Messages.READ_TOPIC,
-                Messages.HOLD_TOPIC, Messages.SHOW_TOPIC, Messages.RELEASE_TOPIC, Messages.CAPTION_TOPIC)) {
+                Messages.HOLD_TOPIC, Messages.SHOW_TOPIC, Messages.RELEASE_TOPIC, Messages.CAPTION_TOPIC,
+                Messages.READ_THUMB_TOPIC, Messages.HOLD_THUMB_TOPIC, Messages.RELEASE_THUMB_TOPIC,
+                Messages.FILMSTRIP_TOPIC)) {
             listen(heard, t);
         }
     }
@@ -91,7 +101,11 @@ class ViewerTest {
 
     /** A picture read, said to be {@code w} by {@code h}; its feed is small, since only the size is counted. */
     private static Pictured read(Path p, int w, int h) {
-        return new Pictured(p, Optional.of(Feed.of(2, 2, 1, false)), w, h, "PNG image", 100);
+        return new Pictured(p, Optional.of(Feed.of(2, 2, 1, false)), w, h, "PNG image", 100, thumb(p));
+    }
+
+    private static Thumb thumb(Path p) {
+        return new Thumb(p, Optional.of(Feed.of(2, 2, 1, false)), 2, 2);
     }
 
     /**
@@ -256,7 +270,7 @@ class ViewerTest {
     @Test
     void aFileThatIsNotAPictureIsHeldAndShownAsWhyNot() {
         tell(Messages.RECALLED_TOPIC, new Recalled(FOLDER, Optional.of(A)));
-        tell(Messages.PICTURED_TOPIC, new Pictured(A, Optional.empty(), 0, 0, "not an image", 100));
+        tell(Messages.PICTURED_TOPIC, new Pictured(A, Optional.empty(), 0, 0, "not an image", 100, new Thumb(A, Optional.empty(), 0, 0)));
         Pictured held = took(Hold.class).getFirst().picture();
         assertTrue(held.feed().isEmpty());
         assertEquals("not an image", held.identity());
@@ -297,5 +311,71 @@ class ViewerTest {
 
         tell(Messages.EDGE_TOPIC, new Edge(false));
         assertEquals(List.of(new Read(folder.get(0))), took(Read.class));
+    }
+    /** A folder of {@code n} pictures, p0 to p{n-1}, started on p{@code at} with its own read answered. */
+    private List<Path> startedIn(int n, int at) {
+        List<Path> folder = IntStream.range(0, n).mapToObj(i -> FOLDER.resolve("p" + i + ".png")).toList();
+        tell(Messages.RECALLED_TOPIC, new Recalled(FOLDER, Optional.of(folder.get(at))));
+        took(Read.class);
+        tell(Messages.PICTURED_TOPIC, read(folder.get(at)));
+        tell(Messages.LISTED_TOPIC, new Listed(FOLDER, folder));
+        return folder;
+    }
+
+    /**
+     * The filmstrip shows what the view has room for: the pictures its span either side, and the thumbnails of those
+     * not read ahead are read after the neighbours, one at a time, nearest first.
+     */
+    @Test
+    void aSpanShowsTheStripAndReadsItsThumbnailsAfterTheNeighbours() {
+        List<Path> p = startedIn(8, 3);
+        assertEquals(List.of(p.get(4), p.get(2), p.get(5)), answerAll());
+        assertEquals(List.of(), took(ReadThumb.class), "no span, no thumbnails read");
+        assertEquals(List.of(p.get(3), p.get(4), p.get(2), p.get(5)),
+                took(HoldThumb.class).stream().map(h -> h.thumb().path()).toList(), "a read brings its thumbnail");
+
+        tell(Messages.SPAN_TOPIC, new Span(2));
+        assertEquals(new Filmstrip(p.subList(1, 6), 2), took(Filmstrip.class).getLast());
+        assertEquals(List.of(new ReadThumb(p.get(1))), took(ReadThumb.class), "p2, p4 and p5 came with their reads");
+        tell(Messages.THUMBNAILED_TOPIC, new Thumbnailed(thumb(p.get(1))));
+        assertEquals(List.of(p.get(1)), took(HoldThumb.class).stream().map(h -> h.thumb().path()).toList());
+        assertEquals(List.of(), took(ReadThumb.class), "the strip is filled");
+        assertEquals(List.of(), took(Read.class));
+    }
+
+    @Test
+    void aStepReadsThePictureBeforeAnyThumbnail() {
+        List<Path> p = startedIn(8, 3);
+        tell(Messages.SPAN_TOPIC, new Span(3));
+        answerAll();
+        assertEquals(List.of(new ReadThumb(p.get(1))), took(ReadThumb.class));
+        tell(Messages.STEP_TOPIC, new Step(-3));
+        assertEquals(List.of(), took(Read.class), "the thumbnail read is still out");
+        tell(Messages.THUMBNAILED_TOPIC, new Thumbnailed(thumb(p.get(1))));
+        assertEquals(List.of(new Read(p.get(0))), took(Read.class), "then the picture wanted, not the next thumbnail");
+        assertEquals(new Filmstrip(p.subList(0, 4), 0), took(Filmstrip.class).getLast(), "clipped at the folder's start");
+    }
+
+    @Test
+    void aThumbnailClickedIsWantedAndOneNotInTheFolderIsIgnored() {
+        List<Path> p = startedIn(8, 3);
+        answerAll();
+        shown();
+        tell(Messages.GO_TOPIC, new Go(p.get(5)));
+        assertEquals(new Caption("p5.png", "6 of 8"), took(Caption.class).getLast());
+        assertEquals(List.of(p.get(5)), shown(), "read ahead, so at once");
+        tell(Messages.GO_TOPIC, new Go(FOLDER.resolve("gone.png")));
+        assertEquals(List.of(), took(Caption.class));
+    }
+
+    @Test
+    void thumbnailsFarFromThePictureWantedAreLetGo() {
+        List<Path> p = startedIn(40, 0);
+        tell(Messages.SPAN_TOPIC, new Span(1));
+        answerAll();
+        took(ReleaseThumb.class);
+        tell(Messages.EDGE_TOPIC, new Edge(true));
+        List<Path> gone = took(ReleaseThumb.class).stream().map(ReleaseThumb::path).toList();
+        assertEquals(List.of(p.get(0), p.get(1), p.get(2)), gone, "39 away, past the strip and the 16 kept beyond it");
     }
 }

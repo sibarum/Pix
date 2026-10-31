@@ -4,11 +4,17 @@ import dev.sibarum.pix.Keys.FitKey;
 import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
 import dev.sibarum.pix.core.Messages.Edge;
+import dev.sibarum.pix.core.Messages.Filmstrip;
+import dev.sibarum.pix.core.Messages.Go;
 import dev.sibarum.pix.core.Messages.Hold;
+import dev.sibarum.pix.core.Messages.HoldThumb;
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Release;
+import dev.sibarum.pix.core.Messages.ReleaseThumb;
 import dev.sibarum.pix.core.Messages.Show;
+import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
+import dev.sibarum.pix.core.Messages.Thumb;
 import dev.vexelray.framework.api.Draw;
 import dev.vexelray.framework.api.Subscribe;
 import dev.vexelray.gui.core.Drawn;
@@ -62,6 +68,12 @@ import java.util.Map;
  * that widens again knows what fits without showing anything to find out. New words are all shown at once and given
  * way a frame later, once they have been measured.
  *
+ * <h2>It fills the filmstrip</h2>
+ *
+ * <p>How many cells fit is the view's to know ({@link Strip}), so it tells the viewer how far either side that reaches
+ * ({@code Span}), and shows what the viewer says is there ({@code Filmstrip}) from the thumbnails it is told to hold,
+ * each a feed of its own. A click on one asks for that picture by its path ({@code Go}).
+ *
  * <h2>It fades the controls</h2>
  *
  * <p>The bar and the arrows fade once the pointer has rested, and come back when it moves or a step shows another name
@@ -88,6 +100,7 @@ final class View {
     private final Gui gui;
     private final Ui ui;
     private final Sender<Step> step;
+    private final Sender<Span> span;
 
     /** What each detail says, its width as last laid out, and which are drawn; the dot's width; the room. */
     private final String[] said = {"", "", ""};
@@ -101,6 +114,16 @@ final class View {
 
     /** The pictures held, by path. */
     private final Map<Path, Pictured> held = new HashMap<>();
+
+    /** The thumbnails held, by path; what the filmstrip shows; how many cells it has, and the radius last told. */
+    private final Map<Path, Thumb> thumbs = new HashMap<>();
+    private Filmstrip strip = new Filmstrip(List.of(), 0);
+    private int cells;
+    private int radius;
+
+    /** The bar's content width and a rem, in px, as last laid out: what the strip is sized from. */
+    private float barW;
+    private float remPx;
 
     /** The picture shown; null before the first. */
     private Pictured shown;
@@ -117,10 +140,31 @@ final class View {
     private final boolean[] over = new boolean[3];
     private boolean kept;
 
-    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey) {
+    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span,
+         Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey) {
         this.gui = gui;
         this.ui = ui;
         this.step = step;
+        this.span = span;
+        gui.hear(ui.bar(), NodeEvent.RESIZE, layout -> {
+            barW = layout.content().w();
+            sizeStrip();
+        });
+        gui.hear(ui.keepNode(), NodeEvent.RESIZE, layout -> {
+            if (measured(layout)) {
+                remPx = layout.rect().w() / Ui.TOOL_REM;
+                sizeStrip();
+            }
+        });
+        for (int i = 0; i < Strip.MOST; i++) {
+            int at = i;
+            gui.hear(ui.cell(i), NodeEvent.CLICK, c -> {
+                int p = Strip.path(at, cells, strip.at(), strip.paths().size());
+                if (p >= 0) {
+                    go.send(new Go(strip.paths().get(p)));
+                }
+            });
+        }
         this.state = new Drawing(ui.picture(), Lens.fitted(0f, 0f, 0f, 0f), ui.faded(),
                 Fade.shown(System.nanoTime()));
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
@@ -240,6 +284,31 @@ final class View {
     }
 
     @Subscribe
+    public void filmstrip(Filmstrip m) {
+        strip = m;
+        paintStrip();
+    }
+
+    /** A thumbnail to keep; one held already for that picture is put back, and closed once nothing draws it. */
+    @Subscribe
+    public void holdThumb(HoldThumb m) {
+        Thumb was = thumbs.put(m.thumb().path(), m.thumb());
+        paintStrip();
+        if (was != null && was != m.thumb()) {
+            close(was);
+        }
+    }
+
+    @Subscribe
+    public void releaseThumb(ReleaseThumb m) {
+        Thumb t = thumbs.remove(m.path());
+        if (t != null) {
+            paintStrip();
+            close(t);
+        }
+    }
+
+    @Subscribe
     public void fitKey(FitKey k) {
         look(state.lens().fit(System.nanoTime()));
     }
@@ -346,6 +415,44 @@ final class View {
 
     private static void close(Pictured p) {
         p.feed().ifPresent(Feed::close);
+    }
+
+    private static void close(Thumb t) {
+        t.feed().ifPresent(Feed::close);
+    }
+
+    /**
+     * As many cells as half the bar holds ({@link Strip}), once the bar and a rem have both been measured; and the
+     * viewer told how far either side that reaches, so it reads those thumbnails and no others.
+     */
+    private void sizeStrip() {
+        float room = barW - remPx * (Ui.TOOL_REM + 2 * Ui.MARGIN_REM);
+        int n = Strip.cells(room, remPx);
+        ui.strip(n, barW > 0f ? Strip.width(n, remPx) / barW * 100f : 0f);
+        cells = n;
+        paintStrip();
+        if (n / 2 != radius) {
+            radius = n / 2;
+            span.send(new Span(radius));
+        }
+    }
+
+    /** Each cell from the filmstrip and the thumbnails held: the picture wanted in the middle, a gap past an end. */
+    private void paintStrip() {
+        float cellW = Strip.CELL_W * remPx;
+        float cellH = Strip.CELL_H * remPx;
+        for (int i = 0; i < cells; i++) {
+            int p = Strip.path(i, cells, strip.at(), strip.paths().size());
+            if (p < 0) {
+                ui.cell(i, null, null, "", false);
+                continue;
+            }
+            Path path = strip.paths().get(p);
+            Thumb t = thumbs.get(path);
+            Feed feed = t == null ? null : t.feed().orElse(null);
+            Fit fit = feed == null ? null : Fit.of(t.width(), t.height(), cellW, cellH);
+            ui.cell(i, feed, fit, String.valueOf(path.getFileName()), p == strip.at());
+        }
     }
 
     private float fitW(Fit fit) {

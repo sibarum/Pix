@@ -37,6 +37,21 @@ public final class Messages {
     public record Edge(boolean last) {
     }
 
+    /** Go to this picture: a thumbnail in the filmstrip, clicked. A path not in the folder is ignored. */
+    public static final Topic<Go> GO_TOPIC = Topic.edge(Go.class);
+
+    public record Go(Path path) {
+    }
+
+    /**
+     * How many pictures the filmstrip shows each side of the one wanted: what fits in the bar, which only the view
+     * knows. The viewer reads thumbnails that far and no further; zero, the strip is hidden and none are read.
+     */
+    public static final Topic<Span> SPAN_TOPIC = Topic.state(Span.class);
+
+    public record Span(int radius) {
+    }
+
     // ------------------------------------------------------------------ the viewer tells the view
 
     /**
@@ -64,6 +79,30 @@ public final class Messages {
     public static final Topic<Caption> CAPTION_TOPIC = Topic.state(Caption.class);
 
     public record Caption(String name, String place) {
+    }
+
+    /**
+     * What the filmstrip shows: the pictures within the span either side of the one wanted, in folder order, and where
+     * that one is among them. Empty with nothing wanted in a listed folder, or no span.
+     */
+    public static final Topic<Filmstrip> FILMSTRIP_TOPIC = Topic.state(Filmstrip.class);
+
+    public record Filmstrip(List<Path> paths, int at) {
+        public Filmstrip {
+            paths = List.copyOf(paths);
+        }
+    }
+
+    /** Keep this thumbnail until told to let it go. Held apart from the pictures, and let go apart from them. */
+    public static final Topic<HoldThumb> HOLD_THUMB_TOPIC = Topic.edge(HoldThumb.class);
+
+    public record HoldThumb(Thumb thumb) {
+    }
+
+    /** Let go of the thumbnail held for this path, closing its feed. Never one the filmstrip shows. */
+    public static final Topic<ReleaseThumb> RELEASE_THUMB_TOPIC = Topic.edge(ReleaseThumb.class);
+
+    public record ReleaseThumb(Path path) {
     }
 
     // ------------------------------------------------------------------ the viewer asks the jobs, and they answer
@@ -107,12 +146,34 @@ public final class Messages {
     public record Read(Path path) {
     }
 
+    /** Read only a picture's thumbnail: one in the filmstrip that is not read whole. One at a time, as {@link Read}. */
+    public static final Topic<ReadThumb> READ_THUMB_TOPIC = Topic.edge(ReadThumb.class);
+
+    public record ReadThumb(Path path) {
+    }
+
+    /** A thumbnail read on its own. */
+    public static final Topic<Thumbnailed> THUMBNAILED_TOPIC = Topic.edge(Thumbnailed.class);
+
+    public record Thumbnailed(Thumb thumb) {
+    }
+
     /**
      * A picture read: its feed and size, or none and why. {@code identity} is what it is and its own size ("PNG image ·
      * 1920 × 1080"), the feed's being at most what is drawn; {@code bytes} is the file's size on disk, or -1 unknown.
+     * {@code thumb} is its thumbnail, from the same decode.
      */
     public static final Topic<Pictured> PICTURED_TOPIC = Topic.edge(Pictured.class);
 
-    public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes) {
+    public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes,
+                           Thumb thumb) {
+    }
+
+    /**
+     * A picture's thumbnail: a feed of its own at most {@code ReadPicture.THUMB} px on its longer side, and that size;
+     * no feed for a file that is not a picture. Not a message: what {@link Pictured}, {@link Thumbnailed} and
+     * {@link HoldThumb} carry.
+     */
+    public record Thumb(Path path, Optional<Feed> feed, int width, int height) {
     }
 }

@@ -95,6 +95,7 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | ‹ and › at the window's sides | the picture before / the next one, as ← and → |
 | Ctrl+= / Ctrl+- / Ctrl+0 | the controls larger / smaller / as they were. The words stay the size they are, and the window too: what the controls give up is the picture's |
 | the pin at the bar's right | Keep shown: the bar and the arrows stay, and the bar takes room of its own below the picture |
+| a thumbnail in the bar | that picture |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
@@ -108,6 +109,10 @@ back is instant too.
 The bar along the bottom says the picture's name, cut in the middle when it is too long so its start and its
 extension both show, and under it what the picture is and its own size, the file's size, and where it is in the folder
 (*12 of 340*). In a narrow window the file's size goes first, then what the picture is; the place stays.
+
+Beside the words, the filmstrip: the picture's neighbours as thumbnails, itself in the middle and marked, filled in as
+they are read. It takes at most half the bar, as many cells as fit there, from three to fifteen, so a narrow window
+shows fewer and the name keeps its half; smaller controls fit more. A click on one shows that picture.
 
 The picture has the whole window under the title bar: the bar floats over its bottom, and the bar and the arrows fade
 when the pointer has rested two seconds, coming back as soon as it moves, or a step shows another name. They stay
@@ -127,8 +132,8 @@ every message is in one file. Read these in this order.
 | File | What belongs in it |
 | --- | --- |
 | `Messages.java` | **every message the parts send each other**, grouped by who sends it to whom, each record beside its topic. A record crosses as itself, so it holds only immutable values, and one handle: a `Feed`. |
-| `Viewer.java` | **the controller**: which picture is wanted, what is read and when, and which pictures are kept, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops; idle, that read goes ahead to the neighbours. Its state names pictures by path; the view holds them. |
-| `Begin.java`, `ListPictures.java`, `ReadPicture.java` | the jobs: where to start, a folder's pictures in order, and a picture decoded into a feed. What can go wrong is part of the reply. |
+| `Viewer.java` | **the controller**: which picture is wanted, what is read and when, and which pictures are kept, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops; idle, that read goes ahead to the neighbours, then to the thumbnails the filmstrip lacks. Its state names pictures by path; the view holds them. |
+| `Begin.java`, `ListPictures.java`, `ReadPicture.java`, `ReadThumbnail.java` | the jobs: where to start, a folder's pictures in order, a picture decoded into a feed with its thumbnail from the same decode, and a thumbnail alone. What can go wrong is part of the reply. |
 | `Core.java` | the list of this module's component and jobs. The processor compiling `-gui` sees only `-gui`'s sources, so this list, named among `PixApp`'s starters, is how the wiring hears of them. A new component or job goes on it. |
 
 **`pix-gui`, the view and the framework integration.**
@@ -143,6 +148,7 @@ every message is in one file. Read these in this order.
 | `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
 | `Ui.java` | the window: the stage, Previous and Next at its sides, and the bar floating over its bottom, or below it with Keep shown. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state; it shows what the view hands it. |
 | `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |
+| `Strip.java` | how many thumbnails the filmstrip shows and how wide it is, from the bar's width and a rem, and which picture each cell is. |
 
 `Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
 clipboard, window memory, the clock, the frame loop with its wakes and its pacing, the dialogs, the command line and
@@ -222,7 +228,7 @@ ottermate --size 24emx16em shot smallest.png --launch ...                # the m
 ```
 
 The landmarks in `Landmarks.java` are the names a script uses: `await bar.name IMG_0412.jpg` waits for a picture
-to be wanted, and `await bar.place 3 of` for its folder to be listed. `ottermate help` lists every verb.
+to be wanted, and `await bar.place 3 of` for its folder to be listed; `click bar.strip.0` presses the filmstrip's left cell. `ottermate help` lists every verb.
 
 ## Logging
 

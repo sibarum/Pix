@@ -2,16 +2,24 @@ package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Caption;
 import dev.sibarum.pix.core.Messages.Edge;
+import dev.sibarum.pix.core.Messages.Filmstrip;
+import dev.sibarum.pix.core.Messages.Go;
+import dev.sibarum.pix.core.Messages.HoldThumb;
 import dev.sibarum.pix.core.Messages.Hold;
 import dev.sibarum.pix.core.Messages.ListFolder;
 import dev.sibarum.pix.core.Messages.Listed;
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Read;
+import dev.sibarum.pix.core.Messages.ReadThumb;
 import dev.sibarum.pix.core.Messages.Recall;
 import dev.sibarum.pix.core.Messages.Recalled;
 import dev.sibarum.pix.core.Messages.Release;
+import dev.sibarum.pix.core.Messages.ReleaseThumb;
 import dev.sibarum.pix.core.Messages.Show;
+import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
+import dev.sibarum.pix.core.Messages.Thumb;
+import dev.sibarum.pix.core.Messages.Thumbnailed;
 import dev.vexelray.framework.api.Component;
 import dev.vexelray.framework.api.Hears;
 import dev.vexelray.framework.api.Publishes;
@@ -57,8 +65,10 @@ import java.util.Optional;
  * is read ahead, since there are no neighbours yet.
  */
 @Component
-@Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Pictured.class})
-@Publishes({Recall.class, ListFolder.class, Read.class, Hold.class, Show.class, Release.class, Caption.class})
+@Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Go.class, Span.class,
+        Pictured.class, Thumbnailed.class})
+@Publishes({Recall.class, ListFolder.class, Read.class, ReadThumb.class, Hold.class, Show.class, Release.class,
+        HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class})
 public final class Viewer {
 
     static final int CAPACITY = 64;
@@ -68,6 +78,9 @@ public final class Viewer {
 
     /** Where reading ahead looks, from the picture wanted, nearest first: the next, the previous, the one after next. */
     static final List<Integer> AHEAD = List.of(1, -1, 2);
+
+    /** How many thumbnails past each end of the filmstrip are kept, so a few steps back find the strip filled. */
+    static final int THUMBS_BEYOND = 16;
 
     /**
      * The pixels the view may hold, counted as {@link #bytes} counts them: a few dozen photographs at the size they are
@@ -90,42 +103,54 @@ public final class Viewer {
      * @param reading  the picture asked of {@link ReadPicture} and not yet answered
      * @param shown    the picture last sent to be shown
      * @param held     the pictures the view holds, least recently shown first
+     * @param radius   how many pictures the filmstrip shows each side of the one wanted ({@link Span})
+     * @param thumbs   the thumbnails the view holds
      */
     record State(Optional<Path> folder, List<Path> pictures, boolean listed, int at, Optional<Path> wanted,
-                 Optional<Path> reading, Optional<Path> shown, List<Held> held) {
+                 Optional<Path> reading, Optional<Path> shown, List<Held> held, int radius, List<Path> thumbs) {
 
         State {
             pictures = List.copyOf(pictures);
             held = List.copyOf(held);
+            thumbs = List.copyOf(thumbs);
         }
 
         static State initial() {
             return new State(Optional.empty(), List.of(), false, -1, Optional.empty(), Optional.empty(),
-                    Optional.empty(), List.of());
+                    Optional.empty(), List.of(), 0, List.of());
         }
 
         State inFolder(Path value) {
-            return new State(Optional.of(value), List.of(), false, -1, wanted, reading, shown, held);
+            return new State(Optional.of(value), List.of(), false, -1, wanted, reading, shown, held, radius, thumbs);
         }
 
         State listed(List<Path> value, int place) {
-            return new State(folder, value, true, place, wanted, reading, shown, held);
+            return new State(folder, value, true, place, wanted, reading, shown, held, radius, thumbs);
         }
 
         State wanting(Path value, int place) {
-            return new State(folder, pictures, listed, place, Optional.of(value), reading, shown, held);
+            return new State(folder, pictures, listed, place, Optional.of(value), reading, shown, held, radius,
+                    thumbs);
         }
 
         State reading(Optional<Path> value) {
-            return new State(folder, pictures, listed, at, wanted, value, shown, held);
+            return new State(folder, pictures, listed, at, wanted, value, shown, held, radius, thumbs);
         }
 
         State shown(Path value) {
-            return new State(folder, pictures, listed, at, wanted, reading, Optional.of(value), held);
+            return new State(folder, pictures, listed, at, wanted, reading, Optional.of(value), held, radius, thumbs);
         }
 
         State held(List<Held> value) {
-            return new State(folder, pictures, listed, at, wanted, reading, shown, value);
+            return new State(folder, pictures, listed, at, wanted, reading, shown, value, radius, thumbs);
+        }
+
+        State radius(int value) {
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, value, thumbs);
+        }
+
+        State thumbs(List<Path> value) {
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, value);
         }
 
         boolean holds(Path p) {
@@ -146,7 +171,10 @@ public final class Viewer {
                 .on(Messages.LISTED_TOPIC, b.step("listed", Viewer::listed))
                 .on(Messages.STEP_TOPIC, b.step("step", Viewer::step))
                 .on(Messages.EDGE_TOPIC, b.step("edge", Viewer::edge))
-                .on(Messages.PICTURED_TOPIC, b.step("pictured", Viewer::pictured));
+                .on(Messages.GO_TOPIC, b.step("go", Viewer::go))
+                .on(Messages.SPAN_TOPIC, b.step("span", Viewer::span))
+                .on(Messages.PICTURED_TOPIC, b.step("pictured", Viewer::pictured))
+                .on(Messages.THUMBNAILED_TOPIC, b.step("thumbnailed", Viewer::thumbnailed));
         ledger = b.build(inbox, "viewer", CAPACITY);
     }
 
@@ -189,7 +217,8 @@ public final class Viewer {
             return want(next, l.pictures().getFirst(), 0, out);
         }
         caption(next, out);
-        return advance(next, out);
+        strip(next, out);
+        return advance(letThumbsGo(next, out), out);
     }
 
     /** On, or back, through the folder, stopping at its ends. */
@@ -211,13 +240,36 @@ public final class Viewer {
         return place == s.at() ? s : want(s, s.pictures().get(place), place, out);
     }
 
-    /** A read landed: hold it, show it if it is wanted, and read whatever is wanted, or ahead, next. */
+    /** A thumbnail clicked: that picture, if it is still in the folder. */
+    static State go(State s, Go m, Out out) {
+        int place = s.pictures().indexOf(m.path());
+        return place < 0 || place == s.at() ? s : want(s, m.path(), place, out);
+    }
+
+    /** The filmstrip shows {@code radius} each side now: say what it shows, and read the thumbnails it lacks. */
+    static State span(State s, Span m, Out out) {
+        int radius = Math.max(0, m.radius());
+        if (radius == s.radius()) {
+            return s;
+        }
+        State next = s.radius(radius);
+        strip(next, out);
+        return advance(next, out);
+    }
+
+    /** A read landed: hold it and its thumbnail, show it if it is wanted, and read whatever is wanted, or ahead, next. */
     static State pictured(State s, Pictured p, Out out) {
         State next = s.reading(Optional.empty());
         if (!next.holds(p.path())) {
             next = hold(next, p, out);
         }
+        next = holdThumb(next, p.thumb(), out);
         return advance(next, out);
+    }
+
+    /** A thumbnail read on its own landed: hold it, and read on. */
+    static State thumbnailed(State s, Thumbnailed t, Out out) {
+        return advance(holdThumb(s.reading(Optional.empty()), t.thumb(), out), out);
     }
 
     // ------------------------------------------------------------------ what the steps share
@@ -226,7 +278,8 @@ public final class Viewer {
     private static State want(State s, Path path, int place, Out out) {
         State next = s.wanting(path, place);
         caption(next, out);
-        return advance(next, out);
+        strip(next, out);
+        return advance(letThumbsGo(next, out), out);
     }
 
     /**
@@ -245,11 +298,77 @@ public final class Viewer {
         }
         State now = next;
         Optional<Path> read = wanted.filter(w -> !now.holds(w)).or(() -> ahead(now));
-        if (read.isEmpty()) {
-            return next;
+        if (read.isPresent()) {
+            out.send(Messages.READ_TOPIC, new Read(read.get()));
+            return next.reading(read);
         }
-        out.send(Messages.READ_TOPIC, new Read(read.get()));
-        return next.reading(read);
+        Optional<Path> thumb = unthumbed(now);
+        if (thumb.isPresent()) {
+            out.send(Messages.READ_THUMB_TOPIC, new ReadThumb(thumb.get()));
+            return next.reading(thumb);
+        }
+        return next;
+    }
+
+    /** The nearest picture in the filmstrip, either side of the one wanted, with no thumbnail held. */
+    private static Optional<Path> unthumbed(State s) {
+        if (s.at() < 0) {
+            return Optional.empty();
+        }
+        for (int d = 1; d <= s.radius(); d++) {
+            for (int i : new int[] {s.at() + d, s.at() - d}) {
+                if (i >= 0 && i < s.pictures().size() && !s.thumbs().contains(s.pictures().get(i))) {
+                    return Optional.of(s.pictures().get(i));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Have the view hold {@code t}. A picture whose thumbnail is held already, read whole since, has the new one held
+     * in its place, the view closing the old: the viewer never touches a feed.
+     */
+    private static State holdThumb(State s, Thumb t, Out out) {
+        out.send(Messages.HOLD_THUMB_TOPIC, new HoldThumb(t));
+        if (s.thumbs().contains(t.path())) {
+            return s;
+        }
+        List<Path> thumbs = new ArrayList<>(s.thumbs());
+        thumbs.add(t.path());
+        return letThumbsGo(s.thumbs(thumbs), out);
+    }
+
+    /**
+     * Let go of every thumbnail further from the picture wanted than the filmstrip shows and {@link #THUMBS_BEYOND}
+     * more, so a step back finds the strip filled, and what is held stays a few dozen however long the folder.
+     */
+    private static State letThumbsGo(State s, Out out) {
+        if (s.at() < 0) {
+            return s;
+        }
+        int keep = s.radius() + THUMBS_BEYOND;
+        List<Path> thumbs = new ArrayList<>();
+        for (Path p : s.thumbs()) {
+            int i = s.pictures().indexOf(p);
+            if (i >= 0 && Math.abs(i - s.at()) <= keep) {
+                thumbs.add(p);
+            } else {
+                out.send(Messages.RELEASE_THUMB_TOPIC, new ReleaseThumb(p));
+            }
+        }
+        return thumbs.size() == s.thumbs().size() ? s : s.thumbs(thumbs);
+    }
+
+    /** What the filmstrip shows: the pictures within the radius of the one wanted, once it has a place. */
+    private static void strip(State s, Out out) {
+        if (s.at() < 0 || s.radius() == 0) {
+            out.send(Messages.FILMSTRIP_TOPIC, new Filmstrip(List.of(), 0));
+            return;
+        }
+        int from = Math.max(0, s.at() - s.radius());
+        int to = Math.min(s.pictures().size(), s.at() + s.radius() + 1);
+        out.send(Messages.FILMSTRIP_TOPIC, new Filmstrip(s.pictures().subList(from, to), s.at() - from));
     }
 
     /** The nearest of the wanted picture's neighbours ({@link #AHEAD}) that is not held, if any. */

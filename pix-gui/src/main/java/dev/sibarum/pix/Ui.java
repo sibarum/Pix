@@ -3,6 +3,7 @@ package dev.sibarum.pix;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
+import dev.vexelray.gui.core.input.CursorShape;
 import dev.vexelray.gui.core.layout.LayoutEnums.AlignItems;
 import dev.vexelray.gui.core.layout.LayoutEnums.Direction;
 import dev.vexelray.gui.core.layout.LayoutEnums.Justify;
@@ -17,7 +18,7 @@ import java.util.List;
 
 /**
  * The window: the framework's title bar, the stage the picture is fitted into with Previous and Next at its sides, and
- * the bar floating over its bottom, or below it with Keep shown (docs/layout.md).
+ * the bar floating over its bottom, or below it with Keep shown: the words, the filmstrip and the tools (docs/layout.md).
  *
  * <h2>Controls in rem, words in dp</h2>
  *
@@ -46,10 +47,12 @@ final class Ui {
     static final Length SIDE_ICON = Length.rem(1.5f);
 
     /** Between the window's edges and the controls along them. */
-    static final Length MARGIN = Length.rem(0.75f);
+    static final float MARGIN_REM = 0.75f;
+    static final Length MARGIN = Length.rem(MARGIN_REM);
 
     /** A tool in the bar: the button, and its icon. */
-    static final Length TOOL = Length.rem(2f);
+    static final float TOOL_REM = 2f;
+    static final Length TOOL = Length.rem(TOOL_REM);
     static final Length TOOL_ICON = Length.rem(1.25f);
 
     /** Between the details: a dot with a space each side, so the gap is part of what is measured. */
@@ -71,6 +74,11 @@ final class Ui {
     /** The details in {@link Details}'s order, and the dot before each but the first. */
     private final Node[] items;
     private final Node[] dots;
+    /** The filmstrip, between the words and the tools, and its cells: each a box, the thumbnail in it, and its name. */
+    private final Node strip;
+    private final Node[] cells;
+    private final Node[] thumbs;
+    private final Node[] cellNames;
 
     Ui(Gui gui, TitleBar titleBar) {
         this.titleBar = titleBar;
@@ -114,6 +122,24 @@ final class Ui {
         }
         Node words = gui.column().width(Length.grow(1f)).gap(LINE_GAP).scroll(false, false).children(name, details);
 
+        cells = new Node[Strip.MOST];
+        thumbs = new Node[Strip.MOST];
+        cellNames = new Node[Strip.MOST];
+        strip = gui.row().width(Length.ZERO).height(Length.rem(Strip.CELL_H)).gap(Length.rem(Strip.GAP))
+                .alignItems(AlignItems.CENTER).clip(true).scroll(false, false).visible(false);
+        gui.landmark(Landmarks.STRIP, strip);
+        for (int i = 0; i < cells.length; i++) {
+            thumbs[i] = gui.box().hitInert(true);
+            cellNames[i] = gui.text("").hitInert(true).visible(false);
+            cells[i] = gui.box().role("button").width(Length.rem(Strip.CELL_W)).height(Length.rem(Strip.CELL_H))
+                    .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
+                    .corner(Length.rem(0.25f)).clip(true).scroll(false, false)
+                    .background(gui.theme().color(Role.WELL)).children(thumbs[i], cellNames[i]);
+            gui.cursor(cells[i], CursorShape.POINTER);
+            gui.landmark(Landmarks.cell(i), cells[i]);
+            strip.append(cells[i]);
+        }
+
         keep = new IconButton(gui, Icon.PIN_UP, "Keep shown").toggle(true).size(TOOL, TOOL_ICON)
                 .tip("Keep shown");
         gui.landmark(Landmarks.KEEP, keep.node());
@@ -122,7 +148,7 @@ final class Ui {
         // whole window under the title bar; unfloated, it takes room of its own below the stage (keep).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words, keep.node());
+                .children(words, strip, keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
@@ -174,6 +200,48 @@ final class Ui {
     /** What the pointer may rest on without the controls fading: the bar, Previous and Next. */
     Node[] controls() {
         return new Node[] {bar, previous.node(), next.node()};
+    }
+
+    /** The bar, whose content width is what the words, the strip and the tools share. */
+    Node bar() {
+        return bar;
+    }
+
+    /** Keep shown's button, which is {@link #TOOL} wide: how the view knows a rem in px. */
+    Node keepNode() {
+        return keep.node();
+    }
+
+    /** The filmstrip's {@code i}th cell, left to right. */
+    Node cell(int i) {
+        return cells[i];
+    }
+
+    /** Show {@code count} cells, the strip {@code widthPercent} of the bar; none hides it. */
+    void strip(int count, float widthPercent) {
+        strip.visible(count > 0).width(Length.percent(widthPercent));
+        for (int i = 0; i < cells.length; i++) {
+            cells[i].visible(i < count);
+        }
+    }
+
+    /**
+     * Cell {@code i}: {@code feed} fitted in it as {@code fit} says and named {@code name}, marked when it is the
+     * picture wanted; with no name, an empty cell past the folder's end, drawn as nothing and never pressed. A name
+     * with no feed is a file that is not a picture: the cell is there, and empty.
+     */
+    void cell(int i, Feed feed, Fit fit, String name, boolean wanted) {
+        Node c = cells[i];
+        boolean there = !name.isEmpty();
+        c.opacity(there ? 1f : 0f).hitInert(!there)
+                .border(Length.rem(wanted ? 0.125f : 0f), wanted ? Role.ACCENT : Role.LINE);
+        cellNames[i].text(name);
+        if (feed != null && fit != null) {
+            thumbs[i].image(feed).width(Length.percent(fit.widthPercent())).height(Length.percent(fit.heightPercent()))
+                    .visible(true);
+        } else {
+            thumbs[i].image((Feed) null).visible(false);
+        }
     }
 
     /** The address Keep shown presses with. */

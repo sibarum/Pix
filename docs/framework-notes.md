@@ -126,3 +126,13 @@ frame's moment, as the picture's zoom is. `Drawn` could set an offset, a stretch
 on what looks like the picture under it, unless it said `hitInert`, which an asked half cannot. **Added upstream**:
 `Drawn.opacity(node, opacity)`, multiplied with the node's own, and a node drawn at nothing by it is passed over by the
 hit test, subtree and all, so the pointer reaches what is behind it, and an ancestor still hears it move.
+
+## FN-11 · A row cannot say "this child gives way first", and a view cannot ask what a rem is 🔬
+
+The filmstrip and the name share the bar, and the strip is to give way first (layout.md). Flex here has grow, but no
+shrink below a basis, no minimum or maximum width, so two children that both want room split it by their grow factors,
+whatever the window. So Pix's view sizes the strip itself: it hears the bar's width, works out the cells that fit in
+half, and sets the strip's width as a percentage of the bar. For that it needs a rem in px, and `Gui` keeps the zoom and
+the density in `Seams`, where an application should not reach; so the view measures the Keep shown button, which is
+two rem wide, and divides. It works, a frame late after a zoom. **Not fixed**: a `minWidth` /
+`maxWidth` (or a shrink factor) would let the layout do it, and a public `Gui.remPx()` would retire the measuring.

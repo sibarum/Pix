@@ -61,7 +61,8 @@ Built: the bar's words (the name cut in the middle, the details going whole), Pr
 and the sizes (controls in rem, words in dp, Ctrl+= / Ctrl+- / Ctrl+0, the window keeping its size). The bar floats
 over the picture, and it and the arrows fade once the pointer has rested two seconds (`Fade`, drawn through
 `Drawn.opacity`, FN-10); they are shown at the start, while the pointer is on one of them, and for a rest after a
-step, so a new name is seen. Keep shown is the pin at the bar's right. Not yet:
+step, so a new name is seen. Keep shown is the pin at the bar's right. The filmstrip is the bar's middle: at most half
+of it, three to fifteen cells, none below three, so it gives way before the name (`Strip`). Not yet:
 
-- **The middle and the tools** come with what they are for: the filmstrip and the transport, Turn, Background,
-  Settings. The ⋯ fold comes with the tools.
+- **The transport and the tools** come with what they are for: the transport in the filmstrip's place for a
+  picture that plays, Turn, Background, Settings. The ⋯ fold comes with the tools.

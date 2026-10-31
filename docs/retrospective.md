@@ -177,3 +177,36 @@ At 1000×640, the bar and the arrows shown after a move, gone after a rest with 
 the faded bar was brought it back, and resting on it kept it; Keep shown moved the bar off the picture (the stage
 608 → 555 px tall, the picture refitted) and kept it through a rest; off again, it floated and faded; a key step showed
 the new name. Not checked live: the pointer leaving the window, which ottermate cannot do, and reduced motion.
+
+## The filmstrip · 2026-10-31
+
+The count: 1 finding (FN-11, no way for a row to say which child gives way first, and no rem in px for a view), not
+fixed upstream; Pix sizes the strip itself.
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-11 | the layout shares a row's room | grow factors only: no minimum, maximum or shrink | the view measures the bar and a button two rem wide, and sets the strip's width as a percentage |
+
+### What changed shape
+- **A thumbnail costs no second decode when its picture is read.** The codec makes every size asked for from one
+  decode, so `ReadPicture` asks for the picture's and the thumbnail's together, and only a cell whose picture is not
+  read ahead gets a read of its own (`ReadThumbnail`), after the picture wanted and its neighbours, one at a time like
+  every read. A step is never queued behind more than one thumbnail.
+- **The view tells the viewer how far the strip reaches** (`Span`), so the thumbnails read are the ones there is room
+  to show, and the viewer lets go of those more than sixteen past either end.
+- **The viewer never touches a feed.** A picture read whole after its thumbnail was read alone sends a second
+  thumbnail; the view puts it in the first one's place and closes the old once nothing draws it, as it does pictures.
+
+### My own mistakes
+- **Alt+F4 through ottermate does not close a background run.** It answered `ok`, the window stayed, and the person
+  found Pix sitting in the notification area and ended it there. Now every live check is `ottermate --launch`, which
+  takes the application down when the script ends, and the process list is checked after.
+- **Two of my scripts expected the wrong picture from a click**: the middle cell is the picture shown, so clicking it
+  does nothing, and cell 1 of nine is three before it. The strip was right both times.
+
+### Checked live
+At 1000×640, nine cells, the picture in the middle and marked, `broken.png` an empty cell and the folder's ends empty;
+a click on the cell after it showed 5 of 7, and one three before showed 2 of 7. At 640 px five cells, at 440 px three,
+and with the controls two steps smaller five again, smaller. Not checked live: a folder long enough for thumbnails to
+be let go, which the viewer's tests cover.
