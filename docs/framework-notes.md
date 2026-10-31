@@ -91,3 +91,12 @@ hears `NodeEvent.POINTER` on the stage to know where the pointer last was; and i
 fine turn waits. A wheel event that also carried the notches (fractional, for a touchpad), the pointer in client
 space and the node's box as `DragEvent` does, and the modifiers, would serve every view that is not a scroller: a
 picture, a map, a 3D camera, a timeline.
+
+## FN-7 · Text cannot follow the system's text size, and the zoom sizes text and controls together 🔬
+
+Pix wants its controls sizeable (Ctrl+= / Ctrl+-) without its words getting too small to read. The stack's one size
+knob is the window's zoom, which scales the root em, and `Metrics.ROOT_EM_PX` is a constant 16, so nothing reads the
+system's text size (Windows' *Accessibility → Text size*). Pix sizes its controls in rem and its text in `dp`, which
+honours display density and not zoom ([layout.md](layout.md)); that keeps text readable, but at one size for everyone.
+A root em read from the system, and a text size that follows it and not the zoom, would serve every application whose
+controls and words want different knobs.
