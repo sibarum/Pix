@@ -100,9 +100,11 @@ final class View {
 
     /**
      * What the asked half draws: the layer in front and how its picture is looked at, the other layer and how a step
-     * threw the one picture in and the other out, and the controls and how far they are shown.
+     * threw the one picture in and the other out, the controls and how far they are shown, and the filmstrip's cells
+     * and how far along a step glides them.
      */
-    record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade) {
+    record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade, List<Node> cells,
+                   Glide glide) {
     }
 
     private final Gui gui;
@@ -189,7 +191,7 @@ final class View {
             });
         }
         this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
-                ui.faded(), Fade.shown(System.nanoTime()));
+                ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE);
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
         gui.hear(gui.root(), NodeEvent.POINTER, p -> {
             if (p.over()) {
@@ -317,7 +319,7 @@ final class View {
         onLayer[front] = feed == null ? null : p;
         shown = p;
         state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
-                toss, state.faded(), state.fade());
+                toss, state.faded(), state.fade(), state.cells(), state.glide());
         closeLetGo();
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
@@ -331,7 +333,8 @@ final class View {
         ui.blank();
         onLayer[0] = null;
         onLayer[1] = null;
-        state = new Drawing(state.picture(), state.leaving(), state.lens(), Toss.NONE, state.faded(), state.fade());
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), Toss.NONE, state.faded(), state.fade(),
+                state.cells(), state.glide());
         closeLetGo();
         say(Details.KIND, "");
         say(Details.BYTES, "");
@@ -363,10 +366,19 @@ final class View {
         wake();
     }
 
+    /**
+     * What the filmstrip shows. A step moves the pictures along, so the cells take their new thumbnails and glide them
+     * from where they were drawn ({@link Glide}); the cells themselves stay where layout puts them.
+     */
     @Subscribe
     public void filmstrip(Filmstrip m) {
+        int shift = Strip.shift(strip.paths(), strip.at(), m.paths(), m.at());
         strip = m;
         paintStrip();
+        float slot = (Strip.CELL_W + Strip.GAP) * remPx;
+        Glide glide = state.glide().shifted(shift, slot, slot * (cells / 2), System.nanoTime());
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
+                state.cells(), glide);
     }
 
     /** A thumbnail to keep; one held already for that picture is put back, and closed once nothing draws it. */
@@ -451,8 +463,13 @@ final class View {
         long wait = f.next(t, reduced);
         long fadeDue = wait == Fade.STILL ? Frame.NEVER : frame.presentNanos() + wait;
         Toss k = s.toss();
+        Glide g = s.glide();
+        float along = reduced ? 0f : g.offset(t);
+        for (Node c : s.cells()) {
+            out.offset(c, along, 0f);
+        }
         if (reduced) {
-            // Nothing thrown: the new picture is simply there.
+            // Nothing thrown or glided: the new picture and thumbnails are simply there.
             out.scale(s.picture(), l.to().zoom());
             out.offset(s.picture(), l.to().x(), l.to().y());
             out.opacity(s.picture(), 1f);
@@ -465,7 +482,7 @@ final class View {
         out.scale(s.leaving(), k.from().zoom());
         out.offset(s.leaving(), k.out(t), k.from().y());
         out.opacity(s.leaving(), k.outOpacity(t));
-        return l.moving(t) || k.moving(t) ? frame.presentNanos() : fadeDue;
+        return l.moving(t) || k.moving(t) || g.moving(t) ? frame.presentNanos() : fadeDue;
     }
 
     /**
@@ -479,7 +496,8 @@ final class View {
     }
 
     private void fade(Fade fade) {
-        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade);
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade,
+                state.cells(), state.glide());
     }
 
     private void say(int detail, String text) {
@@ -513,7 +531,8 @@ final class View {
     }
 
     private void look(Lens lens) {
-        state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade());
+        state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade(),
+                state.cells(), state.glide());
     }
 
     /**

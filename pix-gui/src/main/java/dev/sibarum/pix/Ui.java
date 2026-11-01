@@ -233,6 +233,11 @@ final class Ui {
         return cells[i];
     }
 
+    /** Every cell, shown or not: what a step glides along. */
+    List<Node> cells() {
+        return List.of(cells);
+    }
+
     /** Show {@code count} cells, the strip {@code widthPercent} of the bar; none hides it. */
     void strip(int count, float widthPercent) {
         strip.visible(count > 0).width(Length.percent(widthPercent));

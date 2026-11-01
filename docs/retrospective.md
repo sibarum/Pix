@@ -298,3 +298,21 @@ From `file-types-dark.png` a step on, shot as it landed, showed the old picture 
 from the right; a step back and on again, quickly, kept the harbour picture in sight near the middle, settling there.
 Steps to and from `broken.png` (not a picture) simply replace, by design. Not checked live: reduced motion, and a
 resize mid-throw.
+
+## The filmstrip glides · 2026-11-01
+
+A step glides every thumbnail into its new cell over the throw's 420 ms, out-cubic, as 0.1's filmstrip did: the cells
+stay where layout puts them and what is drawn in them moves, so the strip reads as film pulled through.
+
+### What changed shape
+- **The shift is worked out from the strips, not the folder.** 0.1's strip knew the folder and the index; v0.2's is told
+  only the run it shows (`Filmstrip`), so `Strip.shift` finds a picture on both runs and how far it moved. A jump past
+  the strip's reach (Home, End, a click far off) has no picture on both and does not glide: the cells are new pictures,
+  not the old ones moved. 0.1 glided those from the strip's edge.
+- **Whole cells move, by `Drawn.offset`**, the accent edge with the picture it marks, as 0.1's slots did; hit-testing
+  follows the offset, so a click mid-glide lands on what is seen. No framework change was needed.
+
+### Checked live
+From `file-types-dark.png` a step on, shot as it went: the newly wanted thumbnail, edged, a cell right of the middle and
+easing in, the rest moving with it, and at rest in the middle. One frame mid-glide showed the rightmost thumbnail
+stretched tall; not tracked down. Not checked live: reduced motion, and a step taken mid-glide.

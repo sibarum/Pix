@@ -2,6 +2,9 @@ package dev.sibarum.pix;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class StripTest {
@@ -43,5 +46,15 @@ class StripTest {
         assertEquals(-1, Strip.path(0, 5, 0, 3), "at the folder's start, the left cells are empty");
         assertEquals(2, Strip.path(4, 5, 0, 3));
         assertEquals(-1, Strip.path(4, 5, 2, 3), "and at its end the right ones");
+    }
+
+    @Test
+    void aStepMovesEveryPictureOneCellAndAJumpPastTheStripMovesNone() {
+        List<Path> f = List.of(Path.of("a"), Path.of("b"), Path.of("c"), Path.of("d"), Path.of("e"), Path.of("f"));
+        assertEquals(1, Strip.shift(f.subList(0, 5), 2, f.subList(1, 6), 2), "on: each came from the cell to the right");
+        assertEquals(-1, Strip.shift(f.subList(1, 6), 2, f.subList(0, 5), 2));
+        assertEquals(1, Strip.shift(f.subList(0, 3), 0, f.subList(0, 4), 1), "clipped at the folder's start");
+        assertEquals(0, Strip.shift(f.subList(0, 3), 1, f.subList(0, 3), 1), "a thumbnail read, nothing moved");
+        assertEquals(0, Strip.shift(f.subList(0, 2), 0, f.subList(4, 6), 1), "too far to have moved anything seen");
     }
 }

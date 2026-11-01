@@ -1,5 +1,8 @@
 package dev.sibarum.pix;
 
+import java.nio.file.Path;
+import java.util.List;
+
 /**
  * How many thumbnails the filmstrip shows, and how wide it is: the bar's middle, which gives way first
  * (layout.md, <i>The window</i>). Pure arithmetic on what the view has measured, so it is tested alone, as
@@ -56,5 +59,21 @@ final class Strip {
     static int path(int cell, int cells, int at, int paths) {
         int i = at + cell - cells / 2;
         return i >= 0 && i < paths ? i : -1;
+    }
+
+    /**
+     * How many cells along a picture shown on both strips has moved, from {@code before} (wanted at {@code beforeAt})
+     * to {@code after}: 1 for a step on, whose pictures each came from the cell to the right. Every picture on both
+     * moved alike, both being runs of one folder. Zero when no picture is on both: another folder, or a jump further
+     * than the strip reaches, which is new pictures rather than the old ones moved.
+     */
+    static int shift(List<Path> before, int beforeAt, List<Path> after, int afterAt) {
+        for (int i = 0; i < before.size(); i++) {
+            int j = after.indexOf(before.get(i));
+            if (j >= 0) {
+                return (i - beforeAt) - (j - afterAt);
+            }
+        }
+        return 0;
     }
 }
