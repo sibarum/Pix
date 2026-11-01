@@ -193,12 +193,14 @@ Both buttons now take their own double clicks and do nothing with them; held by 
 Next or Keep shown showed nothing of its own before what it did. Pressed is now the hover fill a press step deeper
 (`Role.at(PRESSED)`), which the framework's colour fade carries in; held by `ButtonTest`, which fails without it.
 
-## FN-17 · The title bar's buttons light up in one frame 🧭
+## FN-17 · The title bar's buttons lit up in one frame 🔬
 
-*Not fixed.* The framework fades every colour a node is given (`WindowMotion`), but the title bar's minimise, maximise
-and close draw their plate and glyph into the button's picture (`TitleBar.Caption`), and a picture's colours are not
-faded: hover and press jump. Either the plate becomes a node of its own whose background fades, with the glyph's ink
-eased the same way, or `PaintMotion` learns pictures.
+*Fixed upstream, 2026-11-01* (vexelray-gui, docs/plans/motion-by-default.md). The framework fades every colour a node
+is given, but the title bar drew its plate and glyph into the button's picture (`TitleBar.Caption`), and a picture's
+colours are not faded. The plate is now a node with a role background, and the glyph is drawn once per state and shown
+by an opacity, which the framework now fades. The same plan made words, images, opacities and `visible()` fade, and
+anything clickable shade itself, by default; Pix's picture layers, thumbnails and cell names say `paintCuts`, since
+the view times those itself (`Toss`, `Glide`, `Shade`).
 
 ## FN-18 · A stage resized is drawn a frame out of step with its picture 🧭
 

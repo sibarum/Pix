@@ -101,8 +101,9 @@ final class Ui {
         gui.zoomSizesWindow(false);
 
         this.gui = gui;
+        // The view throws and crossfades the pictures itself (Toss): the framework leaves their look alone.
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = gui.box().visible(false);
+            layers[i] = gui.box().visible(false).paintCuts(true);
         }
         gui.landmark(Landmarks.PICTURE, layers[0]);
         // Always there, and shown as far as the view shades it (Shade), so it comes and goes gradually.
@@ -154,8 +155,8 @@ final class Ui {
                 .alignItems(AlignItems.CENTER).clip(true).scroll(false, false).visible(false);
         gui.landmark(Landmarks.STRIP, strip);
         for (int i = 0; i < cells.length; i++) {
-            thumbs[i] = gui.box().hitInert(true);
-            cellNames[i] = gui.text("").hitInert(true).visible(false);
+            thumbs[i] = gui.box().hitInert(true).paintCuts(true);   // slid and faded by the view (Glide, Shade)
+            cellNames[i] = gui.text("").hitInert(true).visible(false).paintCuts(true);   // slides with its cell
             cells[i] = gui.box().role("button").width(Length.rem(Strip.CELL_W)).height(Length.rem(Strip.CELL_H))
                     .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                     .corner(Length.rem(0.25f)).clip(true).scroll(false, false)
