@@ -164,18 +164,13 @@ final class View {
 
     /**
      * How far each thing Pix shows and hides itself is shown ({@link Shade}): each cell, then each cell's thumbnail,
-     * the note, the words and the details. The thumbnails drawn at the last painting, so one read since fades up.
+     * and the note. The thumbnails drawn at the last painting, so one read since fades up. The words are left to the
+     * framework, whose own motion already carries a change of them.
      */
     private static final int THUMBS = Strip.MOST;
     private static final int NOTE = 2 * Strip.MOST;
-    private static final int WORDS = NOTE + 1;
-    private static final int DETAILS = WORDS + 1;
-    private final Shade[] shades = new Shade[DETAILS + 1];
+    private final Shade[] shades = new Shade[NOTE + 1];
     private Set<Path> thumbsDrawn = Set.of();
-
-    /** The name last captioned, and whether a detail has said something new since the details were last shown. */
-    private String captioned = "";
-    private boolean detailsNew;
 
     /** Whether the pointer is on each of {@link Ui#controls}, and whether Keep shown is on. */
     private final boolean[] over = new boolean[3];
@@ -212,8 +207,6 @@ final class View {
             shades[THUMBS + i] = Shade.at(ui.thumb(i), 1f);
         }
         shades[NOTE] = Shade.at(ui.noteNode(), 0f);
-        shades[WORDS] = Shade.at(ui.words(), 1f);
-        shades[DETAILS] = Shade.at(ui.details(), 1f);
         this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
                 ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE, List.of(shades));
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
@@ -390,11 +383,6 @@ final class View {
      */
     @Subscribe
     public void caption(Caption m) {
-        if (!m.name().equals(captioned)) {
-            // Another name: the words fade up again, from a little, so a held arrow key still reads them.
-            captioned = m.name();
-            shades[WORDS] = shades[WORDS].from(0.3f, 1f, System.nanoTime());
-        }
         ui.name(m.name());
         if (shown == null || !m.name().equals(String.valueOf(shown.path().getFileName()))) {
             say(Details.KIND, "");
@@ -545,7 +533,6 @@ final class View {
     }
 
     private void say(int detail, String text) {
-        detailsNew |= !text.isEmpty() && !text.equals(said[detail]);
         said[detail] = text;
         ui.detail(detail, text);
     }
@@ -556,10 +543,6 @@ final class View {
             drawn[i] = !said[i].isEmpty();
         }
         ui.shown(drawn);
-        if (detailsNew) {
-            detailsNew = false;
-            shades[DETAILS] = shades[DETAILS].from(0f, 1f, System.nanoTime());
-        }
         shade();
     }
 

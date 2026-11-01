@@ -397,10 +397,6 @@ final class Ui {
         name.textColor(nameState == InteractionState.NORMAL ? ink : Role.ACCENT.at(nameState));
     }
 
-    /** The name and the details under it, which the view fades up when they change. */
-    Node words() {
-        return words;
-    }
 
     /** The name, which opens a picture when clicked. */
     Node nameNode() {

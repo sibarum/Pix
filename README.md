@@ -122,7 +122,7 @@ glides the thumbnails along into their new cells as the picture is thrown in, as
 reduced they are simply there. Whatever can be clicked shows a pointer and lifts under it, and shows a press at once:
 the name turns the accent, a cell takes an edge, the buttons a deeper fill. Nothing Pix shows or hides changes in a
 frame: a picture with no throw (the first, one opened, a file that is not a picture) fades over the one before, and
-a cell, a thumbnail read, the note and new words fade in.
+a cell, a thumbnail read and the note fade in.
 
 The picture has the whole window under the title bar: the bar floats over its bottom, and the bar and the arrows fade
 when the pointer has rested two seconds, coming back as soon as it moves, or a step shows another name. They stay

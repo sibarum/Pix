@@ -333,8 +333,9 @@ shown or hidden, an image or a text swapped.
   moves nothing. The wanted cell is not pressed: no pointer and no hover, since a click there went nowhere.
 - **Previous, Next and Keep shown** were drawn the same pressed as hovered; fixed upstream (FN-16).
 - **`Shade`** eases what Pix shows and hides, through `Drawn.opacity` in the asked half: a cell past the folder's
-  end, a thumbnail read (one that only moved with a step's glide does not fade again), the note, the words when the
-  name changes (from 0.3, so a held arrow key still reads them) and the details when they say something new.
+  end, a thumbnail read (one that only moved with a step's glide does not fade again) and the note. A fade of the
+  words when they changed was tried and taken out: the framework's own motion already carried a change of them, and
+  that was the better one.
 - **A picture with no throw crossfades** (`Toss.crossfade`): a first picture, one opened from elsewhere, a file that
   is not a picture, and a folder with none (`Clear`) fade over the one before, which fades where it was drawn.
 
