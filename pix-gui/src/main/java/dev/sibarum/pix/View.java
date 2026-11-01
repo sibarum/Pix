@@ -39,6 +39,7 @@ import sibarum.tactroller.api.Key;
 import sibarum.tactroller.api.Modifier;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -98,10 +99,10 @@ final class View {
     static final float NOTCH_PX = 48f;
 
     /**
-     * What the asked half draws: the picture's node and how it is looked at, and the controls and how far they are
-     * shown.
+     * What the asked half draws: the layer in front and how its picture is looked at, the other layer and how a step
+     * threw the one picture in and the other out, and the controls and how far they are shown.
      */
-    record Drawing(Node picture, Lens lens, List<Node> faded, Fade fade) {
+    record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade) {
     }
 
     private final Gui gui;
@@ -138,6 +139,13 @@ final class View {
 
     /** The picture shown; null before the first. */
     private Pictured shown;
+
+    /** Which of the two layers is in front, and the picture each draws, null for none. */
+    private int front;
+    private final Pictured[] onLayer = new Pictured[2];
+
+    /** Pictures let go while a layer still drew them, closed once none does ({@link #letGo}). */
+    private final List<Pictured> closing = new ArrayList<>();
 
     /** The stage's size in layout px, as last laid out. */
     private float stageW;
@@ -180,8 +188,8 @@ final class View {
                 }
             });
         }
-        this.state = new Drawing(ui.picture(), Lens.fitted(0f, 0f, 0f, 0f), ui.faded(),
-                Fade.shown(System.nanoTime()));
+        this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
+                ui.faded(), Fade.shown(System.nanoTime()));
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
         gui.hear(gui.root(), NodeEvent.POINTER, p -> {
             if (p.over()) {
@@ -269,21 +277,48 @@ final class View {
     public void hold(Hold m) {
         Pictured was = held.put(m.picture().path(), m.picture());
         if (was != null && was != shown) {
-            close(was);
+            letGo(was);
         }
     }
 
-    /** A picture shown is fitted, in the middle, whatever the one before was zoomed to. */
+    /**
+     * A picture shown is fitted, in the middle, whatever the one before was zoomed to. From a side, and with a picture
+     * before it, it is thrown in on the other layer while that one is flung out from wherever it is drawn now, mid-throw
+     * as well; otherwise it simply replaces it.
+     */
     @Subscribe
     public void show(Show m) {
         Pictured p = held.get(m.path());
         if (p == null) {
             return;
         }
-        shown = p;
+        long now = System.nanoTime();
+        Feed feed = p.feed().orElse(null);
+        Pictured before = onLayer[front];
+        Toss toss = Toss.NONE;
+        if (m.side() != 0 && feed != null && before != null && before != p) {
+            Lens l = state.lens();
+            Toss was = state.toss();
+            Lens.Pose from = new Lens.Pose(l.zoom(now), l.x(now) + was.in(now), l.y(now));
+            toss = Toss.thrown(m.side(), now, stageW, from, was.inOpacity(now));
+            if (p == onLayer[1 - front] && was.moving(now)) {
+                // The picture going out, wanted back: from where it has got to, as far as it is still shown.
+                toss = new Toss(m.side(), now, stageW, was.out(now), was.outOpacity(now), from, was.inOpacity(now));
+            }
+            front = 1 - front;
+        } else {
+            ui.layer(1 - front, null, 0f, 0f);
+            onLayer[1 - front] = null;
+        }
         Fit fit = Fit.of(p.width(), p.height(), stageW, stageH);
-        ui.picture(p.feed().orElse(null), fit.widthPercent(), fit.heightPercent(), p.identity());
-        look(Lens.fitted(fitW(fit), fitH(fit), stageW, stageH));
+        ui.layer(front, feed, fit.widthPercent(), fit.heightPercent());
+        ui.front(front);
+        ui.note(feed == null ? p.identity() : null);
+        onLayer[front] = feed == null ? null : p;
+        shown = p;
+        state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
+                toss, state.faded(), state.fade());
+        closeLetGo();
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
         showSaid();
@@ -294,6 +329,10 @@ final class View {
     public void clear(Clear m) {
         shown = null;
         ui.blank();
+        onLayer[0] = null;
+        onLayer[1] = null;
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), Toss.NONE, state.faded(), state.fade());
+        closeLetGo();
         say(Details.KIND, "");
         say(Details.BYTES, "");
         showSaid();
@@ -304,7 +343,7 @@ final class View {
         Pictured p = held.get(m.path());
         if (p != null && p != shown) {
             held.remove(m.path());
-            close(p);
+            letGo(p);
         }
     }
 
@@ -411,14 +450,22 @@ final class View {
         }
         long wait = f.next(t, reduced);
         long fadeDue = wait == Fade.STILL ? Frame.NEVER : frame.presentNanos() + wait;
+        Toss k = s.toss();
         if (reduced) {
+            // Nothing thrown: the new picture is simply there.
             out.scale(s.picture(), l.to().zoom());
             out.offset(s.picture(), l.to().x(), l.to().y());
+            out.opacity(s.picture(), 1f);
+            out.opacity(s.leaving(), 0f);
             return fadeDue;
         }
         out.scale(s.picture(), l.zoom(t));
-        out.offset(s.picture(), l.x(t), l.y(t));
-        return l.moving(t) ? frame.presentNanos() : fadeDue;
+        out.offset(s.picture(), l.x(t) + k.in(t), l.y(t));
+        out.opacity(s.picture(), k.inOpacity(t));
+        out.scale(s.leaving(), k.from().zoom());
+        out.offset(s.leaving(), k.out(t), k.from().y());
+        out.opacity(s.leaving(), k.outOpacity(t));
+        return l.moving(t) || k.moving(t) ? frame.presentNanos() : fadeDue;
     }
 
     /**
@@ -432,7 +479,7 @@ final class View {
     }
 
     private void fade(Fade fade) {
-        state = new Drawing(state.picture(), state.lens(), state.faded(), fade);
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade);
     }
 
     private void say(int detail, String text) {
@@ -466,7 +513,30 @@ final class View {
     }
 
     private void look(Lens lens) {
-        state = new Drawing(state.picture(), lens, state.faded(), state.fade());
+        state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade());
+    }
+
+    /**
+     * Close {@code p}'s feed, or, while a layer still draws it (the picture flung out by a step), once neither does: a
+     * feed closed under a node that draws it is a texture given back mid-frame.
+     */
+    private void letGo(Pictured p) {
+        if (p == onLayer[0] || p == onLayer[1]) {
+            closing.add(p);
+        } else {
+            close(p);
+        }
+    }
+
+    /** Close what was let go while a layer drew it, now that none does. */
+    private void closeLetGo() {
+        closing.removeIf(p -> {
+            boolean drawn = p == onLayer[0] || p == onLayer[1];
+            if (!drawn) {
+                close(p);
+            }
+            return !drawn;
+        });
     }
 
     private static void close(Pictured p) {
@@ -520,10 +590,15 @@ final class View {
     }
 
     private void refit() {
-        if (shown != null && shown.feed().isPresent()) {
-            Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
-            ui.fit(fit.widthPercent(), fit.heightPercent());
-            look(state.lens().measured(fitW(fit), fitH(fit), stageW, stageH));
+        for (int i = 0; i < onLayer.length; i++) {
+            Pictured p = onLayer[i];
+            if (p != null) {
+                Fit fit = Fit.of(p.width(), p.height(), stageW, stageH);
+                ui.fit(i, fit.widthPercent(), fit.heightPercent());
+                if (i == front) {
+                    look(state.lens().measured(fitW(fit), fitH(fit), stageW, stageH));
+                }
+            }
         }
     }
 }

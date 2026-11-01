@@ -366,7 +366,7 @@ public final class Viewer {
         State next = s;
         Optional<Path> wanted = next.wanted();
         if (wanted.isPresent() && !wanted.equals(next.shown()) && next.holds(wanted.get())) {
-            out.send(Messages.SHOW_TOPIC, new Show(wanted.get()));
+            out.send(Messages.SHOW_TOPIC, new Show(wanted.get(), side(next, next.shown(), wanted.get())));
             next = touched(next.shown(wanted), wanted.get());
         }
         if (next.reading().isPresent()) {
@@ -384,6 +384,17 @@ public final class Viewer {
             return next.reading(thumb);
         }
         return next;
+    }
+
+    /**
+     * Which side {@code to} is from {@code from} in the folder: 1 later, -1 earlier, 0 for none shown before, the same
+     * picture, or either not among the folder's (a picture opened from another, or one shown before its folder is
+     * listed). 0.1's {@code PictureViewer.direction}.
+     */
+    static int side(State s, Optional<Path> from, Path to) {
+        int a = from.map(s.pictures()::indexOf).orElse(-1);
+        int b = s.pictures().indexOf(to);
+        return a < 0 || b < 0 ? 0 : Integer.signum(b - a);
     }
 
     /** The nearest picture in the filmstrip, either side of the one wanted, with no thumbnail held. */

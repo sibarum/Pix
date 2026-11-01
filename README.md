@@ -87,7 +87,7 @@ groups the button with other Java programs, and pinning it pins Java. The native
 
 | Input | Does |
 | --- | --- |
-| → / ← and Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends |
+| → / ← and Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends. The picture is thrown in from the side it is on and the one before flung out the other way; a step back mid-throw brings the one going out back from where it had got to. With motion reduced it is simply there |
 | Home / End | the folder's first picture / its last |
 | The wheel | zoom in (up) or out, about the pointer |
 | Two fingers spread or pinched on the touchpad | zoom in (spread) or out, about the pointer, as far as the fingers go. Nothing else on the touchpad does anything but the wheel the OS makes of two fingers swiping |
@@ -150,6 +150,7 @@ every message is in one file. Read these in this order.
 | `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone. |
 | `Keys.java` | the chords that ask something of the view itself: 0, to fit, and Ctrl+= / Ctrl+- / Ctrl+0, the controls' size. |
 | `Fade.java` | how far the controls are shown, as a value: fading once the pointer has rested, in closed form, drawn by the view's asked half as the lens is. |
+| `Toss.java` | a step's throw, as a value: the new picture in across the stage from its side, the one before out the other way, in closed form, drawn by the view's asked half on two layers, the newest in front. |
 | `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
 | `Ui.java` | the window: the stage, Previous and Next at its sides, and the bar floating over its bottom, or below it with Keep shown. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state; it shows what the view hands it. |
 | `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |

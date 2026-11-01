@@ -14,10 +14,10 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **Look closely, the rest.** The wheel zoom, the drag and 0 are in (`Lens`). Still to come: R / Shift+R and
       Ctrl+drag to turn, and Shift+wheel for a fine turn (FN-6), never a touch gesture, which need a `Drawn.turn`; H
       and V to mirror, a non-uniform scale the canvas cannot draw yet; and 0.1's feel: a drag past the limit against a
-      rubber band that springs back, and a fling that glides. Each is a term in `Lens`'s closed form or a spring solved for its moment.
+      rubber band that springs back, and a fling that glides. Each is a term in `Lens`'s closed form or a spring solved
+      for its moment. `Drawn.turn` also brings back the throw's lean, 7° a whole width out (`Toss`).
 - [ ] **The bar, the rest**: the tools and their ⋯ fold come with the tools ([layout.md](layout.md), *Where it stands*);
       Keep shown remembered between runs comes with Pix's settings.
-- [ ] **A picture thrown in across the window** from the side it came from, the old one flung out.
 - [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
 - [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
 

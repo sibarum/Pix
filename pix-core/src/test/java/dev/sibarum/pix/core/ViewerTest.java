@@ -447,4 +447,18 @@ class ViewerTest {
         tell(Messages.OPEN_TOPIC, new Open(false));
         assertEquals(List.of(PickFile.open(2, empty.toString(), Viewer.PICTURES)), took(PickFile.class));
     }
+
+    @Test
+    void aPictureShownSaysWhichSideOfTheOneBeforeItIs() {
+        tell(Messages.RECALLED_TOPIC, new Recalled(FOLDER, Optional.of(B)));
+        tell(Messages.PICTURED_TOPIC, read(B));
+        assertEquals(List.of(new Show(B, 0)), took(Show.class), "the first picture has nothing to come in beside");
+        tell(Messages.LISTED_TOPIC, new Listed(FOLDER, List.of(A, B, C, D)));
+        answerAll();
+        tell(Messages.STEP_TOPIC, new Step(1));
+        assertEquals(List.of(new Show(C, 1)), took(Show.class), "later in the folder: in from the right");
+        tell(Messages.EDGE_TOPIC, new Edge(false));
+        answerAll();
+        assertEquals(List.of(new Show(A, -1)), took(Show.class), "earlier: in from the left");
+    }
 }

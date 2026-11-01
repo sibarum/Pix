@@ -72,10 +72,14 @@ public final class Messages {
     public record Hold(Pictured picture) {
     }
 
-    /** Show the picture held for this path. It is always held first: both travel from the viewer, in order. */
+    /**
+     * Show the picture held for this path. It is always held first: both travel from the viewer, in order. {@code side}
+     * is where it is from the picture shown before, in the folder: 1 later, -1 earlier, so it is thrown in from that
+     * side; 0 when there was none, or either is not in the folder (a picture opened), and it simply replaces it.
+     */
     public static final Topic<Show> SHOW_TOPIC = Topic.edge(Show.class);
 
-    public record Show(Path path) {
+    public record Show(Path path, int side) {
     }
 
     /**

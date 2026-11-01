@@ -272,3 +272,29 @@ On a maximized window: F11 went full screen at 1920×1200 with no title bar and 
 maximized window with its title bar; two clicks on the stage went full screen again; Next pressed twice quickly
 stepped to 3 of 7 and stayed in the window; Esc in the window closed Pix. Not checked: a window closed while full
 screen opening as the window it was, which is `NativeWindow`'s to keep and was not changed here.
+
+## Thrown-in pictures · 2026-11-01
+
+The count: no findings. The frame contract's asked half drew it with what was there: `Drawn.offset`, `scale` and
+`opacity` on two layers, in closed form.
+
+### What changed shape
+- **The side is the viewer's to say.** 0.1's viewer compared the folder positions itself; now `Show` carries
+  `side`, worked out where the folder is known, and 0 (simply replace) for a first picture, one opened from elsewhere,
+  or one before its folder is listed.
+- **Two layers, the newest in front.** The picture is two floated nodes over each other on the stage, swapped at each
+  throw and put back under Previous and Next; the `picture` landmark follows the one in front. A feed the viewer lets
+  go while the layer flung out still draws it is closed once neither layer does.
+- **No lean yet.** 0.1 leaned each picture up to 7° as it flew; a node cannot be turned by the asked half until
+  `Drawn.turn`, which R / Shift+R need too.
+
+### My own mistakes
+- **A step and a step back, quickly, blanked the stage.** I first did as 0.1 did: whatever is wanted comes in from a
+  whole width off and from nothing. The picture going out, wanted back, was in the middle and nearly whole, and
+  vanished to be thrown in again. It now comes back from where it had got to, as far as it was shown.
+
+### Checked live
+From `file-types-dark.png` a step on, shot as it landed, showed the old picture leaving left and the new one coming in
+from the right; a step back and on again, quickly, kept the harbour picture in sight near the middle, settling there.
+Steps to and from `broken.png` (not a picture) simply replace, by design. Not checked live: reduced motion, and a
+resize mid-throw.

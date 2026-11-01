@@ -64,7 +64,8 @@ final class Ui {
 
     private final TitleBar titleBar;
     private final Node stage;
-    private final Node picture;
+    private final Gui gui;
+    private final Node[] layers = new Node[2];
     private final Node note;
     private final IconButton previous;
     private final IconButton next;
@@ -91,8 +92,11 @@ final class Ui {
         // The zoom sizes the controls, and what they give up is the picture's: the window keeps its size.
         gui.zoomSizesWindow(false);
 
-        picture = gui.box();
-        gui.landmark(Landmarks.PICTURE, picture);
+        this.gui = gui;
+        for (int i = 0; i < layers.length; i++) {
+            layers[i] = gui.box().visible(false);
+        }
+        gui.landmark(Landmarks.PICTURE, layers[0]);
         note = gui.text("").textSize(NAME_TEXT).textColor(gui.theme().color(Role.DIM)).visible(false);
         gui.landmark(Landmarks.NOTE, note);
 
@@ -107,7 +111,7 @@ final class Ui {
                 .width(Length.FILL).height(Length.grow(1f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(picture, note, previousSide, nextSide);
+                .children(layers[0], layers[1], note, previousSide, nextSide);
         gui.landmark(Landmarks.STAGE, stage);
 
         ink = gui.theme().color(Role.INK);
@@ -181,9 +185,12 @@ final class Ui {
         return stage;
     }
 
-    /** The picture's node: laid out fitted, and drawn zoomed and moved by the view's asked half. */
-    Node picture() {
-        return picture;
+    /**
+     * The picture's two layers: one in front, the other the picture before, flung out as a step's new one is thrown
+     * in. Each laid out fitted, and drawn zoomed, moved and faded by the view's asked half.
+     */
+    Node layer(int i) {
+        return layers[i];
     }
 
     /** The row the details are in, whose width is the room they have. */
@@ -279,23 +286,46 @@ final class Ui {
     }
 
     /**
-     * Show {@code feed}, drawn {@code widthPercent} by {@code heightPercent} of the stage and centred in it, or, with no
-     * feed, {@code why} in its place.
+     * Layer {@code i} shows {@code feed}, laid out {@code widthPercent} by {@code heightPercent} of the stage and centred
+     * in it; with none, it shows nothing and holds no feed.
      */
-    void picture(Feed feed, float widthPercent, float heightPercent, String why) {
-        if (feed != null) {
-            picture.image(feed).width(Length.percent(widthPercent)).height(Length.percent(heightPercent))
-                    .visible(true);
-            note.visible(false);
-        } else {
-            picture.image((Feed) null).visible(false);
-            note.text(why).visible(true);
+    void layer(int i, Feed feed, float widthPercent, float heightPercent) {
+        Node n = layers[i];
+        if (feed == null) {
+            n.image((Feed) null).visible(false);
+            return;
         }
+        n.image(feed).visible(true);
+        place(n, widthPercent, heightPercent);
     }
 
-    /** Draw the picture at a new size, the stage having changed under it. */
-    void fit(float widthPercent, float heightPercent) {
-        picture.width(Length.percent(widthPercent)).height(Length.percent(heightPercent));
+    /** Layer {@code i} at a new size, the stage having changed under it. */
+    void fit(int i, float widthPercent, float heightPercent) {
+        place(layers[i], widthPercent, heightPercent);
+    }
+
+    /** Floated, so the two layers can lie over each other, and centred by where it floats. */
+    private static void place(Node n, float widthPercent, float heightPercent) {
+        n.width(Length.percent(widthPercent)).height(Length.percent(heightPercent))
+                .floatAt(Length.percent((100f - widthPercent) / 2f), Length.percent((100f - heightPercent) / 2f));
+    }
+
+    /**
+     * Layer {@code i} in front of the other, the newest picture drawn last, and still under Previous and Next; and the
+     * one the {@code picture} landmark names.
+     */
+    void front(int i) {
+        stage.insert(layers[i], 1);
+        gui.landmark(Landmarks.PICTURE, layers[i]);
+    }
+
+    /** {@code why} said in the picture's place, for a file that is not a picture; or, with null, nothing said. */
+    void note(String why) {
+        if (why == null) {
+            note.visible(false);
+        } else {
+            note.text(why).visible(true);
+        }
     }
 
     /** Full screen, the title bar gone so the picture has the whole display; or the window again, with it. */
@@ -305,8 +335,10 @@ final class Ui {
 
     /** Nothing on the stage: a folder opened with no pictures in it. */
     void blank() {
-        picture.image((Feed) null).visible(false);
-        note.visible(false);
+        for (int i = 0; i < layers.length; i++) {
+            layer(i, null, 0f, 0f);
+        }
+        note(null);
     }
 
     /**
