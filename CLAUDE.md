@@ -1,6 +1,6 @@
-# Working in Pix
+# Working in Rasterware
 
-Pix is a VexelRay desktop application, generated from `vexelray-framework`'s `vexel-desktop` template. It
+Rasterware is a VexelRay desktop application, generated from `vexelray-framework`'s `vexel-desktop` template. It
 is a picture viewer, rebuilt on the 0.2 message model from the template (branch `v0.2`); `docs/TODO.md` lists what
 of Pix 0.1 is still to come back. [README.md](README.md) is the tour: read its *How it is put together* section before
 changing anything, and `Messages.java` before adding a part.

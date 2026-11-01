@@ -1,6 +1,6 @@
 # TODO
 
-Work on **Pix** that is known about and not done. Distinct from
+Work on **Rasterware** that is known about and not done. Distinct from
 [framework-notes.md](framework-notes.md), which is about the framework rather than about this application —
 if the fix belongs upstream, it goes there instead.
 
@@ -17,7 +17,7 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       rubber band that springs back, and a fling that glides. Each is a term in `Lens`'s closed form or a spring solved
       for its moment. `Drawn.turn` also brings back the throw's lean, 7° a whole width out (`Toss`).
 - [ ] **The bar, the rest**: the tools and their ⋯ fold come with the tools ([layout.md](layout.md), *Where it stands*);
-      Keep shown remembered between runs comes with Pix's settings.
+      Keep shown remembered between runs comes with Rasterware's settings.
 - [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
 - [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
 
@@ -35,5 +35,5 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read
       shows as it was until it is let go. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
       compare it. Open can reopen the file shown now, and shows it as it was.
-- [ ] Vexplore's hand-off (`pix <file>`), and one Pix per picture rather than one per hand-off.
-- [ ] Replace the palette anchors in `Look.java` with Pix's own, measured in Oklab.
+- [ ] Vexplore's hand-off (`pix <file>`), and one Rasterware per picture rather than one per hand-off.
+- [ ] Replace the palette anchors in `Look.java` with Rasterware's own, measured in Oklab.

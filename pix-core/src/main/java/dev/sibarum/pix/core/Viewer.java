@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Which picture is wanted, what is read and when, and which pictures are kept: every decision Pix makes, as declared
+ * Which picture is wanted, what is read and when, and which pictures are kept: every decision Rasterware makes, as declared
  * steps on one state.
  *
  * <h2>One read at a time</h2>

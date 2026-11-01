@@ -163,7 +163,7 @@ final class View {
     private boolean pinching;
 
     /**
-     * How far each thing Pix shows and hides itself is shown ({@link Shade}): each cell, then each cell's thumbnail,
+     * How far each thing Rasterware shows and hides itself is shown ({@link Shade}): each cell, then each cell's thumbnail,
      * and the note. The thumbnails drawn at the last painting, so one read since fades up. The words are left to the
      * framework, whose own motion already carries a change of them.
      */
@@ -436,7 +436,7 @@ final class View {
         }
     }
 
-    /** Esc leaves full screen; in the window, it closes Pix, by the route the close button takes. */
+    /** Esc leaves full screen; in the window, it closes Rasterware, by the route the close button takes. */
     @Subscribe
     public void escKey(EscKey k) {
         window.send(full ? WindowCommand.windowed(CloseRequested.MAIN) : WindowCommand.close(CloseRequested.MAIN));

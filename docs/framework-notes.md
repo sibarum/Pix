@@ -1,7 +1,7 @@
 # Framework notes
 
 Findings about VexelRay, vexelray-gui, Kronometer, tactroller and atchung that came out of building
-**Pix** — things the framework does not have, does not document, or does in a way that cost time to
+**Rasterware** — things the framework does not have, does not document, or does in a way that cost time to
 discover.
 
 **Why this file exists.** An application built on a framework is the only place its gaps are visible, and they
@@ -34,7 +34,7 @@ The markers are a filter, not decoration:
 
 ## FN-1 · A decoded picture had no way to the screen 🔬
 
-*Resolved upstream, 2026-10-31.* Pix's whole job is a picture decoded off the GUI thread and drawn on it, and 0.2
+*Resolved upstream, 2026-10-31.* Rasterware's whole job is a picture decoded off the GUI thread and drawn on it, and 0.2
 had no form for that. A job's reply could not carry the codec's `Picture` (a `byte[]`, refused by the processor as
 an array anyone holding can change), and a view could not show one: `Node.image` takes a device texture only
 `GuiApp` can make, the codec's `Textures` hands one back through a `Consumer` (the callback form 0.2 removes), and
@@ -42,7 +42,7 @@ an array anyone holding can change), and a view could not show one: `Node.image`
 a folder of photographs. The answer was already planned (vexelray-gui's `frame-contract.md` D, the feed) and not
 built, so it was built: `Feed` in vexelray-gui-core, `Node.image(Feed)`, `Drawn.show`, and the processor accepting a
 feed as a handle (frame-contract.md step 4 has the shape and why it is device-free). `ReadPicture` now answers with
-the feed it wrote; nothing in Pix works around anything. **What would have saved the time:** a port's first question
+the feed it wrote; nothing in Rasterware works around anything. **What would have saved the time:** a port's first question
 is how its pixels, sound and files reach the screen in 0.2, and nothing asked it until the viewer was being written.
 
 ## FN-2 · An exception that ends the application under automation is not in its log 🔬
@@ -58,7 +58,7 @@ shutdown it starts, and `ottermate` could print the application's last error wit
 ## FN-3 · The template is an editor, so a port starts by deleting it 🔬
 
 Generated, the project is a tabbed Markdown editor: of its 50 files, 30 were the editor's (`Editor`, `Doc`,
-`TextFile`, `Markdown`, eight jobs, `Workspace`, `Buffer`, `Navigator`, their tests), deleted before Pix's first
+`TextFile`, `Markdown`, eight jobs, `Workspace`, `Buffer`, `Navigator`, their tests), deleted before Rasterware's first
 line. What was kept (`Recipes`, `PixApp`, `Pix`, `Look`, the poms, `native-build.cmd`, the icon) is the part every
 application needs, and some of it still described the editor: `Pix.java`'s usage, `PixApp`'s and `Recipes`' javadoc
 (which also called the `View` a `@Component` with a lane of its own, a 0.1 description), and `Look.EMPHASIS`, a
@@ -85,7 +85,7 @@ first repository behind these") needs.
 
 Zooming about the pointer needs three things from a wheel turn: how many notches, where the pointer was, and whether
 Shift was held (0.1 turned the picture with Shift and the wheel). `NodeEvent.WHEEL`'s `WheelEvent(dx, dy)` carries
-only the distance a scroller would move, three em per notch at the turning node's em. So Pix divides by 48 px
+only the distance a scroller would move, three em per notch at the turning node's em. So Rasterware divides by 48 px
 (`View.NOTCH_PX`, three em at 16 px), which zooms more or less per notch as the window's UI zoom changes the em; it
 hears `NodeEvent.POINTER` on the stage to know where the pointer last was; and it cannot tell Shift from none, so the
 fine turn waits. A wheel event that also carried the notches (fractional, for a touchpad), the pointer in client
@@ -94,9 +94,9 @@ picture, a map, a 3D camera, a timeline.
 
 ## FN-7 · Text cannot follow the system's text size, and the zoom sizes text and controls together 🔬
 
-Pix wants its controls sizeable (Ctrl+= / Ctrl+-) without its words getting too small to read. The stack's one size
+Rasterware wants its controls sizeable (Ctrl+= / Ctrl+-) without its words getting too small to read. The stack's one size
 knob is the window's zoom, which scales the root em, and `Metrics.ROOT_EM_PX` is a constant 16, so nothing reads the
-system's text size (Windows' *Accessibility → Text size*). Pix sizes its controls in rem and its text in `dp`, which
+system's text size (Windows' *Accessibility → Text size*). Rasterware sizes its controls in rem and its text in `dp`, which
 honours display density and not zoom ([layout.md](layout.md)); that keeps text readable, but at one size for everyone.
 A root em read from the system, and a text size that follows it and not the zoom, would serve every application whose
 controls and words want different knobs.
@@ -113,10 +113,10 @@ since its spans index the whole text.
 
 ## FN-9 · The window grew and shrank with the zoom, with no way to keep its size 🔬
 
-Pix's Ctrl+- is meant to make the controls smaller so the picture has more room. `GuiWindow` scaled the window's
+Rasterware's Ctrl+- is meant to make the controls smaller so the picture has more room. `GuiWindow` scaled the window's
 client area by every zoom step (`ZoomSizing`), so Ctrl+- three times took a 1180×720 window to 604×369: the controls
 were smaller and the picture had less room than before. Right for a window sized to its content; wrong for one whose
-content is the room left over. **Added upstream**: `Gui.zoomSizesWindow(false)`, which Pix's `Ui` sets.
+content is the room left over. **Added upstream**: `Gui.zoomSizesWindow(false)`, which Rasterware's `Ui` sets.
 
 ## FN-10 · An asked half could move a node but not fade it, and a faded node was still under the pointer 🔬
 
@@ -131,7 +131,7 @@ hit test, subtree and all, so the pointer reaches what is behind it, and an ance
 
 The filmstrip and the name share the bar, and the strip is to give way first (layout.md). Flex here has grow, but no
 shrink below a basis, no minimum or maximum width, so two children that both want room split it by their grow factors,
-whatever the window. So Pix's view sizes the strip itself: it hears the bar's width, works out the cells that fit in
+whatever the window. So Rasterware's view sizes the strip itself: it hears the bar's width, works out the cells that fit in
 half, and sets the strip's width as a percentage of the bar. For that it needs a rem in px, and `Gui` keeps the zoom and
 the density in `Seams`, where an application should not reach; so the view measures the Keep shown button, which is
 two rem wide, and divides. It works, a frame late after a zoom. **Not fixed**: a `minWidth` /
@@ -165,7 +165,7 @@ known sRGB values and read back from `ottermate shot`:
   mips, already showed 188. `fit` now averages in linear light, with `Resample`'s tables. Fine bright detail on dark
   ground (stars, lit windows, text) is where a photograph shows it.
 
-**Not fixed, and not a gamma fault in Pix:** imagelib (imagelib-wrapper, the `image` crate) ignores a PNG's gAMA and
+**Not fixed, and not a gamma fault in Rasterware:** imagelib (imagelib-wrapper, the `image` crate) ignores a PNG's gAMA and
 iCCP and a JPEG's ICC profile, and hands back the stored values as sRGB. A PNG written linear with gAMA 1.0 or a
 linear ICC profile shows dark (1 … 222 for the bars above); a photograph tagged Adobe RGB or Display P3 shows a
 little dull rather than with a wrong curve. Colour management belongs there, in the decoder, so every caller of the
@@ -184,7 +184,7 @@ It reports what the commands did; a window the OS takes out of full screen by it
 
 *Fixed upstream, 2026-10-31* (vexelray-gui-widget). Clicks and double clicks bubble separately, on purpose (a row that
 opens on a double click inside a list that selects on a click). But a `Button` or `IconButton` takes only clicks, so
-pressing Next twice quickly stepped twice and then handed the double click to the stage, which puts Pix full screen.
+pressing Next twice quickly stepped twice and then handed the double click to the stage, which puts Rasterware full screen.
 Both buttons now take their own double clicks and do nothing with them; held by `ButtonTest`, which fails without it.
 
 ## FN-16 · An icon button pressed looked the same as one hovered 🔬
@@ -199,7 +199,7 @@ Next or Keep shown showed nothing of its own before what it did. Pressed is now 
 is given, but the title bar drew its plate and glyph into the button's picture (`TitleBar.Caption`), and a picture's
 colours are not faded. The plate is now a node with a role background, and the glyph is drawn once per state and shown
 by an opacity, which the framework now fades. The same plan made words, images, opacities and `visible()` fade, and
-anything clickable shade itself, by default; Pix's picture layers, thumbnails and cell names say `paintCuts`, since
+anything clickable shade itself, by default; Rasterware's picture layers, thumbnails and cell names say `paintCuts`, since
 the view times those itself (`Toss`, `Glide`, `Shade`).
 
 ## FN-18 · A stage resized is drawn a frame out of step with its picture 🧭

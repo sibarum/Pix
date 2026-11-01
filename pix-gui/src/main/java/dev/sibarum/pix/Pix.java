@@ -43,7 +43,7 @@ public final class Pix {
     static final String APP = "pix";
 
     /** The window's title. */
-    static final String TITLE = "Pix";
+    static final String TITLE = "Rasterware";
 
     /** Window size on a first run, in the engine's logical coordinates. */
     static final int W = 1180;

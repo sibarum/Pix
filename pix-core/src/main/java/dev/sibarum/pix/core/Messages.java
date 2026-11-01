@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Every message Pix's parts send each other: what each one says, and the topic it travels on.
+ * Every message Rasterware's parts send each other: what each one says, and the topic it travels on.
  *
  * <p>Three kinds of part, none holding another. The {@link Viewer} decides which picture is wanted and when it is read;
  * the view, in {@code -gui}, shows it and says what the person pressed; the jobs ({@link Begin}, {@link ListPictures},
@@ -65,7 +65,7 @@ public final class Messages {
 
     /**
      * Keep this picture, read, until told to let it go: the one wanted, or one read ahead. Its feed is already handed
-     * its pixels; with no feed, the file is not a picture Pix can show, and its {@code identity} says why.
+     * its pixels; with no feed, the file is not a picture Rasterware can show, and its {@code identity} says why.
      */
     public static final Topic<Hold> HOLD_TOPIC = Topic.edge(Hold.class);
 

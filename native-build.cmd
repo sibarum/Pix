@@ -1,5 +1,5 @@
 @echo off
-rem Runs mvn inside a Visual Studio developer environment, for Pix's native-image builds.
+rem Runs mvn inside a Visual Studio developer environment, for Rasterware's native-image builds.
 rem
 rem A plain shell has no rc.exe or MSVC link.exe on PATH, and under Git Bash /usr/bin/link.exe (coreutils)
 rem shadows the real linker. This loads vcvars64 (located with vswhere) first, then runs mvn in the current

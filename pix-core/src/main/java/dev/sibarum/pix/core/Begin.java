@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Where Pix starts, on the offload lane: the file or folder the command line named, or the person's Pictures folder,
+ * Where Rasterware starts, on the offload lane: the file or folder the command line named, or the person's Pictures folder,
  * or their home. A job because telling a file from a folder is asking the disk, which a step may not.
  *
  * <pre>

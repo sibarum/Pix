@@ -1,11 +1,11 @@
 # Layout and input
 
-What Pix v0.2's window looks like and what the hands do in it, agreed before the slices that build it (the filmstrip,
+What Rasterware v0.2's window looks like and what the hands do in it, agreed before the slices that build it (the filmstrip,
 the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says where v0.2 departs from it and why.
 
 ## What was wrong with 0.1's bar
 
-0.1's chrome was the suite's `PictureViewer`, and four things in it made Pix cramped:
+0.1's chrome was the suite's `PictureViewer`, and four things in it made Rasterware cramped:
 
 1. **One knob sized everything.** Ctrl+= / Ctrl+- was the window's zoom, which scales the root em, and every tile, gap
    and letter was in rem. So the only way to make the controls smaller made the words smaller with them.
@@ -34,7 +34,7 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
   window's zoom scales.
 - **Text is never zoomed.** Its size is in `dp` (display density, not zoom), so it stays readable however small the
   controls are made. The stack has no reading of the system's text size yet (FN-7); until it has, the text is at one
-  size for every Pix.
+  size for every Rasterware.
 - A control is never smaller than its words need: the bar's height is the larger of its rem height and two lines.
 
 ## Input
@@ -52,7 +52,7 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
 ## Still open
 
 - Whether a sideways two-finger swipe (the wheel's `dx`) does anything.
-- Whether Keep shown is remembered between runs. It is not yet: Pix has no settings of its own (TODO).
+- Whether Keep shown is remembered between runs. It is not yet: Rasterware has no settings of its own (TODO).
 
 ## Where it stands
 
@@ -65,7 +65,7 @@ of it, three to fifteen cells, none below three, so it gives way before the name
 through `NodeEvent.PINCH` (FN-12), at once rather than eased, and the wheel is ignored while a pinch is in flight. The name opens a picture when
 clicked, as Ctrl+O does, and says *Open a picture…* while nothing is shown. Full screen (F11, a double click on the
 stage, Esc back) hides the title bar and leaves the bar floating as before (FN-14). A step throws the picture in from its side on a second layer while the one before is flung out
-(`Toss`), as 0.1 did, without 0.1's lean, and the filmstrip's thumbnails glide a cell along with it (`Glide`). What can be clicked shows a pointer, lifts under it and shows a press at once; what Pix shows and hides fades (`Shade`), and a picture put in another's place without a throw fades over it. Not yet:
+(`Toss`), as 0.1 did, without 0.1's lean, and the filmstrip's thumbnails glide a cell along with it (`Glide`). What can be clicked shows a pointer, lifts under it and shows a press at once; what Rasterware shows and hides fades (`Shade`), and a picture put in another's place without a throw fades over it. Not yet:
 
 - **The transport and the tools** come with what they are for: the transport in the filmstrip's place for a
   picture that plays, Turn, Background, Settings. The ⋯ fold comes with the tools.

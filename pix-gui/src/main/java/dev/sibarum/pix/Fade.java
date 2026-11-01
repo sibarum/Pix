@@ -29,7 +29,7 @@ record Fade(float from, long at, long until) {
     /** What {@link #next} says when nothing will change until the fade is replaced. */
     static final long STILL = Long.MAX_VALUE;
 
-    /** Shown at {@code now}, fading once {@link #REST} has passed: how Pix starts. */
+    /** Shown at {@code now}, fading once {@link #REST} has passed: how Rasterware starts. */
     static Fade shown(long now) {
         return new Fade(1f, now, now + REST);
     }

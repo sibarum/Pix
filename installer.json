@@ -1,6 +1,6 @@
 {
   "id": "pix",
-  "name": "Pix",
+  "name": "Rasterware",
   "publisher": "sibarum",
   "description": "An image viewer: one picture, as large as the window allows, and the rest of its folder a key press away.",
   "version": "0.1.2",
@@ -18,7 +18,7 @@
         "source": "target/pix.exe",
         "icon": "src/main/rc/pix.ico",
         "addToPath": true,
-        "shortcuts": { "desktop": true, "startMenu": true, "label": "Pix" },
+        "shortcuts": { "desktop": true, "startMenu": true, "label": "Rasterware" },
         "fileAssociations": [
           { "extension": ".png", "description": "PNG Image", "contentType": "image/png", "icon": "src/main/rc/file-images.ico" },
           { "extension": ".apng", "description": "Animated PNG Image", "contentType": "image/apng", "icon": "src/main/rc/file-images.ico" },
@@ -81,7 +81,7 @@
         "source": "target-linux/pix",
         "icon": "src/main/rc/pix.ico",
         "addToPath": true,
-        "shortcuts": { "desktop": true, "startMenu": true, "label": "Pix" },
+        "shortcuts": { "desktop": true, "startMenu": true, "label": "Rasterware" },
         "fileAssociations": [
           { "extension": ".png", "description": "PNG Image", "contentType": "image/png", "icon": "src/main/rc/file-images.ico" },
           { "extension": ".apng", "description": "Animated PNG Image", "contentType": "image/apng", "icon": "src/main/rc/file-images.ico" },

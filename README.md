@@ -1,11 +1,11 @@
-# Pix
+# Rasterware
 
 Pictures, one at a time, as large as the window allows, and the rest of the folder a key press away.
 
 A VexelRay desktop application on the 0.2 message model, generated from the `vexel-desktop` template and rebuilt as
 a picture viewer. This branch (`v0.2`) is the port: it starts again from the template rather than from Pix 0.1, and
 the 0.1 viewer's features come back one slice at a time ([docs/TODO.md](docs/TODO.md) lists what is still to come).
-Pix is the first application of vexelray-gui's **feed** (`frame-contract.md` D): a job decodes a picture into a
+Rasterware is the first application of vexelray-gui's **feed** (`frame-contract.md` D): a job decodes a picture into a
 feed, and the feed, not its pixels, is what crosses to the view.
 
 ## Run it
@@ -66,7 +66,7 @@ only the entries that name this program.
 `pix-gui/src/main/rc/pix.ico` is the application's mark, and it is one file read three ways: the window and its
 taskbar button wear it (`@VexelApp(icon = Pix.ICON)`; the pom puts it on the class path), and so does the
 title bar the framework draws; the `.exe` links it (`src/main/rc/pix.rc`), and so Explorer, a shortcut and a
-pinned button show it too. Its source is `pix.svg` beside it, the suite icon canvas's Pix mark.
+pinned button show it too. Its source is `pix.svg` beside it, the suite icon canvas's Rasterware mark.
 
 A second window — a viewer, a settings window — wears the window mark, on the taskbar and in its title bar, with
 nothing to write: declare it in a recipe with `windows.named(...)`, and the framework builds its tree and claims it
@@ -100,14 +100,14 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | Ctrl+O, or a click on the name | open a picture, among the pictures in its folder, through the OS's own dialog starting in the folder open. While nothing is shown the name says *Open a picture…* |
 | Ctrl+Shift+O | open a folder, on its first picture. A folder with none shows nothing and says so |
 | F11, or a double click on the picture | full screen: the picture has the whole display, the title bar goes, and the controls float and fade as before. F11 or a double click again comes back to the window as it was, maximized if it was. Borderless, not a change of display mode, so switching away is instant |
-| Esc | out of full screen; in the window, closes Pix |
+| Esc | out of full screen; in the window, closes Rasterware |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
 file shows its first frame for now. A file that is not a picture, or will not decode, says why in its place. Holding
 an arrow key decodes the picture it stops on and at most one on the way.
 
-While you look, Pix reads ahead: the next picture, then the previous, then the one after next, so a step finds its
+While you look, Rasterware reads ahead: the next picture, then the previous, then the one after next, so a step finds its
 picture waiting. Every picture read is kept, up to 256 MB of pixels, the least recently shown let go first, so going
 back is instant too.
 
@@ -120,7 +120,7 @@ they are read. It takes at most half the bar, as many cells as fit there, from t
 shows fewer and the name keeps its half; smaller controls fit more. A click on one shows that picture. A step
 glides the thumbnails along into their new cells as the picture is thrown in, as film pulled through; with motion
 reduced they are simply there. Whatever can be clicked shows a pointer and lifts under it, and shows a press at once:
-the name turns the accent, a cell takes an edge, the buttons a deeper fill. Nothing Pix shows or hides changes in a
+the name turns the accent, a cell takes an edge, the buttons a deeper fill. Nothing Rasterware shows or hides changes in a
 frame: a picture with no throw (the first, one opened, a file that is not a picture) fades over the one before, and
 a cell, a thumbnail read and the note fade in.
 
@@ -161,7 +161,7 @@ every message is in one file. Read these in this order.
 | `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |
 | `Strip.java` | how many thumbnails the filmstrip shows and how wide it is, from the bar's width and a rem, and which picture each cell is, and how many cells a step moved them. |
 | `Glide.java` | the filmstrip's glide, as a value: at a step every thumbnail starts where it was drawn and eases into its new cell over the throw's time, the cells themselves staying put. |
-| `Shade.java` | how far one node is shown, eased: what Pix shows and hides itself (a cell, a thumbnail read, the note, the words when they change) comes and goes over 150 ms rather than in a frame. |
+| `Shade.java` | how far one node is shown, eased: what Rasterware shows and hides itself (a cell, a thumbnail read, the note, the words when they change) comes and goes over 150 ms rather than in a frame. |
 
 `Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
 clipboard, window memory, the clock, the frame loop with its wakes and its pacing, the dialogs, the command line and
@@ -198,7 +198,7 @@ happened at least once. If the build cannot resolve them, that is why.
 
 ## Automation
 
-Pix can be driven and read from outside, by a script, a macro or an agent, through the framework's two loopback
+Rasterware can be driven and read from outside, by a script, a macro or an agent, through the framework's two loopback
 sockets: **remote control** (the keys, clicks and reads a person has) and **diagnostics** (the flight recorder, the
 log, the Inspector). Both are in every build, the release one too, and both start off.
 

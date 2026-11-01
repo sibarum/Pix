@@ -14,7 +14,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * The pictures in a folder, in the order they are stepped through, on the offload lane. The only place Pix lists a
+ * The pictures in a folder, in the order they are stepped through, on the offload lane. The only place Rasterware lists a
  * folder.
  *
  * <p>By name, ignoring case, with runs of digits compared as numbers, so {@code IMG_9} comes before {@code IMG_10} as it

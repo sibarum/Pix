@@ -110,6 +110,19 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <!-- Splits the version into parsedVersion.majorVersion and the rest, for the version
+                         resource compile-icon-resource builds: its numeric fields take numbers only. -->
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.6.0</version>
+                    <executions>
+                        <execution>
+                            <id>parse-version</id>
+                            <goals><goal>parse-version</goal></goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>org.graalvm.buildtools</groupId>
                     <artifactId>native-maven-plugin</artifactId>
                     <version>0.10.6</version>
@@ -137,8 +150,9 @@
                         </buildArgs>
                     </configuration>
                 </plugin>
-                <!-- The executable's icon: a resource linked into the program, so it has to exist as a compiled .res
-                     before link time. rc.exe is the Windows SDK's resource compiler and must be on PATH, as it is in a
+                <!-- The executable's icon and version resource: linked into the program, so they have to exist as a
+                     compiled .res before link time. The defines carry the version and the image's file name into
+                     pix.rc. rc.exe is the Windows SDK's resource compiler and must be on PATH, as it is in a
                      Visual Studio developer prompt (which the native build already needs for link.exe).
                      native-build.cmd makes one and runs mvn in it, so it is looked for first: without it the failure
                      would be exec's 'not recognized', which names neither the cause nor the fix. -->
@@ -157,6 +171,11 @@
                                     <fail unless="rc.exe.found" message="rc.exe, the Windows SDK's resource compiler (for the icon), is not on PATH, and neither is the MSVC link.exe that native-image needs: they are only there in a Visual Studio developer prompt. Run the native build through native-build.cmd, which loads that environment and then runs mvn with its arguments, e.g. native-build.cmd -Pnative package -DskipTests (./native-build.cmd from Git Bash)."/>
                                     <exec executable="rc.exe" searchpath="true" failonerror="true">
                                         <arg value="/nologo"/>
+                                        <arg value="/dVI_VERSION=${project.version}"/>
+                                        <arg value="/dVI_MAJOR=${parsedVersion.majorVersion}"/>
+                                        <arg value="/dVI_MINOR=${parsedVersion.minorVersion}"/>
+                                        <arg value="/dVI_PATCH=${parsedVersion.incrementalVersion}"/>
+                                        <arg value="/dVI_IMAGE=${native.imageName}.exe"/>
                                         <arg value="/fo"/>
                                         <arg file="${project.build.directory}/pix.res"/>
                                         <arg file="${project.basedir}/src/main/rc/pix.rc"/>
@@ -267,6 +286,10 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                    </plugin>
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
                     </plugin>
@@ -290,6 +313,10 @@
             </properties>
             <build>
                 <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>

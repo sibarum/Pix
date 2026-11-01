@@ -20,7 +20,7 @@ final class Landmarks {
     /** The picture. */
     static final String PICTURE = "picture";
 
-    /** What is said in the picture's place when a file is not a picture Pix can show. */
+    /** What is said in the picture's place when a file is not a picture Rasterware can show. */
     static final String NOTE = "note";
 
     /** The buttons at the stage's sides. */

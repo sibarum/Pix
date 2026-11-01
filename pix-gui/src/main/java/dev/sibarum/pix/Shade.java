@@ -3,7 +3,7 @@ package dev.sibarum.pix;
 import dev.vexelray.gui.core.Node;
 
 /**
- * How far one node is shown, eased: what Pix shows and hides itself (a cell, a thumbnail read, the note, the words when
+ * How far one node is shown, eased: what Rasterware shows and hides itself (a cell, a thumbnail read, the note, the words when
  * they change) comes and goes over {@link #LENGTH} rather than in a frame. The framework already fades a colour and a
  * node added or removed (its {@code WindowMotion}); an opacity or an image set by the application is the
  * application's to ease. A value, read by the view's asked half at each frame's moment, as the {@link Fade} is.

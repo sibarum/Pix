@@ -25,7 +25,7 @@ import java.util.List;
  * <h2>Controls in rem, words in dp</h2>
  *
  * <p>The window's zoom (Ctrl+= / Ctrl+-) scales rem and not dp. So everything that is a control — the buttons, the
- * bar's padding, the room around them — is in rem, and every word Pix writes is in dp: making the controls smaller
+ * bar's padding, the room around them — is in rem, and every word Rasterware writes is in dp: making the controls smaller
  * never makes the name too small to read. This is the framework's rule turned round on purpose (its own is type in rem,
  * gutters in dp), because what the zoom is for here is room for the picture, not reading.
  *
