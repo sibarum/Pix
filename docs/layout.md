@@ -52,7 +52,6 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
 ## Still open
 
 - Whether a sideways two-finger swipe (the wheel's `dx`) does anything.
-- Whether a click on the name still opens a picture (0.1's Open).
 - Whether Keep shown is remembered between runs. It is not yet: Pix has no settings of its own (TODO).
 
 ## Where it stands
@@ -63,7 +62,8 @@ over the picture, and it and the arrows fade once the pointer has rested two sec
 `Drawn.opacity`, FN-10); they are shown at the start, while the pointer is on one of them, and for a rest after a
 step, so a new name is seen. Keep shown is the pin at the bar's right. The filmstrip is the bar's middle: at most half
 of it, three to fifteen cells, none below three, so it gives way before the name (`Strip`). Pinch zooms about the pointer
-through `NodeEvent.PINCH` (FN-12), at once rather than eased, and the wheel is ignored while a pinch is in flight. Not yet:
+through `NodeEvent.PINCH` (FN-12), at once rather than eased, and the wheel is ignored while a pinch is in flight. The name opens a picture when
+clicked, as Ctrl+O does, and says *Open a picture…* while nothing is shown. Not yet:
 
 - **The transport and the tools** come with what they are for: the transport in the filmstrip's place for a
   picture that plays, Turn, Background, Settings. The ⋯ fold comes with the tools.

@@ -52,6 +52,15 @@ public final class Messages {
     public record Span(int radius) {
     }
 
+    /**
+     * Ask for a picture to open, among the pictures in its folder, or, {@code folder}, a folder to open on its first:
+     * Ctrl+O or a click on the name, and Ctrl+Shift+O. The viewer asks the OS's own dialog, starting in the folder open.
+     */
+    public static final Topic<Open> OPEN_TOPIC = Topic.edge(Open.class);
+
+    public record Open(boolean folder) {
+    }
+
     // ------------------------------------------------------------------ the viewer tells the view
 
     /**
@@ -67,6 +76,15 @@ public final class Messages {
     public static final Topic<Show> SHOW_TOPIC = Topic.edge(Show.class);
 
     public record Show(Path path) {
+    }
+
+    /**
+     * Show nothing: a folder opened that has no pictures, so the picture from the one before is not left on the stage
+     * as if it were there.
+     */
+    public static final Topic<Clear> CLEAR_TOPIC = Topic.edge(Clear.class);
+
+    public record Clear() {
     }
 
     /** Let go of the picture held for this path, closing its feed. Never the one shown. */

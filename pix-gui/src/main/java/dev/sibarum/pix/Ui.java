@@ -1,5 +1,6 @@
 package dev.sibarum.pix;
 
+import dev.vexelray.canvas.Color;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
@@ -36,6 +37,9 @@ final class Ui {
     /** The name, and what is said in a picture's place. */
     static final Length NAME_TEXT = Length.dp(14f);
 
+    /** What the name says while nothing is wanted: a click on it opens one. */
+    static final String OPEN_A_PICTURE = "Open a picture…";
+
     /** The details under the name. */
     static final Length DETAIL_TEXT = Length.dp(12f);
 
@@ -70,6 +74,8 @@ final class Ui {
     private final Node bar;
     private final IconButton keep;
     private final Node name;
+    private final Color ink;
+    private final Color dim;
     private final Node details;
     /** The details in {@link Details}'s order, and the dot before each but the first. */
     private final Node[] items;
@@ -104,9 +110,12 @@ final class Ui {
                 .children(picture, note, previousSide, nextSide);
         gui.landmark(Landmarks.STAGE, stage);
 
-        name = gui.text("").wordWrap(false).ellipsis(Ellipsis.MIDDLE).width(Length.FILL)
-                .textSize(NAME_TEXT).textColor(gui.theme().color(Role.INK));
+        ink = gui.theme().color(Role.INK);
+        dim = gui.theme().color(Role.DIM);
+        name = gui.text(OPEN_A_PICTURE).role("button").wordWrap(false).ellipsis(Ellipsis.MIDDLE).width(Length.FILL)
+                .textSize(NAME_TEXT).textColor(dim);
         gui.landmark(Landmarks.BAR_NAME, name);
+        gui.cursor(name, CursorShape.POINTER);
         items = new Node[Details.COUNT];
         dots = new Node[Details.COUNT];
         String[] landmarks = {Landmarks.BAR_KIND, Landmarks.BAR_BYTES, Landmarks.BAR_PLACE};
@@ -289,10 +298,24 @@ final class Ui {
         picture.width(Length.percent(widthPercent)).height(Length.percent(heightPercent));
     }
 
-    /** The picture's name in the title bar and the bar. */
+    /** Nothing on the stage: a folder opened with no pictures in it. */
+    void blank() {
+        picture.image((Feed) null).visible(false);
+        note.visible(false);
+    }
+
+    /**
+     * The picture's name in the title bar and the bar; with none, the bar asks for one, since a click on the name
+     * opens a picture.
+     */
     void name(String name) {
         titleBar.title(name.isEmpty() ? Pix.TITLE : name + " — " + Pix.TITLE);
-        this.name.text(name);
+        this.name.text(name.isEmpty() ? OPEN_A_PICTURE : name).textColor(name.isEmpty() ? dim : ink);
+    }
+
+    /** The name, which opens a picture when clicked. */
+    Node nameNode() {
+        return name;
     }
 
     /** What the {@code i}th detail says. */

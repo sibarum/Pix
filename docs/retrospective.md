@@ -228,3 +228,24 @@ picture zoomed in about the pointer; pinched 0.4× it came back to fitted, and 0
 a real Windows touchpad, which may also send the pinch as Ctrl+wheel. The view ignores the wheel while a pinch is in
 flight for that, but a wheel arriving just after the pinch ends would still zoom; the pretend touchpad sends no wheel,
 so whether that happens needs a real pad.
+
+## Open · 2026-10-31
+
+The count: no findings. The framework's `PickFile` / `Picked` did what its docs say: the viewer, on the logic lane,
+publishes a `PickFile`, the processor wires it to the framework's dialogs, and the answer comes back by id.
+
+### What changed shape
+- **The viewer asks for the dialog, not the view.** 0.1's `Opener` held `Dialogs` and called it from the view; now
+  Ctrl+O, Ctrl+Shift+O and a click on the name are one `Open` message, and the viewer sends the `PickFile`, keeps its
+  id while it is up (a second Ctrl+O is ignored) and takes the path picked as it takes the command line's: a picture
+  read while its folder is listed, a folder on its first picture. Telling the two apart needs no disk, since the
+  viewer knows which dialog it asked for.
+- **A folder with no pictures shows nothing** (`Clear`), rather than the picture from the folder before under
+  *no pictures here*.
+- **The name says *Open a picture…*** while nothing is wanted, dim, as 0.1's did.
+
+### Checked live
+Started on an empty folder: the name reads *Open a picture…* and is a button in the tree, over *no pictures here*, and
+the title is *Pix*. Not checked live: the dialogs themselves. ottermate cannot see or press a native picker, and one
+opened from a background run would come up on the desk of the person working there, so Ctrl+O was not pressed. The
+viewer's tests cover asking, cancelling, a picture picked, a folder picked and an empty one.

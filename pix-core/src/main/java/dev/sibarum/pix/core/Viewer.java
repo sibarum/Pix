@@ -1,6 +1,7 @@
 package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Caption;
+import dev.sibarum.pix.core.Messages.Clear;
 import dev.sibarum.pix.core.Messages.Edge;
 import dev.sibarum.pix.core.Messages.Filmstrip;
 import dev.sibarum.pix.core.Messages.Go;
@@ -8,6 +9,7 @@ import dev.sibarum.pix.core.Messages.HoldThumb;
 import dev.sibarum.pix.core.Messages.Hold;
 import dev.sibarum.pix.core.Messages.ListFolder;
 import dev.sibarum.pix.core.Messages.Listed;
+import dev.sibarum.pix.core.Messages.Open;
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Read;
 import dev.sibarum.pix.core.Messages.ReadThumb;
@@ -20,9 +22,12 @@ import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.sibarum.pix.core.Messages.Thumbnailed;
+import dev.vexelray.codec.image.Pictures;
 import dev.vexelray.framework.api.Component;
 import dev.vexelray.framework.api.Hears;
 import dev.vexelray.framework.api.Publishes;
+import dev.vexelray.framework.core.PickFile;
+import dev.vexelray.framework.core.Picked;
 import dev.vexelray.framework.core.WindowOpened;
 import sibarum.atchung.Inbox;
 import sibarum.atchung.Ledger;
@@ -63,12 +68,19 @@ import java.util.Optional;
  * <p>{@code pix <file>} shows the file before its folder has been read: the read and the listing go out together, and
  * whichever lands first does its part. Until the listing lands, the caption says the folder is being read, and nothing
  * is read ahead, since there are no neighbours yet.
+ *
+ * <h2>Opened the same way</h2>
+ *
+ * <p>Ctrl+O and Ctrl+Shift+O ({@link Open}) ask the framework for the OS's dialog ({@link PickFile}), and what it
+ * answers ({@link Picked}) is taken as the command line's place is: a picture shown before its folder is listed, a
+ * folder on its first picture. The picture from before stays until the new one is shown; a folder with none is shown
+ * as nothing ({@link Clear}). What was held from the folder before is let go as the budget needs the room.
  */
 @Component
-@Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Go.class, Span.class,
-        Pictured.class, Thumbnailed.class})
-@Publishes({Recall.class, ListFolder.class, Read.class, ReadThumb.class, Hold.class, Show.class, Release.class,
-        HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class})
+@Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Go.class, Span.class, Open.class,
+        Picked.class, Pictured.class, Thumbnailed.class})
+@Publishes({Recall.class, ListFolder.class, Read.class, ReadThumb.class, PickFile.class, Hold.class, Show.class,
+        Clear.class, Release.class, HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class})
 public final class Viewer {
 
     static final int CAPACITY = 64;
@@ -92,6 +104,13 @@ public final class Viewer {
     record Held(Path path, long bytes) {
     }
 
+    /** A dialog asked for: its id, and whether it is for a folder rather than a picture. */
+    record Picking(long id, boolean folder) {
+    }
+
+    /** What the open dialog offers: the files a folder is listed for. */
+    static final List<PickFile.Filter> PICTURES = List.of(new PickFile.Filter("Pictures", Pictures.extensions()));
+
     /**
      * Everything the viewer knows, in one value.
      *
@@ -105,9 +124,12 @@ public final class Viewer {
      * @param held     the pictures the view holds, least recently shown first
      * @param radius   how many pictures the filmstrip shows each side of the one wanted ({@link Span})
      * @param thumbs   the thumbnails the view holds
+     * @param picks    the last dialog id given out
+     * @param picking  the dialog asked for and not yet answered
      */
     record State(Optional<Path> folder, List<Path> pictures, boolean listed, int at, Optional<Path> wanted,
-                 Optional<Path> reading, Optional<Path> shown, List<Held> held, int radius, List<Path> thumbs) {
+                 Optional<Path> reading, Optional<Path> shown, List<Held> held, int radius, List<Path> thumbs,
+                 long picks, Optional<Picking> picking) {
 
         State {
             pictures = List.copyOf(pictures);
@@ -117,40 +139,52 @@ public final class Viewer {
 
         static State initial() {
             return new State(Optional.empty(), List.of(), false, -1, Optional.empty(), Optional.empty(),
-                    Optional.empty(), List.of(), 0, List.of());
+                    Optional.empty(), List.of(), 0, List.of(), 0L, Optional.empty());
         }
 
+        /** In a folder not listed yet, wanting nothing in it so far. */
         State inFolder(Path value) {
-            return new State(Optional.of(value), List.of(), false, -1, wanted, reading, shown, held, radius, thumbs);
+            return new State(Optional.of(value), List.of(), false, -1, Optional.empty(), reading, shown, held, radius,
+                    thumbs, picks, picking);
         }
 
         State listed(List<Path> value, int place) {
-            return new State(folder, value, true, place, wanted, reading, shown, held, radius, thumbs);
+            return new State(folder, value, true, place, wanted, reading, shown, held, radius, thumbs, picks, picking);
         }
 
         State wanting(Path value, int place) {
             return new State(folder, pictures, listed, place, Optional.of(value), reading, shown, held, radius,
-                    thumbs);
+                    thumbs, picks, picking);
         }
 
         State reading(Optional<Path> value) {
-            return new State(folder, pictures, listed, at, wanted, value, shown, held, radius, thumbs);
+            return new State(folder, pictures, listed, at, wanted, value, shown, held, radius, thumbs, picks, picking);
         }
 
-        State shown(Path value) {
-            return new State(folder, pictures, listed, at, wanted, reading, Optional.of(value), held, radius, thumbs);
+        State shown(Optional<Path> value) {
+            return new State(folder, pictures, listed, at, wanted, reading, value, held, radius, thumbs, picks,
+                    picking);
         }
 
         State held(List<Held> value) {
-            return new State(folder, pictures, listed, at, wanted, reading, shown, value, radius, thumbs);
+            return new State(folder, pictures, listed, at, wanted, reading, shown, value, radius, thumbs, picks,
+                    picking);
         }
 
         State radius(int value) {
-            return new State(folder, pictures, listed, at, wanted, reading, shown, held, value, thumbs);
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, value, thumbs, picks,
+                    picking);
         }
 
         State thumbs(List<Path> value) {
-            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, value);
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, value, picks,
+                    picking);
+        }
+
+        /** Asking for a dialog with the next id, or, with none, no longer asking. */
+        State picking(Optional<Picking> value) {
+            long ids = value.map(Picking::id).orElse(picks);
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, thumbs, ids, value);
         }
 
         boolean holds(Path p) {
@@ -173,6 +207,8 @@ public final class Viewer {
                 .on(Messages.EDGE_TOPIC, b.step("edge", Viewer::edge))
                 .on(Messages.GO_TOPIC, b.step("go", Viewer::go))
                 .on(Messages.SPAN_TOPIC, b.step("span", Viewer::span))
+                .on(Messages.OPEN_TOPIC, b.step("open", Viewer::open))
+                .on(Picked.TOPIC, b.step("picked", Viewer::picked))
                 .on(Messages.PICTURED_TOPIC, b.step("pictured", Viewer::pictured))
                 .on(Messages.THUMBNAILED_TOPIC, b.step("thumbnailed", Viewer::thumbnailed));
         ledger = b.build(inbox, "viewer", CAPACITY);
@@ -216,6 +252,10 @@ public final class Viewer {
         if (next.wanted().isEmpty() && !l.pictures().isEmpty()) {
             return want(next, l.pictures().getFirst(), 0, out);
         }
+        if (next.wanted().isEmpty() && next.shown().isPresent()) {
+            out.send(Messages.CLEAR_TOPIC, new Clear());
+            next = next.shown(Optional.empty());
+        }
         caption(next, out);
         strip(next, out);
         return advance(letThumbsGo(next, out), out);
@@ -257,6 +297,42 @@ public final class Viewer {
         return advance(next, out);
     }
 
+    /**
+     * Ask the OS for a picture, or a folder, starting in the folder open. One dialog at a time: a second Ctrl+O while
+     * one is up is ignored.
+     */
+    static State open(State s, Open m, Out out) {
+        if (s.picking().isPresent()) {
+            return s;
+        }
+        Picking p = new Picking(s.picks() + 1, m.folder());
+        String start = s.folder().map(Path::toString).orElse("");
+        out.send(PickFile.TOPIC, p.folder() ? PickFile.folder(p.id(), start) : PickFile.open(p.id(), start, PICTURES));
+        return s.picking(Optional.of(p));
+    }
+
+    /**
+     * The dialog answered: a picture picked is wanted at once and its folder listed, a folder picked is listed and
+     * opened on its first, just as when the command line names them ({@link #recalled}). Cancelled, nothing changes.
+     */
+    static State picked(State s, Picked m, Out out) {
+        Optional<Picking> asked = s.picking().filter(p -> p.id() == m.id());
+        if (asked.isEmpty()) {
+            return s;
+        }
+        State next = s.picking(Optional.empty());
+        Optional<Path> path = m.isCancelled() ? Optional.empty() : Begin.path(m.path());
+        if (path.isEmpty()) {
+            return next;
+        }
+        Path p = path.get();
+        Path parent = p.getParent();
+        if (asked.get().folder() || parent == null) {
+            return recalled(next, new Recalled(p, Optional.empty()), out);
+        }
+        return recalled(next, new Recalled(parent, Optional.of(p)), out);
+    }
+
     /** A read landed: hold it and its thumbnail, show it if it is wanted, and read whatever is wanted, or ahead, next. */
     static State pictured(State s, Pictured p, Out out) {
         State next = s.reading(Optional.empty());
@@ -291,7 +367,7 @@ public final class Viewer {
         Optional<Path> wanted = next.wanted();
         if (wanted.isPresent() && !wanted.equals(next.shown()) && next.holds(wanted.get())) {
             out.send(Messages.SHOW_TOPIC, new Show(wanted.get()));
-            next = touched(next.shown(wanted.get()), wanted.get());
+            next = touched(next.shown(wanted), wanted.get());
         }
         if (next.reading().isPresent()) {
             return next;

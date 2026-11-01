@@ -3,11 +3,13 @@ package dev.sibarum.pix;
 import dev.sibarum.pix.Keys.FitKey;
 import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
+import dev.sibarum.pix.core.Messages.Clear;
 import dev.sibarum.pix.core.Messages.Edge;
 import dev.sibarum.pix.core.Messages.Filmstrip;
 import dev.sibarum.pix.core.Messages.Go;
 import dev.sibarum.pix.core.Messages.Hold;
 import dev.sibarum.pix.core.Messages.HoldThumb;
+import dev.sibarum.pix.core.Messages.Open;
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Release;
 import dev.sibarum.pix.core.Messages.ReleaseThumb;
@@ -44,8 +46,8 @@ import java.util.Map;
  * <h2>It decides nothing about the folder</h2>
  *
  * <p>Which picture is wanted, which are read and which kept is the {@code Viewer}'s. This shows what it is told
- * ({@link Show}, {@link Caption}) and turns keys into messages ({@link Step}, {@link Edge}), declared once as chords:
- * nothing of the application runs at a key press.
+ * ({@link Show}, {@link Caption}) and turns keys into messages ({@link Step}, {@link Edge}, {@link Open}), declared
+ * once as chords: nothing of the application runs at a key press. Even a dialog is the viewer's to ask for.
  *
  * <h2>It holds the pictures</h2>
  *
@@ -144,7 +146,7 @@ final class View {
     private final boolean[] over = new boolean[3];
     private boolean kept;
 
-    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span,
+    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span, Sender<Open> open,
          Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey) {
         this.gui = gui;
         this.ui = ui;
@@ -217,6 +219,9 @@ final class View {
         gui.shortcut(Shortcut.of(Key.PAGE_UP), step, new Step(-1));
         gui.shortcut(Shortcut.of(Key.HOME), edge, new Edge(false));
         gui.shortcut(Shortcut.of(Key.END), edge, new Edge(true));
+        gui.shortcut(Shortcut.of(Key.O, Modifier.CONTROL), open, new Open(false));
+        gui.shortcut(Shortcut.of(Key.O, Modifier.CONTROL, Modifier.SHIFT), open, new Open(true));
+        gui.hear(ui.nameNode(), NodeEvent.CLICK, c -> open.send(new Open(false)));
         gui.shortcut(Shortcut.of(Key.DIGIT_0), fitKey, new FitKey());
         gui.shortcut(Shortcut.of(Key.EQUAL, Modifier.CONTROL), zoomKey, new ZoomKey(1));
         gui.shortcut(Shortcut.of(Key.MINUS, Modifier.CONTROL), zoomKey, new ZoomKey(-1));
@@ -267,6 +272,16 @@ final class View {
         look(Lens.fitted(fitW(fit), fitH(fit), stageW, stageH));
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
+        showSaid();
+    }
+
+    /** Nothing shown: a folder opened with no pictures. The picture from before stays held until it is released. */
+    @Subscribe
+    public void clear(Clear m) {
+        shown = null;
+        ui.blank();
+        say(Details.KIND, "");
+        say(Details.BYTES, "");
         showSaid();
     }
 

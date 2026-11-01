@@ -1,6 +1,7 @@
 package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Caption;
+import dev.sibarum.pix.core.Messages.Clear;
 import dev.sibarum.pix.core.Messages.Edge;
 import dev.sibarum.pix.core.Messages.Filmstrip;
 import dev.sibarum.pix.core.Messages.Go;
@@ -8,6 +9,7 @@ import dev.sibarum.pix.core.Messages.HoldThumb;
 import dev.sibarum.pix.core.Messages.Hold;
 import dev.sibarum.pix.core.Messages.ListFolder;
 import dev.sibarum.pix.core.Messages.Listed;
+import dev.sibarum.pix.core.Messages.Open;
 import dev.sibarum.pix.core.Messages.Pictured;
 import dev.sibarum.pix.core.Messages.Read;
 import dev.sibarum.pix.core.Messages.ReadThumb;
@@ -20,6 +22,8 @@ import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.sibarum.pix.core.Messages.Thumbnailed;
+import dev.vexelray.framework.core.PickFile;
+import dev.vexelray.framework.core.Picked;
 import dev.vexelray.framework.core.WindowOpened;
 import dev.vexelray.gui.core.Feed;
 import org.junit.jupiter.api.AfterEach;
@@ -70,7 +74,7 @@ class ViewerTest {
         for (Topic<?> t : List.of(Messages.RECALL_TOPIC, Messages.LIST_FOLDER_TOPIC, Messages.READ_TOPIC,
                 Messages.HOLD_TOPIC, Messages.SHOW_TOPIC, Messages.RELEASE_TOPIC, Messages.CAPTION_TOPIC,
                 Messages.READ_THUMB_TOPIC, Messages.HOLD_THUMB_TOPIC, Messages.RELEASE_THUMB_TOPIC,
-                Messages.FILMSTRIP_TOPIC)) {
+                Messages.FILMSTRIP_TOPIC, Messages.CLEAR_TOPIC, PickFile.TOPIC)) {
             listen(heard, t);
         }
     }
@@ -377,5 +381,70 @@ class ViewerTest {
         tell(Messages.EDGE_TOPIC, new Edge(true));
         List<Path> gone = took(ReleaseThumb.class).stream().map(ReleaseThumb::path).toList();
         assertEquals(List.of(p.get(0), p.get(1), p.get(2)), gone, "39 away, past the strip and the 16 kept beyond it");
+    }
+
+    @Test
+    void openAsksForAPictureOrAFolderStartingInTheFolderOpenAndOneAtATime() {
+        startedOn(A);
+        tell(Messages.OPEN_TOPIC, new Open(false));
+        assertEquals(List.of(PickFile.open(1, FOLDER.toString(), Viewer.PICTURES)), took(PickFile.class));
+        tell(Messages.OPEN_TOPIC, new Open(true));
+        assertEquals(List.of(), took(PickFile.class), "one dialog at a time");
+        tell(Picked.TOPIC, Picked.cancelled(1));
+        assertEquals(List.of(), took(ListFolder.class), "a cancel changes nothing");
+        tell(Messages.OPEN_TOPIC, new Open(true));
+        assertEquals(List.of(PickFile.folder(2, FOLDER.toString())), took(PickFile.class));
+    }
+
+    @Test
+    void aPicturePickedIsReadWhileItsFolderIsListed() {
+        startedOn(A);
+        Path other = Path.of("/elsewhere").toAbsolutePath();
+        Path x = other.resolve("x.png");
+        tell(Messages.OPEN_TOPIC, new Open(false));
+        tell(Picked.TOPIC, new Picked(7, x.toString()));
+        assertEquals(List.of(), took(ListFolder.class), "an answer to a dialog not asked for is ignored");
+        tell(Picked.TOPIC, new Picked(1, x.toString()));
+        assertEquals(List.of(new ListFolder(other)), took(ListFolder.class));
+        assertEquals(new Caption("x.png", Viewer.READING_FOLDER), took(Caption.class).getLast());
+        answerAll();
+        assertEquals(List.of(x), shown());
+        tell(Messages.LISTED_TOPIC, new Listed(other, List.of(x, other.resolve("y.png"))));
+        assertEquals(new Caption("x.png", "1 of 2"), took(Caption.class).getLast());
+    }
+
+    @Test
+    void aFolderPickedOpensOnItsFirstPictureAndLetsTheOldThumbnailsGo() {
+        startedOn(A);
+        tell(Messages.SPAN_TOPIC, new Span(1));
+        answerAll();
+        shown();
+        took(ReleaseThumb.class);
+        Path other = Path.of("/elsewhere").toAbsolutePath();
+        Path x = other.resolve("x.png");
+        tell(Messages.OPEN_TOPIC, new Open(true));
+        tell(Picked.TOPIC, new Picked(1, other.toString()));
+        assertEquals(List.of(new ListFolder(other)), took(ListFolder.class));
+        assertEquals(List.of(), took(Read.class), "nothing to read until the folder is listed");
+        tell(Messages.LISTED_TOPIC, new Listed(other, List.of(x)));
+        assertEquals(new Caption("x.png", "1 of 1"), took(Caption.class).getLast());
+        answerAll();
+        assertEquals(List.of(x), shown());
+        assertEquals(List.of(A, B, C), took(ReleaseThumb.class).stream().map(ReleaseThumb::path).sorted().toList(),
+                "every thumbnail read in the folder before, those read ahead too");
+    }
+
+    @Test
+    void aFolderPickedWithNoPicturesShowsNothing() {
+        startedOn(A);
+        Path empty = Path.of("/empty").toAbsolutePath();
+        tell(Messages.OPEN_TOPIC, new Open(true));
+        took(PickFile.class);
+        tell(Picked.TOPIC, new Picked(1, empty.toString()));
+        tell(Messages.LISTED_TOPIC, new Listed(empty, List.of()));
+        assertEquals(List.of(new Clear()), took(Clear.class));
+        assertEquals(new Caption("", "no pictures here"), took(Caption.class).getLast());
+        tell(Messages.OPEN_TOPIC, new Open(false));
+        assertEquals(List.of(PickFile.open(2, empty.toString(), Viewer.PICTURES)), took(PickFile.class));
     }
 }

@@ -97,6 +97,8 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | Ctrl+= / Ctrl+- / Ctrl+0 | the controls larger / smaller / as they were. The words stay the size they are, and the window too: what the controls give up is the picture's |
 | the pin at the bar's right | Keep shown: the bar and the arrows stay, and the bar takes room of its own below the picture |
 | a thumbnail in the bar | that picture |
+| Ctrl+O, or a click on the name | open a picture, among the pictures in its folder, through the OS's own dialog starting in the folder open. While nothing is shown the name says *Open a picture…* |
+| Ctrl+Shift+O | open a folder, on its first picture. A folder with none shows nothing and says so |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
@@ -133,7 +135,7 @@ every message is in one file. Read these in this order.
 | File | What belongs in it |
 | --- | --- |
 | `Messages.java` | **every message the parts send each other**, grouped by who sends it to whom, each record beside its topic. A record crosses as itself, so it holds only immutable values, and one handle: a `Feed`. |
-| `Viewer.java` | **the controller**: which picture is wanted, what is read and when, and which pictures are kept, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops; idle, that read goes ahead to the neighbours, then to the thumbnails the filmstrip lacks. Its state names pictures by path; the view holds them. |
+| `Viewer.java` | **the controller**: which picture is wanted, what is read and when, and which pictures are kept, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops; idle, that read goes ahead to the neighbours, then to the thumbnails the filmstrip lacks. Its state names pictures by path; the view holds them. It asks for the OS's open dialogs (the framework's `PickFile`) and takes what is picked as it takes the command line's place. |
 | `Begin.java`, `ListPictures.java`, `ReadPicture.java`, `ReadThumbnail.java` | the jobs: where to start, a folder's pictures in order, a picture decoded into a feed with its thumbnail from the same decode, and a thumbnail alone. What can go wrong is part of the reply. |
 | `Core.java` | the list of this module's component and jobs. The processor compiling `-gui` sees only `-gui`'s sources, so this list, named among `PixApp`'s starters, is how the wiring hears of them. A new component or job goes on it. |
 

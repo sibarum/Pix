@@ -19,7 +19,6 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       Keep shown remembered between runs comes with Pix's settings.
 - [ ] **A picture thrown in across the window** from the side it came from, the old one flung out.
 - [ ] **Full screen**: a double click, F11, Esc. Phase 5 moved window state to messages.
-- [ ] **Open**: Ctrl+O, Ctrl+Shift+O and a click on the name, through `PickFile` / `Picked`.
 - [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
 - [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
 
@@ -36,6 +35,6 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
 - [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read
       shows as it was until it is let go. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
-      compare it. Matters once Open can reopen the file shown.
+      compare it. Open can reopen the file shown now, and shows it as it was.
 - [ ] Vexplore's hand-off (`pix <file>`), and one Pix per picture rather than one per hand-off.
 - [ ] Replace the palette anchors in `Look.java` with Pix's own, measured in Oklab.
