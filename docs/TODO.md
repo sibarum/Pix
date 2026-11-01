@@ -36,4 +36,3 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       shows as it was until it is let go. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
       compare it. Open can reopen the file shown now, and shows it as it was.
 - [ ] Vexplore's hand-off (`pix <file>`), and one Rasterware per picture rather than one per hand-off.
-- [ ] Replace the palette anchors in `Look.java` with Rasterware's own, measured in Oklab.

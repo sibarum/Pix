@@ -1,9 +1,12 @@
 package dev.sibarum.pix;
 
 import dev.vexelray.canvas.Color;
+import dev.vexelray.gui.core.style.Oklab;
 import dev.vexelray.gui.core.style.Role;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,10 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * one anchor moved by a tenth changes every surface and every shade of text at once, and nothing on screen
  * says which change did it. These are the checks that would have caught it.
  *
- * <p>When this application gets a real design, the useful version of this test is the one that <b>pins the gap
- * between the design and the construction</b> -- assert each authored colour against what the palette derives,
- * with the difference written down. A gap that is measured is a known quantity; a gap that is absorbed is a
- * surprise waiting for a review.
+ * <p>Rasterware has a design now (the viewer mockup of 2026-11-01), so the last test <b>pins the gap between the
+ * design and the construction</b>: each authored colour against what the palette derives, with the difference
+ * written down. A gap that is measured is a known quantity; a gap that is absorbed is a surprise waiting for a
+ * review.
  */
 class LookTest {
 
@@ -51,6 +54,35 @@ class LookTest {
     void theAccentIsNotTheInk() {
         assertNotEquals(Look.THEME.color(Role.INK), Look.THEME.color(Role.ACCENT),
                 "the accent should be a colour, not the text shade");
+    }
+
+    /**
+     * The mockup's colours, each against the role the palette derives for it, and how far apart the two may be in
+     * Oklab. Most are anchors, so all but equal; the climbing surfaces and the dim ink are the ladder's, and their
+     * allowance is the chroma the ladder does not climb with (Look's javadoc).
+     */
+    @Test
+    void theMockupsColoursAreWhatThePaletteDerives() {
+        assertAll(
+                near(0x0d0a11, Role.PAGE, 0.001),
+                near(0x120d17, Role.CHROME, 0.006),
+                near(0x1b1421, Role.RAISED, 0.009),
+                near(0xf1eaf5, Role.INK, 0.001),
+                near(0x9b8fa8, Role.DIM, 0.025),
+                near(0xf99bd1, Role.ACCENT, 0.001),
+                near(0xc4528f, Role.ACTION, 0.001),
+                near(0xe0476f, Role.DANGER, 0.001));
+    }
+
+    private static Executable near(int hex, Role role, double allowed) {
+        return () -> {
+            Oklab drawn = Oklab.of(Color.rgb(hex));
+            Oklab derived = Oklab.of(Look.THEME.color(role));
+            double d = Math.sqrt(Math.pow(drawn.l() - derived.l(), 2) + Math.pow(drawn.a() - derived.a(), 2)
+                    + Math.pow(drawn.b() - derived.b(), 2));
+            assertTrue(d <= allowed, String.format("#%06x is %.4f from what the palette derives, past %.4f",
+                    hex, d, allowed));
+        };
     }
 
     /** Rough perceived brightness -- enough to order two shades, which is all these assertions need. */
