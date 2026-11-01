@@ -146,3 +146,27 @@ for the framework's widgets, filtered it for pinches, and hit-tested the pointer
 over its stage. **Added upstream** (vexelray-gui): `NodeEvent.PINCH` with `PinchEvent(phase, scale)`, given whole to
 the nearest node under the pointer that asked, chosen when the pinch starts and kept until it ends. The twist and the
 drift stay on the gesture topic.
+
+## FN-13 · Every picture was drawn a gamma curve too dark, and a large one's fine detail darker still 🔬
+
+*Fixed upstream, 2026-10-31.* "The gamma looks wrong in some pictures" was two faults, measured with grey bars written at
+known sRGB values and read back from `ottermate shot`:
+
+- **Every picture, every format** (vexelray-gui). A picture feed is uploaded `R8G8B8A8_SRGB`, so sampling it gives linear
+  light, and the canvas must encode it again for the `B8G8R8A8_UNORM` swapchain. `TreeRenderer` asked for that encode only
+  when the node's image *was* a linear `SampledImage`; since frame contract step 4 a node holds the `Feed`, which
+  `DeviceImages` turns into its texture only later, so the test never matched and the encode was skipped. Bars at
+  16, 48, 80, 112, 144, 176, 208, 240 showed as 1, 8, 20, 41, 71, 111, 160, 222. Dark pictures suffered most, which is
+  why it read as "some". The renderer now also takes a feed that is a `picture()` as linear; the same bars now show
+  exactly as written, from 8-bit, 16-bit and greyscale PNGs, a JPEG and an Adobe CMYK JPEG alike.
+- **Pictures over 2560 px, and every filmstrip thumbnail** (vexelray-codec). `Picture.fit` shrank them by averaging
+  the stored sRGB bytes, where `Resample` and the GPU's mips average light. One-pixel black and white lines in a
+  5120 px file showed as 128 grey (bytes averaged) rather than 188 (light averaged); a 2560 px file, shrunk only by the
+  mips, already showed 188. `fit` now averages in linear light, with `Resample`'s tables. Fine bright detail on dark
+  ground (stars, lit windows, text) is where a photograph shows it.
+
+**Not fixed, and not a gamma fault in Pix:** imagelib (imagelib-wrapper, the `image` crate) ignores a PNG's gAMA and
+iCCP and a JPEG's ICC profile, and hands back the stored values as sRGB. A PNG written linear with gAMA 1.0 or a
+linear ICC profile shows dark (1 … 222 for the bars above); a photograph tagged Adobe RGB or Display P3 shows a
+little dull rather than with a wrong curve. Colour management belongs there, in the decoder, so every caller of the
+codec has it: reading gAMA/cHRM/sRGB/iCCP from the `png` crate and the ICC from the JPEG, and converting to sRGB.
