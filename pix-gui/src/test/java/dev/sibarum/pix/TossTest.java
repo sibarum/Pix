@@ -74,4 +74,17 @@ class TossTest {
         assertEquals(0f, back.in(AT + Toss.LENGTH), 1e-3f);
         assertEquals(1f, back.inOpacity(AT + Toss.LENGTH / 4), 1e-6f);
     }
+
+    @Test
+    void aCrossfadeMovesNothingAndFadesTheOneBeforeWhereItWas() {
+        Toss swap = Toss.crossfade(AT, new Lens.Pose(2f, 120f, -40f), 1f);
+        assertTrue(swap.moving(AT));
+        assertEquals(0f, swap.in(AT));
+        assertEquals(0f, swap.inOpacity(AT), 1e-6f, "the new one fades up");
+        assertEquals(1f, swap.inOpacity(AT + Toss.LENGTH / 4), 1e-6f);
+        assertEquals(120f, swap.out(AT + Toss.LENGTH / 2), 1e-6f, "the old one stays where it was drawn");
+        assertTrue(swap.outOpacity(AT + Toss.LENGTH / 2) < 1f);
+        assertFalse(swap.moving(AT + Toss.LENGTH));
+        assertEquals(0f, swap.outOpacity(AT + Toss.LENGTH));
+    }
 }

@@ -119,7 +119,10 @@ Beside the words, the filmstrip: the picture's neighbours as thumbnails, itself 
 they are read. It takes at most half the bar, as many cells as fit there, from three to fifteen, so a narrow window
 shows fewer and the name keeps its half; smaller controls fit more. A click on one shows that picture. A step
 glides the thumbnails along into their new cells as the picture is thrown in, as film pulled through; with motion
-reduced they are simply there.
+reduced they are simply there. Whatever can be clicked shows a pointer and lifts under it, and shows a press at once:
+the name turns the accent, a cell takes an edge, the buttons a deeper fill. Nothing Pix shows or hides changes in a
+frame: a picture with no throw (the first, one opened, a file that is not a picture) fades over the one before, and
+a cell, a thumbnail read, the note and new words fade in.
 
 The picture has the whole window under the title bar: the bar floats over its bottom, and the bar and the arrows fade
 when the pointer has rested two seconds, coming back as soon as it moves, or a step shows another name. They stay
@@ -158,6 +161,7 @@ every message is in one file. Read these in this order.
 | `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |
 | `Strip.java` | how many thumbnails the filmstrip shows and how wide it is, from the bar's width and a rem, and which picture each cell is, and how many cells a step moved them. |
 | `Glide.java` | the filmstrip's glide, as a value: at a step every thumbnail starts where it was drawn and eases into its new cell over the throw's time, the cells themselves staying put. |
+| `Shade.java` | how far one node is shown, eased: what Pix shows and hides itself (a cell, a thumbnail read, the note, the words when they change) comes and goes over 150 ms rather than in a frame. |
 
 `Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
 clipboard, window memory, the clock, the frame loop with its wakes and its pacing, the dialogs, the command line and

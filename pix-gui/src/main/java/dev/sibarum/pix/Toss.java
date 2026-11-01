@@ -17,7 +17,7 @@ package dev.sibarum.pix;
  * had got to, as far as it was still shown, rather than from a whole width off and from nothing, which blanked the
  * stage for a moment.
  *
- * @param side    1 for a picture later in the folder (in from the right), -1 earlier, 0 for no throw
+ * @param side    1 for a picture later in the folder (in from the right), -1 earlier, 0 for a crossfade in place
  * @param at      when it started, on {@code System.nanoTime()}'s clock
  * @param span    how far the picture going out travels: the stage's width, layout px
  * @param inFrom  where the picture coming in starts, along x from where the lens puts it: a whole width off on its
@@ -40,9 +40,18 @@ record Toss(int side, long at, float span, float inFrom, float inAlpha, Lens.Pos
         return new Toss(side, at, span, side * span, 0f, from, alpha);
     }
 
-    /** Whether it is still flying at {@code now}. */
+    /**
+     * A picture put in the other's place without a throw (a first picture, one opened from elsewhere, a file that is
+     * not a picture, or nothing): the new one fades up where the lens puts it as a thrown one would, and the one before
+     * fades where it was drawn, without moving.
+     */
+    static Toss crossfade(long at, Lens.Pose from, float alpha) {
+        return new Toss(0, at, 0f, 0f, 0f, from, alpha);
+    }
+
+    /** Whether it is still going at {@code now}. */
     boolean moving(long now) {
-        return side != 0 && now - at < LENGTH;
+        return at != Lens.AT_REST && now - at < LENGTH;
     }
 
     /** How far through it is at {@code now}, 0 to 1. */
@@ -66,6 +75,9 @@ record Toss(int side, long at, float span, float inFrom, float inAlpha, Lens.Pos
 
     /** The picture going out, along x from the stage's centre, layout px. */
     float out(long now) {
+        if (side == 0) {
+            return from.x();
+        }
         float u = 1f - q(now);
         float eased = 1f - u * u * u;
         return from.x() + (-side * span - from.x()) * eased;

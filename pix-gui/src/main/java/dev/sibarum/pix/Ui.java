@@ -1,10 +1,11 @@
 package dev.sibarum.pix;
 
-import dev.vexelray.canvas.Color;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
+import dev.vexelray.gui.core.NodeEvent;
 import dev.vexelray.gui.core.input.CursorShape;
+import dev.vexelray.gui.core.input.InteractionState;
 import dev.vexelray.gui.core.layout.LayoutEnums.AlignItems;
 import dev.vexelray.gui.core.layout.LayoutEnums.Direction;
 import dev.vexelray.gui.core.layout.LayoutEnums.Justify;
@@ -28,7 +29,8 @@ import java.util.List;
  * never makes the name too small to read. This is the framework's rule turned round on purpose (its own is type in rem,
  * gutters in dp), because what the zoom is for here is room for the picture, not reading.
  *
- * <p>It holds no state. The picture shown is the view's to know, which details fit is the view's to decide
+ * <p>It holds no state but what the pointer is on, which it paints as each widget does its own: a hover lifts what
+ * can be clicked and a press shows at once, and the framework fades the colours between. The picture shown is the view's to know, which details fit is the view's to decide
  * ({@link Details}), and what each label says is what the viewer last told the view. Built in the {@code TREE} phase,
  * before there is a window, and needing none, so a test can build the real tree headless.
  */
@@ -75,8 +77,10 @@ final class Ui {
     private final Node bar;
     private final IconButton keep;
     private final Node name;
-    private final Color ink;
-    private final Color dim;
+    private final Node words;
+    /** Whether the name is a picture's, rather than asking for one; where the pointer is on it. */
+    private boolean named;
+    private InteractionState nameState = InteractionState.NORMAL;
     private final Node details;
     /** The details in {@link Details}'s order, and the dot before each but the first. */
     private final Node[] items;
@@ -86,6 +90,10 @@ final class Ui {
     private final Node[] cells;
     private final Node[] thumbs;
     private final Node[] cellNames;
+    /** Which cell is the picture wanted, which are past the folder's ends, and where the pointer is on each. */
+    private final boolean[] wanted = new boolean[Strip.MOST];
+    private final boolean[] there = new boolean[Strip.MOST];
+    private final InteractionState[] cellStates = new InteractionState[Strip.MOST];
 
     Ui(Gui gui, TitleBar titleBar) {
         this.titleBar = titleBar;
@@ -97,7 +105,8 @@ final class Ui {
             layers[i] = gui.box().visible(false);
         }
         gui.landmark(Landmarks.PICTURE, layers[0]);
-        note = gui.text("").textSize(NAME_TEXT).textColor(gui.theme().color(Role.DIM)).visible(false);
+        // Always there, and shown as far as the view shades it (Shade), so it comes and goes gradually.
+        note = gui.text("").textSize(NAME_TEXT).textColor(gui.theme().color(Role.DIM));
         gui.landmark(Landmarks.NOTE, note);
 
         previous = new IconButton(gui, Icon.CHEVRON_LEFT, "Previous").size(SIDE, SIDE_ICON).tip("Previous (←)");
@@ -114,12 +123,15 @@ final class Ui {
                 .children(layers[0], layers[1], note, previousSide, nextSide);
         gui.landmark(Landmarks.STAGE, stage);
 
-        ink = gui.theme().color(Role.INK);
-        dim = gui.theme().color(Role.DIM);
         name = gui.text(OPEN_A_PICTURE).role("button").wordWrap(false).ellipsis(Ellipsis.MIDDLE).width(Length.FILL)
-                .textSize(NAME_TEXT).textColor(dim);
+                .textSize(NAME_TEXT);
         gui.landmark(Landmarks.BAR_NAME, name);
         gui.cursor(name, CursorShape.POINTER);
+        gui.hear(name, NodeEvent.STATE, s -> {
+            nameState = s;
+            paintName();
+        });
+        paintName();
         items = new Node[Details.COUNT];
         dots = new Node[Details.COUNT];
         String[] landmarks = {Landmarks.BAR_KIND, Landmarks.BAR_BYTES, Landmarks.BAR_PLACE};
@@ -133,7 +145,7 @@ final class Ui {
             }
             details.append(items[i]);
         }
-        Node words = gui.column().width(Length.grow(1f)).gap(LINE_GAP).scroll(false, false).children(name, details);
+        words = gui.column().width(Length.grow(1f)).gap(LINE_GAP).scroll(false, false).children(name, details);
 
         cells = new Node[Strip.MOST];
         thumbs = new Node[Strip.MOST];
@@ -148,7 +160,13 @@ final class Ui {
                     .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                     .corner(Length.rem(0.25f)).clip(true).scroll(false, false)
                     .background(gui.theme().color(Role.WELL)).children(thumbs[i], cellNames[i]);
-            gui.cursor(cells[i], CursorShape.POINTER);
+            cellStates[i] = InteractionState.NORMAL;
+            int at = i;
+            gui.hear(cells[i], NodeEvent.STATE, s -> {
+                cellStates[at] = s;
+                paintCell(at);
+            });
+            paintCell(i);
             gui.landmark(Landmarks.cell(i), cells[i]);
             strip.append(cells[i]);
         }
@@ -252,10 +270,10 @@ final class Ui {
      * with no feed is a file that is not a picture: the cell is there, and empty.
      */
     void cell(int i, Feed feed, Fit fit, String name, boolean wanted) {
-        Node c = cells[i];
-        boolean there = !name.isEmpty();
-        c.opacity(there ? 1f : 0f).hitInert(!there)
-                .border(Length.rem(wanted ? 0.125f : 0f), wanted ? Role.ACCENT : Role.LINE);
+        there[i] = !name.isEmpty();
+        this.wanted[i] = wanted;
+        cells[i].hitInert(!there[i]);
+        paintCell(i);
         cellNames[i].text(name);
         if (feed != null && fit != null) {
             thumbs[i].image(feed).width(Length.percent(fit.widthPercent())).height(Length.percent(fit.heightPercent()))
@@ -263,6 +281,27 @@ final class Ui {
         } else {
             thumbs[i].image((Feed) null).visible(false);
         }
+    }
+
+    /** Cell {@code i}'s thumbnail, which the view fades up as it is read. */
+    Node thumb(int i) {
+        return thumbs[i];
+    }
+
+    /**
+     * A cell's edge, always there so marking one moves nothing: the accent on the picture wanted, which is not
+     * pressed; on the others, nothing until the pointer is on one, a line then, and ink while it is pressed.
+     */
+    private void paintCell(int i) {
+        boolean live = there[i] && !wanted[i];
+        InteractionState s = live ? cellStates[i] : InteractionState.NORMAL;
+        Role edge = wanted[i] ? Role.ACCENT
+                : s == InteractionState.PRESSED ? Role.INK
+                : s == InteractionState.HOVER ? Role.DIM
+                : Role.NONE;
+        cells[i].border(Length.rem(0.125f), edge)
+                .background(s == InteractionState.NORMAL ? Role.WELL : Role.WELL.at(s));
+        gui.cursor(cells[i], live ? CursorShape.POINTER : CursorShape.DEFAULT);
     }
 
     /** The address Keep shown presses with. */
@@ -326,24 +365,19 @@ final class Ui {
 
     /** {@code why} said in the picture's place, for a file that is not a picture; or, with null, nothing said. */
     void note(String why) {
-        if (why == null) {
-            note.visible(false);
-        } else {
-            note.text(why).visible(true);
+        if (why != null) {
+            note.text(why);
         }
+    }
+
+    /** What is said in a picture's place, which the view shows and hides by shading it. */
+    Node noteNode() {
+        return note;
     }
 
     /** Full screen, the title bar gone so the picture has the whole display; or the window again, with it. */
     void fullScreen(boolean on) {
         titleBar.node().visible(!on);
-    }
-
-    /** Nothing on the stage: a folder opened with no pictures in it. */
-    void blank() {
-        for (int i = 0; i < layers.length; i++) {
-            layer(i, null, 0f, 0f);
-        }
-        note(null);
     }
 
     /**
@@ -352,7 +386,20 @@ final class Ui {
      */
     void name(String name) {
         titleBar.title(name.isEmpty() ? Pix.TITLE : name + " — " + Pix.TITLE);
-        this.name.text(name.isEmpty() ? OPEN_A_PICTURE : name).textColor(name.isEmpty() ? dim : ink);
+        this.name.text(name.isEmpty() ? OPEN_A_PICTURE : name);
+        named = !name.isEmpty();
+        paintName();
+    }
+
+    /** The name in ink, or dim while it asks for a picture; in the accent under the pointer, deeper while pressed. */
+    private void paintName() {
+        Role ink = named ? Role.INK : Role.DIM;
+        name.textColor(nameState == InteractionState.NORMAL ? ink : Role.ACCENT.at(nameState));
+    }
+
+    /** The name and the details under it, which the view fades up when they change. */
+    Node words() {
+        return words;
     }
 
     /** The name, which opens a picture when clicked. */

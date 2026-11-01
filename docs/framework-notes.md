@@ -186,3 +186,24 @@ It reports what the commands did; a window the OS takes out of full screen by it
 opens on a double click inside a list that selects on a click). But a `Button` or `IconButton` takes only clicks, so
 pressing Next twice quickly stepped twice and then handed the double click to the stage, which puts Pix full screen.
 Both buttons now take their own double clicks and do nothing with them; held by `ButtonTest`, which fails without it.
+
+## FN-16 · An icon button pressed looked the same as one hovered 🔬
+
+*Fixed upstream, 2026-11-01* (vexelray-gui-widget). `IconButton` filled hovered and pressed alike, so a click on Previous,
+Next or Keep shown showed nothing of its own before what it did. Pressed is now the hover fill a press step deeper
+(`Role.at(PRESSED)`), which the framework's colour fade carries in; held by `ButtonTest`, which fails without it.
+
+## FN-17 · The title bar's buttons light up in one frame 🧭
+
+*Not fixed.* The framework fades every colour a node is given (`WindowMotion`), but the title bar's minimise, maximise
+and close draw their plate and glyph into the button's picture (`TitleBar.Caption`), and a picture's colours are not
+faded: hover and press jump. Either the plate becomes a node of its own whose background fades, with the glyph's ink
+eased the same way, or `PaintMotion` learns pictures.
+
+## FN-18 · A stage resized is drawn a frame out of step with its picture 🧭
+
+*Not fixed.* The picture's layers are sized as a share of the stage, and the view's lens zooms them in its asked half.
+When the stage changes size (a window resized, Keep shown, full screen), layout and the lens take the change a frame
+apart, so for that frame the picture is drawn at the wrong size: on Keep shown, 1023 px wide, then 1083, then 963. So
+Keep shown cannot be eased into yet; an ease made it pop larger before shrinking. What would let it: a node that fits
+an image's aspect inside its box itself, or a size change the told half makes and the asked half sees in the same frame.

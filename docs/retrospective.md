@@ -316,3 +316,35 @@ stay where layout puts them and what is drawn in them moves, so the strip reads 
 From `file-types-dark.png` a step on, shot as it went: the newly wanted thumbnail, edged, a cell right of the middle and
 easing in, the rest moving with it, and at rest in the middle. One frame mid-glide showed the rightmost thumbnail
 stretched tall; not tracked down. Not checked live: reduced motion, and a step taken mid-glide.
+
+## A UI pass: hover, press, and nothing in a frame · 2026-11-01
+
+Three rules from the user: whatever can be clicked shows a pointer and a subtle hover; a click shows at once; nothing
+changes in one frame.
+
+### What was already there
+The framework fades every colour a node is given (120 ms) and slides what layout moves (`WindowMotion`), so the
+widgets' hovers were gradual already. What it does not ease is what an application sets itself: an opacity, a node
+shown or hidden, an image or a text swapped.
+
+### What changed
+- **The name and the cells** take the pointer's state as the widgets do: the name turns the accent under it, deeper
+  pressed; a cell takes a dim edge, ink pressed. The edge is always there, so marking the wanted cell (the accent)
+  moves nothing. The wanted cell is not pressed: no pointer and no hover, since a click there went nowhere.
+- **Previous, Next and Keep shown** were drawn the same pressed as hovered; fixed upstream (FN-16).
+- **`Shade`** eases what Pix shows and hides, through `Drawn.opacity` in the asked half: a cell past the folder's
+  end, a thumbnail read (one that only moved with a step's glide does not fade again), the note, the words when the
+  name changes (from 0.3, so a held arrow key still reads them) and the details when they say something new.
+- **A picture with no throw crossfades** (`Toss.crossfade`): a first picture, one opened from elsewhere, a file that
+  is not a picture, and a folder with none (`Clear`) fade over the one before, which fades where it was drawn.
+
+### Not done
+- **Keep shown and full screen** still change the stage's size in a frame. An ease from the drawn size was tried and
+  taken out: layout and the lens take a new stage a frame apart, so the picture popped 6% larger before shrinking
+  (FN-18). The title bar's own buttons still light up in a frame (FN-17).
+- The details giving way in a narrow bar, and a cell shown or hidden as the window is resized, are still at once.
+
+### Checked live
+A hovered cell showed its edge and a pressed one a white edge; the name turned the accent under the pointer; Next
+pressed showed a deeper fill than hovered; a step to `broken.png` ended on its note with the picture gone. The
+crossfade's middle frames were not caught (the shots lag a frame); `TossTest` holds them.

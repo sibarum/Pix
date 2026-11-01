@@ -41,8 +41,10 @@ import sibarum.tactroller.api.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The view: the picture the viewer chose, fitted to the window and looked at closely, and the keys that step through
@@ -101,10 +103,10 @@ final class View {
     /**
      * What the asked half draws: the layer in front and how its picture is looked at, the other layer and how a step
      * threw the one picture in and the other out, the controls and how far they are shown, and the filmstrip's cells
-     * and how far along a step glides them.
+     * and how far along a step glides them, and the shades of what comes and goes.
      */
     record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade, List<Node> cells,
-                   Glide glide) {
+                   Glide glide, List<Shade> shades) {
     }
 
     private final Gui gui;
@@ -160,6 +162,21 @@ final class View {
     /** Whether a pinch is in flight on the stage, which the wheel then leaves alone. */
     private boolean pinching;
 
+    /**
+     * How far each thing Pix shows and hides itself is shown ({@link Shade}): each cell, then each cell's thumbnail,
+     * the note, the words and the details. The thumbnails drawn at the last painting, so one read since fades up.
+     */
+    private static final int THUMBS = Strip.MOST;
+    private static final int NOTE = 2 * Strip.MOST;
+    private static final int WORDS = NOTE + 1;
+    private static final int DETAILS = WORDS + 1;
+    private final Shade[] shades = new Shade[DETAILS + 1];
+    private Set<Path> thumbsDrawn = Set.of();
+
+    /** The name last captioned, and whether a detail has said something new since the details were last shown. */
+    private String captioned = "";
+    private boolean detailsNew;
+
     /** Whether the pointer is on each of {@link Ui#controls}, and whether Keep shown is on. */
     private final boolean[] over = new boolean[3];
     private boolean kept;
@@ -190,8 +207,15 @@ final class View {
                 }
             });
         }
+        for (int i = 0; i < Strip.MOST; i++) {
+            shades[i] = Shade.at(ui.cell(i), 0f);
+            shades[THUMBS + i] = Shade.at(ui.thumb(i), 1f);
+        }
+        shades[NOTE] = Shade.at(ui.noteNode(), 0f);
+        shades[WORDS] = Shade.at(ui.words(), 1f);
+        shades[DETAILS] = Shade.at(ui.details(), 1f);
         this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
-                ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE);
+                ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE, List.of(shades));
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
         gui.hear(gui.root(), NodeEvent.POINTER, p -> {
             if (p.over()) {
@@ -286,7 +310,8 @@ final class View {
     /**
      * A picture shown is fitted, in the middle, whatever the one before was zoomed to. From a side, and with a picture
      * before it, it is thrown in on the other layer while that one is flung out from wherever it is drawn now, mid-throw
-     * as well; otherwise it simply replaces it.
+     * as well. Otherwise, a picture after another fades up over it while that one fades where it is, and over nothing
+     * from nothing: nothing is swapped in one frame.
      */
     @Subscribe
     public void show(Show m) {
@@ -298,15 +323,17 @@ final class View {
         Feed feed = p.feed().orElse(null);
         Pictured before = onLayer[front];
         Toss toss = Toss.NONE;
+        Toss was = state.toss();
+        Lens.Pose from = drawnAt(now);
         if (m.side() != 0 && feed != null && before != null && before != p) {
-            Lens l = state.lens();
-            Toss was = state.toss();
-            Lens.Pose from = new Lens.Pose(l.zoom(now), l.x(now) + was.in(now), l.y(now));
             toss = Toss.thrown(m.side(), now, stageW, from, was.inOpacity(now));
             if (p == onLayer[1 - front] && was.moving(now)) {
                 // The picture going out, wanted back: from where it has got to, as far as it is still shown.
                 toss = new Toss(m.side(), now, stageW, was.out(now), was.outOpacity(now), from, was.inOpacity(now));
             }
+            front = 1 - front;
+        } else if (before != p) {
+            toss = Toss.crossfade(now, from, was.inOpacity(now));
             front = 1 - front;
         } else {
             ui.layer(1 - front, null, 0f, 0f);
@@ -316,25 +343,32 @@ final class View {
         ui.layer(front, feed, fit.widthPercent(), fit.heightPercent());
         ui.front(front);
         ui.note(feed == null ? p.identity() : null);
+        shades[NOTE] = shades[NOTE].toward(feed == null ? 1f : 0f, now);
         onLayer[front] = feed == null ? null : p;
         shown = p;
         state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
-                toss, state.faded(), state.fade(), state.cells(), state.glide());
+                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades));
         closeLetGo();
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
         showSaid();
     }
 
-    /** Nothing shown: a folder opened with no pictures. The picture from before stays held until it is released. */
+    /**
+     * Nothing shown: a folder opened with no pictures. The picture from before fades where it is, and stays held until
+     * it is released.
+     */
     @Subscribe
     public void clear(Clear m) {
+        long now = System.nanoTime();
         shown = null;
-        ui.blank();
-        onLayer[0] = null;
-        onLayer[1] = null;
-        state = new Drawing(state.picture(), state.leaving(), state.lens(), Toss.NONE, state.faded(), state.fade(),
-                state.cells(), state.glide());
+        Toss toss = Toss.crossfade(now, drawnAt(now), state.toss().inOpacity(now));
+        front = 1 - front;
+        ui.layer(front, null, 0f, 0f);
+        onLayer[front] = null;
+        shades[NOTE] = shades[NOTE].toward(0f, now);
+        state = new Drawing(ui.layer(front), ui.layer(1 - front), state.lens(), toss, state.faded(), state.fade(),
+                state.cells(), state.glide(), List.of(shades));
         closeLetGo();
         say(Details.KIND, "");
         say(Details.BYTES, "");
@@ -356,6 +390,11 @@ final class View {
      */
     @Subscribe
     public void caption(Caption m) {
+        if (!m.name().equals(captioned)) {
+            // Another name: the words fade up again, from a little, so a held arrow key still reads them.
+            captioned = m.name();
+            shades[WORDS] = shades[WORDS].from(0.3f, 1f, System.nanoTime());
+        }
         ui.name(m.name());
         if (shown == null || !m.name().equals(String.valueOf(shown.path().getFileName()))) {
             say(Details.KIND, "");
@@ -374,11 +413,11 @@ final class View {
     public void filmstrip(Filmstrip m) {
         int shift = Strip.shift(strip.paths(), strip.at(), m.paths(), m.at());
         strip = m;
-        paintStrip();
+        paintStrip(shift != 0);
         float slot = (Strip.CELL_W + Strip.GAP) * remPx;
         Glide glide = state.glide().shifted(shift, slot, slot * (cells / 2), System.nanoTime());
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), glide);
+                state.cells(), glide, state.shades());
     }
 
     /** A thumbnail to keep; one held already for that picture is put back, and closed once nothing draws it. */
@@ -468,8 +507,13 @@ final class View {
         for (Node c : s.cells()) {
             out.offset(c, along, 0f);
         }
+        boolean shading = false;
+        for (Shade d : s.shades()) {
+            out.opacity(d.node(), reduced ? d.to() : d.opacity(t));
+            shading |= !reduced && d.moving(t);
+        }
         if (reduced) {
-            // Nothing thrown or glided: the new picture and thumbnails are simply there.
+            // Nothing thrown, glided or shaded: the new picture, the thumbnails and the words are simply there.
             out.scale(s.picture(), l.to().zoom());
             out.offset(s.picture(), l.to().x(), l.to().y());
             out.opacity(s.picture(), 1f);
@@ -482,7 +526,7 @@ final class View {
         out.scale(s.leaving(), k.from().zoom());
         out.offset(s.leaving(), k.out(t), k.from().y());
         out.opacity(s.leaving(), k.outOpacity(t));
-        return l.moving(t) || k.moving(t) || g.moving(t) ? frame.presentNanos() : fadeDue;
+        return l.moving(t) || k.moving(t) || g.moving(t) || shading ? frame.presentNanos() : fadeDue;
     }
 
     /**
@@ -497,10 +541,11 @@ final class View {
 
     private void fade(Fade fade) {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade,
-                state.cells(), state.glide());
+                state.cells(), state.glide(), state.shades());
     }
 
     private void say(int detail, String text) {
+        detailsNew |= !text.isEmpty() && !text.equals(said[detail]);
         said[detail] = text;
         ui.detail(detail, text);
     }
@@ -511,6 +556,11 @@ final class View {
             drawn[i] = !said[i].isEmpty();
         }
         ui.shown(drawn);
+        if (detailsNew) {
+            detailsNew = false;
+            shades[DETAILS] = shades[DETAILS].from(0f, 1f, System.nanoTime());
+        }
+        shade();
     }
 
     private void giveWay() {
@@ -530,9 +580,21 @@ final class View {
         return layout.present() && layout.rect().w() > 0f;
     }
 
+    /** The shades as they now are, for the asked half. */
+    private void shade() {
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
+                state.cells(), state.glide(), List.of(shades));
+    }
+
+    /** Where the picture in front is drawn at {@code now}: its zoom, and its offset from the stage's centre. */
+    private Lens.Pose drawnAt(long now) {
+        Lens l = state.lens();
+        return new Lens.Pose(l.zoom(now), l.x(now) + state.toss().in(now), l.y(now));
+    }
+
     private void look(Lens lens) {
         state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide());
+                state.cells(), state.glide(), state.shades());
     }
 
     /**
@@ -582,12 +644,20 @@ final class View {
         }
     }
 
-    /** Each cell from the filmstrip and the thumbnails held: the picture wanted in the middle, a gap past an end. */
-    private void paintStrip() {
+    /**
+     * Each cell from the filmstrip and the thumbnails held: the picture wanted in the middle, a gap past an end. A cell
+     * that comes or goes, and a thumbnail read since the last painting, fade; but not at a step ({@code glided}), whose
+     * glide already carries each picture from the cell it was in.
+     */
+    private void paintStrip(boolean glided) {
+        long now = System.nanoTime();
         float cellW = Strip.CELL_W * remPx;
         float cellH = Strip.CELL_H * remPx;
+        Set<Path> drawnNow = new HashSet<>();
         for (int i = 0; i < cells; i++) {
             int p = Strip.path(i, cells, strip.at(), strip.paths().size());
+            float there = p < 0 ? 0f : 1f;
+            shades[i] = glided ? Shade.at(ui.cell(i), there) : shades[i].toward(there, now);
             if (p < 0) {
                 ui.cell(i, null, null, "", false);
                 continue;
@@ -597,7 +667,21 @@ final class View {
             Feed feed = t == null ? null : t.feed().orElse(null);
             Fit fit = feed == null ? null : Fit.of(t.width(), t.height(), cellW, cellH);
             ui.cell(i, feed, fit, String.valueOf(path.getFileName()), p == strip.at());
+            if (feed != null) {
+                drawnNow.add(path);
+                if (!thumbsDrawn.contains(path)) {
+                    shades[THUMBS + i] = shades[THUMBS + i].from(0f, 1f, now);
+                } else if (glided) {
+                    shades[THUMBS + i] = Shade.at(ui.thumb(i), 1f);
+                }
+            }
         }
+        thumbsDrawn = drawnNow;
+        shade();
+    }
+
+    private void paintStrip() {
+        paintStrip(false);
     }
 
     private float fitW(Fit fit) {
