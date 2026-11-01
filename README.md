@@ -99,6 +99,8 @@ groups the button with other Java programs, and pinning it pins Java. The native
 | a thumbnail in the bar | that picture |
 | Ctrl+O, or a click on the name | open a picture, among the pictures in its folder, through the OS's own dialog starting in the folder open. While nothing is shown the name says *Open a picture…* |
 | Ctrl+Shift+O | open a folder, on its first picture. A folder with none shows nothing and says so |
+| F11, or a double click on the picture | full screen: the picture has the whole display, the title bar goes, and the controls float and fade as before. F11 or a double click again comes back to the window as it was, maximized if it was. Borderless, not a change of display mode, so switching away is instant |
+| Esc | out of full screen; in the window, closes Pix |
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated

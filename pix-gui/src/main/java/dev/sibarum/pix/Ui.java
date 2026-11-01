@@ -298,6 +298,11 @@ final class Ui {
         picture.width(Length.percent(widthPercent)).height(Length.percent(heightPercent));
     }
 
+    /** Full screen, the title bar gone so the picture has the whole display; or the window again, with it. */
+    void fullScreen(boolean on) {
+        titleBar.node().visible(!on);
+    }
+
     /** Nothing on the stage: a folder opened with no pictures in it. */
     void blank() {
         picture.image((Feed) null).visible(false);

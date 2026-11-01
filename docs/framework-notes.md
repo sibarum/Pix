@@ -170,3 +170,19 @@ iCCP and a JPEG's ICC profile, and hands back the stored values as sRGB. A PNG w
 linear ICC profile shows dark (1 … 222 for the bars above); a photograph tagged Adobe RGB or Display P3 shows a
 little dull rather than with a wrong curve. Colour management belongs there, in the decoder, so every caller of the
 codec has it: reading gAMA/cHRM/sRGB/iCCP from the `png` crate and the ICC from the JPEG, and converting to sRGB.
+
+## FN-14 · A part could open, hide and close a window, but not put it full screen 🔬
+
+*Fixed upstream, 2026-10-31* (vexelray-framework). `NativeWindow.fullscreen(boolean)` is there, borderless and keeping
+the placement to go back to, and 0.1 reached it through `app.window()`. In v0.2 a part reaches a window only by sending
+a `WindowCommand`, whose commands were show, hide, toggle and close, so there was no way to it at all. Added
+`WindowCommand.fullScreen`, `windowed` and `toggleFullScreen`, carried out on the main thread between frames, and
+`WindowFullScreen(window, on)`, a state topic said after each, so Esc can know whether to leave full screen or close.
+It reports what the commands did; a window the OS takes out of full screen by itself is not reported.
+
+## FN-15 · Two quick presses of a button were also a double click on what it sits in 🔬
+
+*Fixed upstream, 2026-10-31* (vexelray-gui-widget). Clicks and double clicks bubble separately, on purpose (a row that
+opens on a double click inside a list that selects on a click). But a `Button` or `IconButton` takes only clicks, so
+pressing Next twice quickly stepped twice and then handed the double click to the stage, which puts Pix full screen.
+Both buttons now take their own double clicks and do nothing with them; held by `ButtonTest`, which fails without it.

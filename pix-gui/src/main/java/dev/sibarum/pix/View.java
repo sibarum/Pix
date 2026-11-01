@@ -1,5 +1,6 @@
 package dev.sibarum.pix;
 
+import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
 import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
@@ -19,6 +20,9 @@ import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.vexelray.framework.api.Draw;
 import dev.vexelray.framework.api.Subscribe;
+import dev.vexelray.framework.core.CloseRequested;
+import dev.vexelray.framework.core.WindowCommand;
+import dev.vexelray.framework.core.WindowFullScreen;
 import dev.vexelray.gui.core.Drawn;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Frame;
@@ -104,6 +108,10 @@ final class View {
     private final Ui ui;
     private final Sender<Step> step;
     private final Sender<Span> span;
+    private final Sender<WindowCommand> window;
+
+    /** Whether the main window is full screen, as the framework last said. */
+    private boolean full;
 
     /** What each detail says, its width as last laid out, and which are drawn; the dot's width; the room. */
     private final String[] said = {"", "", ""};
@@ -147,9 +155,10 @@ final class View {
     private boolean kept;
 
     View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span, Sender<Open> open,
-         Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey) {
+         Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey, Sender<EscKey> escKey) {
         this.gui = gui;
         this.ui = ui;
+        this.window = window;
         this.step = step;
         this.span = span;
         gui.hear(ui.bar(), NodeEvent.RESIZE, layout -> {
@@ -222,6 +231,11 @@ final class View {
         gui.shortcut(Shortcut.of(Key.O, Modifier.CONTROL), open, new Open(false));
         gui.shortcut(Shortcut.of(Key.O, Modifier.CONTROL, Modifier.SHIFT), open, new Open(true));
         gui.hear(ui.nameNode(), NodeEvent.CLICK, c -> open.send(new Open(false)));
+        gui.shortcut(Shortcut.of(Key.F11), window, WindowCommand.toggleFullScreen(CloseRequested.MAIN));
+        gui.shortcut(Shortcut.of(Key.ESCAPE), escKey, new EscKey());
+        // The stage's own: Previous and Next take their double clicks, so pressing one twice quickly only steps twice.
+        gui.hear(ui.stage(), NodeEvent.DOUBLE_CLICK,
+                c -> window.send(WindowCommand.toggleFullScreen(CloseRequested.MAIN)));
         gui.shortcut(Shortcut.of(Key.DIGIT_0), fitKey, new FitKey());
         gui.shortcut(Shortcut.of(Key.EQUAL, Modifier.CONTROL), zoomKey, new ZoomKey(1));
         gui.shortcut(Shortcut.of(Key.MINUS, Modifier.CONTROL), zoomKey, new ZoomKey(-1));
@@ -333,6 +347,21 @@ final class View {
             paintStrip();
             close(t);
         }
+    }
+
+    /** The main window full screen, or back: the title bar goes with it, and comes back. */
+    @Subscribe
+    public void fullScreen(WindowFullScreen m) {
+        if (m.main()) {
+            full = m.on();
+            ui.fullScreen(full);
+        }
+    }
+
+    /** Esc leaves full screen; in the window, it closes Pix, by the route the close button takes. */
+    @Subscribe
+    public void escKey(EscKey k) {
+        window.send(full ? WindowCommand.windowed(CloseRequested.MAIN) : WindowCommand.close(CloseRequested.MAIN));
     }
 
     @Subscribe

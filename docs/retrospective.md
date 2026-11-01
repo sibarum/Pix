@@ -249,3 +249,26 @@ Started on an empty folder: the name reads *Open a picture…* and is a button i
 the title is *Pix*. Not checked live: the dialogs themselves. ottermate cannot see or press a native picker, and one
 opened from a background run would come up on the desk of the person working there, so Ctrl+O was not pressed. The
 viewer's tests cover asking, cancelling, a picture picked, a folder picked and an empty one.
+
+## Full screen · 2026-10-31
+
+The count: 2 findings, both fixed upstream. FN-14, no full-screen command for a part to send, and FN-15, a button's
+double click reaching what it sits in.
+
+### What changed shape
+- **Full screen is a message.** 0.1 called `app.window().fullscreen(on)` from a recipe; now F11 is a chord that sends
+  `WindowCommand.toggleFullScreen(main)`, the stage's double click sends the same, and the view hears
+  `WindowFullScreen` to hide the title bar and to know what Esc means.
+- **Esc decides in the view.** A chord sends one fixed message, and Esc means two things (leave full screen, or close
+  Pix), so it sends `EscKey` and the view picks the command.
+
+### My own mistakes
+- **I first fixed the double click in the dispatcher**, making it stop at the nearest node that takes clicks. The
+  dispatcher's own test says clicks and double clicks walk apart on purpose, and a list selecting on a click with
+  rows opening on a double click needs that. The fix went into the buttons instead.
+
+### Checked live
+On a maximized window: F11 went full screen at 1920×1200 with no title bar and the controls faded; Esc came back to the
+maximized window with its title bar; two clicks on the stage went full screen again; Next pressed twice quickly
+stepped to 3 of 7 and stayed in the window; Esc in the window closed Pix. Not checked: a window closed while full
+screen opening as the window it was, which is `NativeWindow`'s to keep and was not changed here.

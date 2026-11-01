@@ -18,6 +18,11 @@ final class Keys {
         static final Topic<FitKey> TOPIC = Topic.edge(FitKey.class);
     }
 
+    /** Esc: out of full screen, or, in the window, closing Pix. Which, only the view knows. */
+    record EscKey() {
+        static final Topic<EscKey> TOPIC = Topic.edge(EscKey.class);
+    }
+
     /**
      * Ctrl+= ({@code 1}), Ctrl+- ({@code -1}) and Ctrl+0 ({@code 0}): the controls a step larger, smaller, or as they
      * started. The window's zoom, which sizes the controls and not the words (layout.md, <i>Sizes</i>).
