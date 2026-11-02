@@ -109,11 +109,11 @@ final class Ui {
 
     Ui(Gui gui, TitleBar titleBar) {
         this.titleBar = titleBar;
-        // The name after the picture's, where "— Rasterware" was: the title gives way when the window is narrow, the
-        // mark keeps its size.
-        Node wordmark = Wordmark.node(gui, gui.theme().color(Role.INK));
-        titleBar.addLeading(wordmark);
-        gui.landmark(Landmarks.WORDMARK, wordmark);
+        // The name as the bar's wordmark, after the mark in its lockup and before the picture's name: the title gives
+        // way when the window is narrow, the lockup keeps its size, and the bar inks it as the pointer comes and goes.
+        TitleBar.Wordmark wordmark = Wordmark.bar(gui);
+        titleBar.wordmark(wordmark);
+        gui.landmark(Landmarks.WORDMARK, wordmark.node());
         // The zoom sizes the controls, and what they give up is the picture's: the window keeps its size.
         gui.zoomSizesWindow(false);
 
@@ -142,7 +142,8 @@ final class Ui {
                 .width(Length.FILL).height(Length.grow(1f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(layers[0], layers[1], note, splash.node());
+                .children(layers[0], layers[1], note, splash.node(), previousSide.visible(false),
+                        nextSide.visible(false));
         splashed = true;
         gui.landmark(Landmarks.STAGE, stage);
 
@@ -215,7 +216,7 @@ final class Ui {
         // joins it with the first picture wanted (splash).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words, strip, keep.node());
+                .children(words, strip, zoom.visible(false), keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
@@ -427,25 +428,19 @@ final class Ui {
 
     /**
      * The splash in the stage, after the note, and the controls that act on a picture out of the window: Previous,
-     * Next and the zoom, which have nothing to do while there is none. Or the other way round. Added and removed
-     * rather than shaded, so the framework fades them in and out, and what is out takes neither room nor the pointer.
+     * Next and the zoom, which have nothing to do while there is none. Or the other way round. Shown and hidden, so
+     * what is hidden takes neither room nor the pointer and comes back as it was: removing a node releases it, and
+     * one removed cannot be put back (FN-19).
      */
     void splash(boolean shown) {
         if (shown == splashed) {
             return;
         }
         splashed = shown;
-        if (shown) {
-            stage.insert(splash.node(), 3);   // after the two layers and the note
-            previousSide.remove();
-            nextSide.remove();
-            zoom.remove();
-        } else {
-            splash.node().remove();
-            stage.append(previousSide);
-            stage.append(nextSide);
-            bar.insert(zoom, 2);   // after the words and the strip, before Keep shown
-        }
+        splash.node().visible(shown);
+        previousSide.visible(!shown);
+        nextSide.visible(!shown);
+        zoom.visible(!shown);
     }
 
     /** The address the splash's button presses with. */

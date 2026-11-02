@@ -6,6 +6,8 @@ import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.layout.Length;
+import dev.vexelray.gui.core.style.Role;
+import dev.vexelray.gui.widget.TitleBar;
 import dev.vexelray.vulkan.present.MipChain;
 
 /**
@@ -68,6 +70,27 @@ final class Wordmark {
                 .size(Length.dp(W * PX), Length.dp(H * PX))
                 .image(feed(ink))
                 .imageFilter(ImageFilter.SHARP_BILINEAR, W, H);
+    }
+
+    /**
+     * The wordmark for the title bar's lockup: the raster, re-lit in whatever ink the bar hands it as the pointer comes
+     * and goes. A raster per ink, made the first time that ink is asked for and kept, since the bar asks for the same
+     * two or three over and over.
+     */
+    static TitleBar.Wordmark bar(Gui gui) {
+        Node node = node(gui, gui.theme().color(Role.INK));
+        java.util.Map<Color, Feed> lit = new java.util.concurrent.ConcurrentHashMap<>();
+        return new TitleBar.Wordmark() {
+            @Override
+            public Node node() {
+                return node;
+            }
+
+            @Override
+            public void ink(Color ink) {
+                node.image(lit.computeIfAbsent(ink, Wordmark::feed));
+            }
+        };
     }
 
     /** The worn tape's two ghosts, from the canvas's lockup: red a little left, cyan a little right and down. */

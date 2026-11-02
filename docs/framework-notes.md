@@ -209,3 +209,15 @@ When the stage changes size (a window resized, Keep shown, full screen), layout 
 apart, so for that frame the picture is drawn at the wrong size: on Keep shown, 1023 px wide, then 1083, then 963. So
 Keep shown cannot be eased into yet; an ease made it pop larger before shrinking. What would let it: a node that fits
 an image's aspect inside its box itself, or a size change the told half makes and the asked half sees in the same frame.
+
+## FN-19 · A node taken out cannot be put back, so a thing that comes and goes cannot fade 🔬
+
+The splash and the controls it stands in for (Previous, Next, the zoom) were written to be removed and inserted
+again, so the framework's presence motion would fade them in and out. `Node.remove()` posts a `Remove`, and the
+reconciler releases the node and its subtree on it, so the later `insert` of the same handle finds nothing and does
+nothing, with no error. The splash went away with the first picture and nothing came back with the last; the first
+check drove only the one direction. They are shown and hidden now (`Node.visible`, which keeps identity), and so come
+and go in a frame. The framework's own context menu met the same wall in the same week and fades its opacity by hand
+before hiding. What would stop it: a `remove` that refuses a handle used again (a startup error rather than a silent
+no-op), and a way to take a node out of view with the presence motion and keep it, `visible(false)` eased as an
+add and a removal are.

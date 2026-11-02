@@ -92,14 +92,17 @@ a compile error; one that does not decode costs the window its mark, logged, and
 
 ### The wordmark
 
-The title bar says the picture's name and then RASTERWARE, the suite canvas's wordmark: Press Start 2P's capitals,
-which sit on an eight-pixel grid, so the word is a raster 79 by 7 and is kept as one, written out pixel by pixel in
-`Wordmark.java`, rather than as the font. It is lit in the theme's ink and shown with square pixels
-(`SHARP_BILINEAR`), a pixel and a half to each of its own.
+The title bar's lockup is the mark and then RASTERWARE, the suite canvas's wordmark, before the picture's name: Press
+Start 2P's capitals, which sit on an eight-pixel grid, so the word is a raster 79 by 7 and is kept as one, written out
+pixel by pixel in
+`Wordmark.java`, rather than as the font. It is lit in the theme's ink, in the accent while the pointer is on the
+lockup (`Wordmark.bar`, given to the bar as its `TitleBar.Wordmark`), and shown with square pixels
+(`SHARP_BILINEAR`), a pixel and a half to each of its own. A click on the lockup opens the framework's app menu:
+About, the camera, and the debug run's ports and restart.
 
 While no picture is wanted, the stage shows the splash (`Splash.java`): the canvas's lockup, the mark beside the
 wordmark worn as on a tape (a red and a cyan ghost either side, `Wordmark.split`, and scanlines over both), and an
-*Open a picture…* button that does what Ctrl+O does; Previous, Next and the zoom are out of the window until a picture
+*Open a picture…* button that does what Ctrl+O does; Previous, Next and the zoom are hidden until a picture
 is wanted. It is what most first runs show: with no file named Rasterware
 opens Pictures, and Windows keeps pictures in folders under it (Screenshots, Camera Roll) rather than in it. The mark
 is the About window's, `/pix.pair`, which the icon plugin bakes from `src/main/rc/pix.svg`.
