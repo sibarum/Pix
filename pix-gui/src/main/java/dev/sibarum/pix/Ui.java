@@ -136,12 +136,13 @@ final class Ui {
 
         previousSide = side(gui, previous, Length.ZERO);
         nextSide = side(gui, next, Length.percent(100f));
-        // The splash is there from the start, since nothing is wanted until the folder is listed.
+        // The splash is there from the start, since nothing is wanted until the folder is listed, and Previous and
+        // Next are not (splash).
         stage = gui.box()
                 .width(Length.FILL).height(Length.grow(1f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(layers[0], layers[1], note, splash.node(), previousSide, nextSide);
+                .children(layers[0], layers[1], note, splash.node());
         splashed = true;
         gui.landmark(Landmarks.STAGE, stage);
 
@@ -210,10 +211,11 @@ final class Ui {
         gui.landmark(Landmarks.KEEP, keep.node());
 
         // The bar is the root's last child, so floating it puts it over the bottom of the stage, which then has the
-        // whole window under the title bar; unfloated, it takes room of its own below the stage (keep).
+        // whole window under the title bar; unfloated, it takes room of its own below the stage (keep). The zoom
+        // joins it with the first picture wanted (splash).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words, strip, zoom, keep.node());
+                .children(words, strip, keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
@@ -424,8 +426,9 @@ final class Ui {
     }
 
     /**
-     * The splash in the stage, after the note, or out of it. Added and removed rather than shaded, so the framework
-     * fades it in and out, and while it is out it takes neither room from the note nor the pointer from the stage.
+     * The splash in the stage, after the note, and the controls that act on a picture out of the window: Previous,
+     * Next and the zoom, which have nothing to do while there is none. Or the other way round. Added and removed
+     * rather than shaded, so the framework fades them in and out, and what is out takes neither room nor the pointer.
      */
     void splash(boolean shown) {
         if (shown == splashed) {
@@ -433,9 +436,15 @@ final class Ui {
         }
         splashed = shown;
         if (shown) {
-            stage.insert(splash.node(), 3);   // after the two layers and the note, under Previous and Next
+            stage.insert(splash.node(), 3);   // after the two layers and the note
+            previousSide.remove();
+            nextSide.remove();
+            zoom.remove();
         } else {
             splash.node().remove();
+            stage.append(previousSide);
+            stage.append(nextSide);
+            bar.insert(zoom, 2);   // after the words and the strip, before Keep shown
         }
     }
 

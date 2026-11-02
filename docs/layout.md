@@ -19,7 +19,8 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
 - **The title bar** says the picture's name, then the RASTERWARE wordmark, a raster with square pixels. A narrow window
   cuts the name and keeps the mark whole; with no picture the mark is alone.
 - **With no picture wanted, the stage shows the splash**: the mark and the wordmark as the canvas's lockup, and an
-  *Open a picture…* button with Ctrl+O beside it. It fades out as a picture is wanted and back if none is.
+  *Open a picture…* button with Ctrl+O beside it. It fades out as a picture is wanted and back if none is. Previous,
+  Next and the zoom have nothing to act on then, so they are out of the window, and come in with the first picture.
 - **The picture has the whole window** under the title bar. The controls float over it and fade when the pointer rests,
   and Keep shown pins them and gives them room of their own, as in 0.1.
 - **One slim bar along the bottom**, as tall as two lines of text, not as a tile. Left to right:

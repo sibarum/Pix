@@ -99,7 +99,8 @@ which sit on an eight-pixel grid, so the word is a raster 79 by 7 and is kept as
 
 While no picture is wanted, the stage shows the splash (`Splash.java`): the canvas's lockup, the mark beside the
 wordmark worn as on a tape (a red and a cyan ghost either side, `Wordmark.split`, and scanlines over both), and an
-*Open a picture…* button that does what Ctrl+O does. It is what most first runs show: with no file named Rasterware
+*Open a picture…* button that does what Ctrl+O does; Previous, Next and the zoom are out of the window until a picture
+is wanted. It is what most first runs show: with no file named Rasterware
 opens Pictures, and Windows keeps pictures in folders under it (Screenshots, Camera Roll) rather than in it. The mark
 is the About window's, `/pix.pair`, which the icon plugin bakes from `src/main/rc/pix.svg`.
 
