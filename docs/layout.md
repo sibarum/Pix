@@ -16,6 +16,8 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
 
 ## The window
 
+- **The title bar** says the picture's name, then the RASTERWARE wordmark, a raster with square pixels. A narrow window
+  cuts the name and keeps the mark whole; with no picture the mark is alone.
 - **The picture has the whole window** under the title bar. The controls float over it and fade when the pointer rests,
   and Keep shown pins them and gives them room of their own, as in 0.1.
 - **One slim bar along the bottom**, as tall as two lines of text, not as a tile. Left to right:

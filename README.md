@@ -80,6 +80,13 @@ To make it yours, draw a 64x64 SVG and render it at every size Windows asks for,
 largest. Replace the file, and the window and the executable change together. An `.ico` or `.png` that is missing is
 a compile error; one that does not decode costs the window its mark, logged, and nothing else.
 
+### The wordmark
+
+The title bar says the picture's name and then RASTERWARE, the suite canvas's wordmark: Press Start 2P's capitals,
+which sit on an eight-pixel grid, so the word is a raster 79 by 7 and is kept as one, written out pixel by pixel in
+`Wordmark.java`, rather than as the font. It is lit in the theme's ink and shown with square pixels
+(`SHARP_BILINEAR`), a pixel and a half to each of its own.
+
 Run from `mvn exec:exec`, the process is `java.exe`, so the window and its taskbar button wear the mark but Windows
 groups the button with other Java programs, and pinning it pins Java. The native executable has neither problem.
 

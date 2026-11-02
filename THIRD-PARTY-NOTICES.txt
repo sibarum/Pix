@@ -28,6 +28,13 @@ Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-gree
 
 The fonts' glyphs are built into the program as signed-distance-field atlases, which it draws its text from. The fonts themselves are not included.
 
+Press Start 2P font
+https://fonts.google.com/specimen/Press+Start+2P
+Licence: SIL Open Font License 1.1
+Copyright 2012 The Press Start 2P Project Authors (cody@zone38.net), with Reserved Font Name "Press Start 2P".
+
+The wordmark in the title bar is a 79 by 7 pixel picture of the word RASTERWARE in this font's capitals. The font itself is not included.
+
 ===============================================================================
 4. nativefiledialog-extended (nfd.dll)
 https://github.com/btzy/nativefiledialog-extended

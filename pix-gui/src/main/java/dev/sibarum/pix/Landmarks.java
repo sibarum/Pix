@@ -14,6 +14,9 @@ package dev.sibarum.pix;
  */
 final class Landmarks {
 
+    /** The wordmark in the title bar, after the picture's name. */
+    static final String WORDMARK = "title.wordmark";
+
     /** The room the picture is fitted into. */
     static final String STAGE = "stage";
 

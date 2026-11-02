@@ -106,6 +106,11 @@ final class Ui {
 
     Ui(Gui gui, TitleBar titleBar) {
         this.titleBar = titleBar;
+        // The name after the picture's, where "— Rasterware" was: the title gives way when the window is narrow, the
+        // mark keeps its size.
+        Node wordmark = Wordmark.node(gui, gui.theme().color(Role.INK));
+        titleBar.addLeading(wordmark);
+        gui.landmark(Landmarks.WORDMARK, wordmark);
         // The zoom sizes the controls, and what they give up is the picture's: the window keeps its size.
         gui.zoomSizesWindow(false);
 
@@ -422,11 +427,11 @@ final class Ui {
     }
 
     /**
-     * The picture's name in the title bar and the bar; with none, the bar asks for one, since a click on the name
-     * opens a picture.
+     * The picture's name in the title bar, before the wordmark, and in the bar; with none, the title bar has the mark
+     * alone and the bar asks for a picture, since a click on the name opens one.
      */
     void name(String name) {
-        titleBar.title(name.isEmpty() ? Pix.TITLE : name + " — " + Pix.TITLE);
+        titleBar.title(name);
         this.name.text(name.isEmpty() ? OPEN_A_PICTURE : name);
         named = !name.isEmpty();
         paintName();
