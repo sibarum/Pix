@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * one anchor moved by a tenth changes every surface and every shade of text at once, and nothing on screen
  * says which change did it. These are the checks that would have caught it.
  *
- * <p>Rasterware has a design now (the viewer mockup of 2026-11-01), so the last test <b>pins the gap between the
- * design and the construction</b>: each authored colour against what the palette derives, with the difference
- * written down. A gap that is measured is a known quantity; a gap that is absorbed is a surprise waiting for a
+ * <p>Rasterware has a design now (the viewer mockup of 2026-11-01, turned to the blue of the suite canvas's branding),
+ * so the last test <b>pins the gap between the design and the construction</b>: each authored colour against what the
+ * palette derives, with the difference written down. A gap that is measured is a known quantity; a gap that is absorbed is a surprise waiting for a
  * review.
  */
 class LookTest {
@@ -57,31 +57,38 @@ class LookTest {
     }
 
     /**
-     * The mockup's colours, each against the role the palette derives for it, and how far apart the two may be in
-     * Oklab. Most are anchors, so all but equal; the climbing surfaces and the dim ink are the ladder's, and their
-     * allowance is the chroma the ladder does not climb with (Look's javadoc).
+     * The viewer mockup's colours turned to the brand's hue, each against the role the palette derives for it, and
+     * how far apart the two may be in Oklab. Most are anchors, so all but equal; the climbing surfaces and the dim ink
+     * are the ladder's, and their allowance is the chroma the ladder does not climb with; the fill's is the chroma
+     * sRGB does not hold at this hue (Look's javadoc). The accent is the brand's blue itself, and the close button's
+     * red is left where it was drawn.
      */
     @Test
-    void theMockupsColoursAreWhatThePaletteDerives() {
+    void theMockupsColoursTurnedToTheBrandsHueAreWhatThePaletteDerives() {
         assertAll(
-                near(0x0d0a11, Role.PAGE, 0.001),
-                near(0x120d17, Role.CHROME, 0.006),
-                near(0x1b1421, Role.RAISED, 0.009),
-                near(0xf1eaf5, Role.INK, 0.001),
-                near(0x9b8fa8, Role.DIM, 0.025),
-                near(0xf99bd1, Role.ACCENT, 0.001),
-                near(0xc4528f, Role.ACTION, 0.001),
-                near(0xe0476f, Role.DANGER, 0.001));
+                near(turned(0x0d0a11), Role.PAGE, 0.001),
+                near(turned(0x120d17), Role.CHROME, 0.006),
+                near(turned(0x1b1421), Role.RAISED, 0.009),
+                near(turned(0xf1eaf5), Role.INK, 0.001),
+                near(turned(0x9b8fa8), Role.DIM, 0.025),
+                near(Oklab.of(Color.rgb(0x80c5ff)), Role.ACCENT, 0.001),
+                near(turned(0xc4528f), Role.ACTION, 0.021),
+                near(Oklab.of(Color.rgb(0xe0476f)), Role.DANGER, 0.001));
     }
 
-    private static Executable near(int hex, Role role, double allowed) {
+    /** {@code hex} at its own lightness and chroma, on the brand's hue. */
+    private static Oklab turned(int hex) {
+        Oklab o = Oklab.of(Color.rgb(hex));
+        return Oklab.polar(o.l(), Math.hypot(o.a(), o.b()), Look.HUE);
+    }
+
+    private static Executable near(Oklab drawn, Role role, double allowed) {
         return () -> {
-            Oklab drawn = Oklab.of(Color.rgb(hex));
             Oklab derived = Oklab.of(Look.THEME.color(role));
             double d = Math.sqrt(Math.pow(drawn.l() - derived.l(), 2) + Math.pow(drawn.a() - derived.a(), 2)
                     + Math.pow(drawn.b() - derived.b(), 2));
-            assertTrue(d <= allowed, String.format("#%06x is %.4f from what the palette derives, past %.4f",
-                    hex, d, allowed));
+            assertTrue(d <= allowed, String.format("%s's %s is %.4f from what the palette derives, past %.4f",
+                    role, drawn, d, allowed));
         };
     }
 

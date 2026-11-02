@@ -77,7 +77,17 @@ second window reads as its own and is still told apart from the main one.
 
 To make it yours, draw a 64x64 SVG and render it at every size Windows asks for, 16 to 256 px, into that `.ico` —
 `vex-suite-common`'s `tools/Ico.java` does exactly this, from each size's own rasterisation rather than shrinking the
-largest. Replace the file, and the window and the executable change together. An `.ico` or `.png` that is missing is
+largest. Its javadoc's class path is older than imagelib's split into an API and per-OS natives, so it needs all
+three jars now; from `vex-suite-common`, with `M=~/.m2/repository/sibarum/imagelib` and `V=0.1.3-SNAPSHOT`:
+
+```
+java --enable-native-access=ALL-UNNAMED \
+     -cp "$M/imagelib-wrapper/$V/imagelib-wrapper-$V.jar;$M/imagelib-wrapper-api/$V/imagelib-wrapper-api-$V.jar;$M/imagelib-wrapper-windows/$V/imagelib-wrapper-windows-$V.jar" \
+     tools/Ico.java ../Pix/pix-gui/src/main/rc/pix.svg ../Pix/pix-gui/src/main/rc/pix.ico
+```
+
+`pix-background.ico` is made the same way, with `16=pix-background-16.svg 24=pix-background-24.svg` after it.
+Replace the file, and the window and the executable change together. An `.ico` or `.png` that is missing is
 a compile error; one that does not decode costs the window its mark, logged, and nothing else.
 
 ### The wordmark
