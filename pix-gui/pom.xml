@@ -12,7 +12,7 @@
 
     <artifactId>pix-gui</artifactId>
 
-    <name>pix-gui</name>
+    <name>Rasterware</name>
     <description>
         The view, and the framework integration: the window, the widgets, the entry point and its generated wiring.
     </description>
