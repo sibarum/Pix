@@ -140,6 +140,8 @@ final class View {
     /** The bar's content width and a rem, in px, as last laid out: what the strip is sized from. */
     private float barW;
     private float remPx;
+    /** The bar's zoom's width, px, as last laid out, which the strip leaves it. */
+    private float zoomW;
 
     /** The picture shown; null before the first. */
     private Pictured shown;
@@ -185,6 +187,10 @@ final class View {
         this.span = span;
         gui.hear(ui.bar(), NodeEvent.RESIZE, layout -> {
             barW = layout.content().w();
+            sizeStrip();
+        });
+        gui.hear(ui.zoomNode(), NodeEvent.RESIZE, layout -> {
+            zoomW = layout.rect().w();
             sizeStrip();
         });
         gui.hear(ui.keepNode(), NodeEvent.RESIZE, layout -> {
@@ -342,6 +348,7 @@ final class View {
         state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
                 toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades));
         closeLetGo();
+        sayZoom();
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
         showSaid();
@@ -458,13 +465,17 @@ final class View {
         }
     }
 
-    /** Previous and Next, as ← and →; Keep shown, on or off. */
+    /** Previous and Next, as ← and →; the bar's − and +; Keep shown, on or off. */
     @Subscribe
     public void pressed(Button.Pressed p) {
         if (p.button().equals(ui.previousAddress())) {
             step.send(new Step(-1));
         } else if (p.button().equals(ui.nextAddress())) {
             step.send(new Step(1));
+        } else if (p.button().equals(ui.zoomOutAddress())) {
+            look(state.lens().stepped(-1, own(), System.nanoTime()));
+        } else if (p.button().equals(ui.zoomInAddress())) {
+            look(state.lens().stepped(1, own(), System.nanoTime()));
         } else if (p.button().equals(ui.keepAddress())) {
             kept = !kept;
             ui.keep(kept);
@@ -578,6 +589,19 @@ final class View {
     private void look(Lens lens) {
         state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade(),
                 state.cells(), state.glide(), state.shades());
+        sayZoom();
+    }
+
+    /** The bar's zoom, saying where the lens is going: fitted, or a percent of the picture's own pixels. */
+    private void sayZoom() {
+        Lens l = state.lens();
+        ui.zoomLevel(l.fitted() ? Ui.FIT : l.percent(own()) + "%");
+    }
+
+    /** The zoom at which the picture shown is at its own pixels, one to a layout px; none while nothing is shown. */
+    private float own() {
+        float fitW = state.lens().fitW();
+        return shown == null || !(fitW > 0f) ? 0f : shown.width() / fitW;
     }
 
     /**
@@ -616,7 +640,8 @@ final class View {
      * viewer told how far either side that reaches, so it reads those thumbnails and no others.
      */
     private void sizeStrip() {
-        float room = barW - remPx * (Ui.TOOL_REM + 2 * Ui.MARGIN_REM);
+        // Keep shown, the zoom, and the three gaps between the bar's four parts.
+        float room = barW - zoomW - remPx * (Ui.TOOL_REM + 3 * Ui.MARGIN_REM);
         int n = Strip.cells(room, remPx);
         ui.strip(n, barW > 0f ? Strip.width(n, remPx) / barW * 100f : 0f);
         cells = n;

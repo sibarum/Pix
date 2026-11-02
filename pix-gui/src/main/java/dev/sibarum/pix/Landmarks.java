@@ -44,6 +44,14 @@ final class Landmarks {
         return STRIP + "." + i;
     }
 
+    /**
+     * The bar's zoom: − and +, and between them how large the picture is going to be, {@code Fit} or a percent of its
+     * own pixels ({@code await bar.zoom 100%}).
+     */
+    static final String ZOOM_OUT = "bar.zoom-out";
+    static final String ZOOM = "bar.zoom";
+    static final String ZOOM_IN = "bar.zoom-in";
+
     /** Keep shown, in the bar's tools: the controls pinned, and given room of their own. */
     static final String KEEP = "bar.keep";
 

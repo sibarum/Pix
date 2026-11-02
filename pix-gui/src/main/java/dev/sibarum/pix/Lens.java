@@ -46,6 +46,14 @@ record Lens(Pose from, Pose to, long since, float fitW, float fitH, float stageW
     /** The smallest and largest zoom, over the fitted size. */
     static final float MIN_ZOOM = 0.1f;
     static final float MAX_ZOOM = 50f;
+    /**
+     * Where the bar's − and + stop, in percent of the picture's own pixels; the fitted size is a stop too, wherever it
+     * falls among them.
+     */
+    static final float[] STOPS = {10f, 25f, 50f, 75f, 100f, 150f, 200f, 300f, 400f, 600f, 800f, 1200f, 1600f, 2400f,
+            3200f};
+    /** How near a zoom must be to a stop to count as at it, so a step never lands where it already is. */
+    static final float STOP_SLACK = 0.01f;
     /** How fast a gesture closes on where it is going: its time constant, ns. 0.1's zoom eased at the same. */
     static final long EASE = 70_000_000L;
     /** How long a gesture is drawn moving: past seven time constants it is within a thousandth, and drawn arrived. */
@@ -124,6 +132,46 @@ record Lens(Pose from, Pose to, long since, float fitW, float fitH, float stageW
         float k = zoom / at.zoom();
         Pose p = held(new Pose(zoom, px - (px - at.x()) * k, py - (py - at.y()) * k));
         return new Lens(p, p, AT_REST, fitW, fitH, stageW, stageH);
+    }
+
+    /**
+     * The bar's zoom, a stop in or out ({@code direction} positive or negative): to the nearest of {@link #STOPS} or
+     * the fitted size past where the picture is going, about the stage's centre. {@code own} is the zoom at which the
+     * picture shows its own pixels, one picture pixel to a layout px, as {@link Fit} counts them. Past the last stop
+     * either way, it stays.
+     */
+    Lens stepped(int direction, float own, long now) {
+        if (direction == 0 || !(own > 0f) || !(fitW > 0f) || !(fitH > 0f)) {
+            return this;
+        }
+        float z = to.zoom();
+        float goal = direction > 0 ? Float.MAX_VALUE : 0f;
+        for (int i = -1; i < STOPS.length; i++) {
+            float stop = i < 0 ? 1f : STOPS[i] / 100f * own;
+            if (stop < MIN_ZOOM || stop > MAX_ZOOM) {
+                continue;
+            }
+            if (direction > 0 ? stop > z * (1f + STOP_SLACK) && stop < goal
+                    : stop < z * (1f - STOP_SLACK) && stop > goal) {
+                goal = stop;
+            }
+        }
+        if (goal == Float.MAX_VALUE || goal == 0f) {
+            return this;
+        }
+        Pose at = at(now);
+        float k = goal / at.zoom();
+        return toward(at, held(new Pose(goal, at.x() * k, at.y() * k)), now);
+    }
+
+    /** Whether the picture is going to its fitted size: what the bar says instead of a percent. */
+    boolean fitted() {
+        return Math.abs(to.zoom() - 1f) < STOP_SLACK;
+    }
+
+    /** How large the picture is going to be, in percent of its own pixels, {@code own} as {@link #stepped} takes it. */
+    int percent(float own) {
+        return own > 0f ? Math.round(to.zoom() / own * 100f) : 100;
     }
 
     /** Moved by a drag, {@code (dx, dy)} layout px: at once, and still held. A gesture under way goes on from there. */

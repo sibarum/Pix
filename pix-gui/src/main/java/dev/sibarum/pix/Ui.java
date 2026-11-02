@@ -61,6 +61,10 @@ final class Ui {
     static final Length TOOL = Length.rem(TOOL_REM);
     static final Length TOOL_ICON = Length.rem(1.25f);
 
+    /** What the zoom says while the picture is fitted, and the room it has: as wide as {@code 3200%}. */
+    static final String FIT = "Fit";
+    static final Length ZOOM_LEVEL_W = Length.dp(48f);
+
     /** Between the details: a dot with a space each side, so the gap is part of what is measured. */
     static final String DOT = " · ";
 
@@ -76,6 +80,11 @@ final class Ui {
     private final Node nextSide;
     private final Node bar;
     private final IconButton keep;
+    /** The bar's zoom: − and + either side of how large the picture is. */
+    private final IconButton zoomOut;
+    private final IconButton zoomIn;
+    private final Node zoomLevel;
+    private final Node zoom;
     private final Node name;
     private final Node words;
     /** Whether the name is a picture's, rather than asking for one; where the pointer is on it. */
@@ -172,6 +181,18 @@ final class Ui {
             strip.append(cells[i]);
         }
 
+        zoomOut = new IconButton(gui, Icon.MINUS, "Zoom out").size(TOOL, TOOL_ICON).tip("Zoom out");
+        zoomIn = new IconButton(gui, Icon.PLUS, "Zoom in").size(TOOL, TOOL_ICON).tip("Zoom in");
+        zoomLevel = gui.text(FIT).wordWrap(false).textSize(DETAIL_TEXT).textColor(gui.theme().color(Role.INK));
+        gui.landmark(Landmarks.ZOOM_OUT, zoomOut.node());
+        gui.landmark(Landmarks.ZOOM_IN, zoomIn.node());
+        gui.landmark(Landmarks.ZOOM, zoomLevel);
+        // As wide as its longest word, so the buttons either side stay put as it changes.
+        Node level = gui.row().width(ZOOM_LEVEL_W).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
+                .scroll(false, false).children(zoomLevel);
+        zoom = gui.row().alignItems(AlignItems.CENTER).scroll(false, false)
+                .children(zoomOut.node(), level, zoomIn.node());
+
         keep = new IconButton(gui, Icon.PIN_UP, "Keep shown").toggle(true).size(TOOL, TOOL_ICON)
                 .tip("Keep shown");
         gui.landmark(Landmarks.KEEP, keep.node());
@@ -180,7 +201,7 @@ final class Ui {
         // whole window under the title bar; unfloated, it takes room of its own below the stage (keep).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words, strip, keep.node());
+                .children(words, strip, zoom, keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
@@ -303,6 +324,25 @@ final class Ui {
         cells[i].border(Length.rem(0.125f), edge)
                 .background(s == InteractionState.NORMAL ? Role.WELL : Role.WELL.at(s));
         gui.cursor(cells[i], live ? CursorShape.POINTER : CursorShape.DEFAULT);
+    }
+
+    /** The bar's zoom, whose width the filmstrip leaves it. */
+    Node zoomNode() {
+        return zoom;
+    }
+
+    /** What the zoom says: {@link #FIT}, or a percent of the picture's own pixels. */
+    void zoomLevel(String text) {
+        zoomLevel.text(text);
+    }
+
+    /** The addresses − and + press with. */
+    String zoomOutAddress() {
+        return zoomOut.address();
+    }
+
+    String zoomInAddress() {
+        return zoomIn.address();
     }
 
     /** The address Keep shown presses with. */

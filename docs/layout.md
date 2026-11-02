@@ -23,7 +23,8 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
     the details (size, file size) and the place (*12 of 340*).
   - **The middle**: the filmstrip, or for a picture that plays its transport, whose timeline grows into whatever the
     bar has spare. This is the part that gives first.
-  - **The tools**: Turn, Background, Settings, Keep shown, as icons sized for the bar.
+  - **The tools**: the zoom (− and +, either side of *Fit* or a percent of the picture's own pixels), Turn,
+    Background, Settings, Keep shown, as icons sized for the bar.
 - **Previous and Next** stay at the window's sides, halfway up, smaller than 0.1's tiles.
 - **A narrow window gives way in order**: the filmstrip shrinks, then the details drop one at a time, then the tools
   fold into a ⋯ menu. The name and the place go last. Nothing is cut at a fixed edge.
@@ -60,7 +61,7 @@ Built: the bar's words (the name cut in the middle, the details going whole), Pr
 and the sizes (controls in rem, words in dp, Ctrl+= / Ctrl+- / Ctrl+0, the window keeping its size). The bar floats
 over the picture, and it and the arrows fade once the pointer has rested two seconds (`Fade`, drawn through
 `Drawn.opacity`, FN-10); they are shown at the start, while the pointer is on one of them, and for a rest after a
-step, so a new name is seen. Keep shown is the pin at the bar's right. The filmstrip is the bar's middle: at most half
+step, so a new name is seen. Keep shown is the pin at the bar's right, and the zoom beside it steps − and + between stops of the picture's own pixels and its fitted size, about the stage's centre, saying where the picture is going. The filmstrip is the bar's middle: at most half
 of it, three to fifteen cells, none below three, so it gives way before the name (`Strip`). Pinch zooms about the pointer
 through `NodeEvent.PINCH` (FN-12), at once rather than eased, and the wheel is ignored while a pinch is in flight. The name opens a picture when
 clicked, as Ctrl+O does, and says *Open a picture…* while nothing is shown. Full screen (F11, a double click on the

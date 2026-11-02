@@ -144,4 +144,50 @@ class LensTest {
         assertEquals(drawn * 2f, easing.pinched(2f, 0f, 0f, T + Lens.EASE).to().zoom(), CLOSE,
                 "from where it is drawn, not where the wheel was going");
     }
+
+    /**
+     * The bar's − and +: a picture of 1600 by 900 fitted at 800 by 450 shows its own pixels at zoom two, so its stops
+     * are at a fiftieth of a percent each, and fitted is 50%.
+     */
+    @Test
+    void theBarsStepsGoFromStopToStopOfThePicturesOwnPixels() {
+        float own = 2f;
+        Lens l = lens().stepped(1, own, T);
+        assertEquals(1.5f, l.to().zoom(), CLOSE, "fitted, then 75%");
+        assertEquals(75, l.percent(own));
+        l = l.stepped(1, own, T);
+        assertEquals(2f, l.to().zoom(), CLOSE, "then 100%");
+        l = l.stepped(-1, own, T).stepped(-1, own, T);
+        assertTrue(l.fitted(), "back down to the fitted size, which is also 50%");
+        assertEquals(0.5f, l.stepped(-1, own, T).to().zoom(), CLOSE, "then 25%");
+    }
+
+    @Test
+    void theFittedSizeIsAStopBetweenTheOthers() {
+        float own = 1.2f;   // fitted at a little under its own pixels: 1 is 83%
+        Lens in = lens().stepped(1, own, T);
+        assertEquals(100, in.percent(own), "fitted, then its own pixels");
+        Lens out = in.stepped(-1, own, T);
+        assertTrue(out.fitted(), "and back to fitted, not past it to 75%");
+        assertEquals(0.75f * own, out.stepped(-1, own, T).to().zoom(), CLOSE);
+    }
+
+    @Test
+    void aStepZoomsAboutTheStagesCentre() {
+        Pose moved = new Pose(1.5f, 100f, -40f);
+        Lens s = new Lens(moved, moved, Lens.AT_REST, 800f, 450f, 1000f, 600f).stepped(1, 2f, T);
+        assertEquals(2f, s.to().zoom(), CLOSE);
+        assertEquals(100f * 2f / 1.5f, s.to().x(), CLOSE, "the point at the stage's centre stays there");
+        assertEquals(-40f * 2f / 1.5f, s.to().y(), CLOSE);
+    }
+
+    @Test
+    void pastTheLastStopAStepStays() {
+        Lens l = lens();
+        for (int i = 0; i < Lens.STOPS.length + 2; i++) {
+            l = l.stepped(1, 2f, T);
+        }
+        assertEquals(48f, l.to().zoom(), CLOSE, "2400% of a picture at zoom two; 3200% is past the largest zoom");
+        assertTrue(l.to().zoom() <= Lens.MAX_ZOOM);
+    }
 }

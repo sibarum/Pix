@@ -152,7 +152,7 @@ every message is in one file. Read these in this order.
 | --- | --- |
 | `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
 | `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its asked half (`@Draw`) draws that on every frame as a scale and an offset, and the controls' `Fade` as an opacity. |
-| `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone. |
+| `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone; and the stops the bar's − and + step between. |
 | `Keys.java` | the chords that ask something of the view itself: 0, to fit, and Ctrl+= / Ctrl+- / Ctrl+0, the controls' size. |
 | `Fade.java` | how far the controls are shown, as a value: fading once the pointer has rested, in closed form, drawn by the view's asked half as the lens is. |
 | `Toss.java` | a step's throw, as a value: the new picture in across the stage from its side, the one before out the other way, in closed form, drawn by the view's asked half on two layers, the newest in front. |
