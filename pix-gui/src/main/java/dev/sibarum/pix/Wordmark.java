@@ -70,6 +70,65 @@ final class Wordmark {
                 .imageFilter(ImageFilter.SHARP_BILINEAR, W, H);
     }
 
+    /** The worn tape's two ghosts, from the canvas's lockup: red a little left, cyan a little right and down. */
+    static final Color SPLIT_RED = Color.rgb(0xff3b6b);
+    static final Color SPLIT_CYAN = Color.rgb(0x38e8ff);
+
+    /** The lockup's split mark: four texels to a pixel of the raster, so the ghosts can sit half and a quarter off. */
+    static final int SPLIT_SCALE = 4;
+    static final int SPLIT_W = W * SPLIT_SCALE + 4;
+    static final int SPLIT_H = H * SPLIT_SCALE + 1;
+
+    /** How far each ghost is drawn. */
+    private static final float SPLIT_ALPHA = 0.85f;
+
+    /**
+     * The mark as the lockup draws it (the canvas's "light distortion"): the red and the cyan ghost screened together
+     * two texels either side, the cyan one down a texel, and the face over both in {@code face}. Screened as over
+     * black, which the page all but is, and handed over with straight alpha, so drawn over the page it comes out as
+     * the canvas's screen blend does.
+     */
+    static Feed split(Color face) {
+        byte[] rgba = new byte[SPLIT_W * SPLIT_H * 4];
+        for (int y = 0; y < SPLIT_H; y++) {
+            for (int x = 0; x < SPLIT_W; x++) {
+                boolean red = lit(x, y);
+                boolean cyan = lit(x - 4, y - 1);
+                boolean lit = lit(x - 2, y);
+                float a = 1f - (red ? 1f - SPLIT_ALPHA : 1f) * (cyan ? 1f - SPLIT_ALPHA : 1f);
+                if (a <= 0f) {
+                    continue;
+                }
+                int i = (y * SPLIT_W + x) * 4;
+                if (lit) {
+                    rgba[i] = channel(face.r());
+                    rgba[i + 1] = channel(face.g());
+                    rgba[i + 2] = channel(face.b());
+                    rgba[i + 3] = (byte) 255;
+                    continue;
+                }
+                rgba[i] = channel(screen(red, SPLIT_RED.r(), cyan, SPLIT_CYAN.r()) / a);
+                rgba[i + 1] = channel(screen(red, SPLIT_RED.g(), cyan, SPLIT_CYAN.g()) / a);
+                rgba[i + 2] = channel(screen(red, SPLIT_RED.b(), cyan, SPLIT_CYAN.b()) / a);
+                rgba[i + 3] = channel(a);
+            }
+        }
+        return Feed.still(SPLIT_W, SPLIT_H, true, MipChain.of(rgba, SPLIT_W, SPLIT_H));
+    }
+
+    /** Whether texel {@code (x, y)} of the face, placed at the split's origin, is a lit pixel of the raster. */
+    private static boolean lit(int x, int y) {
+        if (x < 0 || y < 0 || x >= W * SPLIT_SCALE || y >= H * SPLIT_SCALE) {
+            return false;
+        }
+        return ROWS[y / SPLIT_SCALE].charAt(x / SPLIT_SCALE) == '#';
+    }
+
+    /** The two ghosts' channel screened over black, premultiplied. */
+    private static float screen(boolean red, float r, boolean cyan, float c) {
+        return 1f - (1f - (red ? r * SPLIT_ALPHA : 0f)) * (1f - (cyan ? c * SPLIT_ALPHA : 0f));
+    }
+
     private static byte channel(float v) {
         return (byte) Math.round(Math.max(0f, Math.min(1f, v)) * 255f);
     }

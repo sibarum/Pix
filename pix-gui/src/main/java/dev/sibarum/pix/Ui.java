@@ -73,6 +73,9 @@ final class Ui {
     private final Gui gui;
     private final Node[] layers = new Node[2];
     private final Node note;
+    /** What the stage shows while no picture is wanted, and whether it is in the stage. */
+    private final Splash splash;
+    private boolean splashed;
     private final IconButton previous;
     private final IconButton next;
     /** The columns Previous and Next are in, which fade with the bar. */
@@ -129,13 +132,17 @@ final class Ui {
         gui.landmark(Landmarks.PREVIOUS, previous.node());
         gui.landmark(Landmarks.NEXT, next.node());
 
+        splash = new Splash(gui);
+
         previousSide = side(gui, previous, Length.ZERO);
         nextSide = side(gui, next, Length.percent(100f));
+        // The splash is there from the start, since nothing is wanted until the folder is listed.
         stage = gui.box()
                 .width(Length.FILL).height(Length.grow(1f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(layers[0], layers[1], note, previousSide, nextSide);
+                .children(layers[0], layers[1], note, splash.node(), previousSide, nextSide);
+        splashed = true;
         gui.landmark(Landmarks.STAGE, stage);
 
         name = gui.text(OPEN_A_PICTURE).role("button").wordWrap(false).ellipsis(Ellipsis.MIDDLE).width(Length.FILL)
@@ -414,6 +421,27 @@ final class Ui {
         if (why != null) {
             note.text(why);
         }
+    }
+
+    /**
+     * The splash in the stage, after the note, or out of it. Added and removed rather than shaded, so the framework
+     * fades it in and out, and while it is out it takes neither room from the note nor the pointer from the stage.
+     */
+    void splash(boolean shown) {
+        if (shown == splashed) {
+            return;
+        }
+        splashed = shown;
+        if (shown) {
+            stage.insert(splash.node(), 3);   // after the two layers and the note, under Previous and Next
+        } else {
+            splash.node().remove();
+        }
+    }
+
+    /** The address the splash's button presses with. */
+    String splashOpenAddress() {
+        return splash.openAddress();
     }
 
     /** What is said in a picture's place, which the view shows and hides by shading it. */

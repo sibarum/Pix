@@ -18,6 +18,8 @@ the bar, full screen, the touchpad). 0.1's README says what 0.1 did; this says w
 
 - **The title bar** says the picture's name, then the RASTERWARE wordmark, a raster with square pixels. A narrow window
   cuts the name and keeps the mark whole; with no picture the mark is alone.
+- **With no picture wanted, the stage shows the splash**: the mark and the wordmark as the canvas's lockup, and an
+  *Open a picture…* button with Ctrl+O beside it. It fades out as a picture is wanted and back if none is.
 - **The picture has the whole window** under the title bar. The controls float over it and fade when the pointer rests,
   and Keep shown pins them and gives them room of their own, as in 0.1.
 - **One slim bar along the bottom**, as tall as two lines of text, not as a tile. Left to right:
@@ -66,7 +68,8 @@ over the picture, and it and the arrows fade once the pointer has rested two sec
 step, so a new name is seen. Keep shown is the pin at the bar's right, and the zoom beside it steps − and + between stops of the picture's own pixels and its fitted size, about the stage's centre, saying where the picture is going. The filmstrip is the bar's middle: at most half
 of it, three to fifteen cells, none below three, so it gives way before the name (`Strip`). Pinch zooms about the pointer
 through `NodeEvent.PINCH` (FN-12), at once rather than eased, and the wheel is ignored while a pinch is in flight. The name opens a picture when
-clicked, as Ctrl+O does, and says *Open a picture…* while nothing is shown. Full screen (F11, a double click on the
+clicked, as Ctrl+O does, and says *Open a picture…* while nothing is shown, when the stage shows the splash
+(`Splash`). Full screen (F11, a double click on the
 stage, Esc back) hides the title bar and leaves the bar floating as before (FN-14). A step throws the picture in from its side on a second layer while the one before is flung out
 (`Toss`), as 0.1 did, without 0.1's lean, and the filmstrip's thumbnails glide a cell along with it (`Glide`). What can be clicked shows a pointer, lifts under it and shows a press at once; what Rasterware shows and hides fades (`Shade`), and a picture put in another's place without a throw fades over it. Not yet:
 

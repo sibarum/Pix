@@ -97,6 +97,12 @@ which sit on an eight-pixel grid, so the word is a raster 79 by 7 and is kept as
 `Wordmark.java`, rather than as the font. It is lit in the theme's ink and shown with square pixels
 (`SHARP_BILINEAR`), a pixel and a half to each of its own.
 
+While no picture is wanted, the stage shows the splash (`Splash.java`): the canvas's lockup, the mark beside the
+wordmark worn as on a tape (a red and a cyan ghost either side, `Wordmark.split`, and scanlines over both), and an
+*Open a picture…* button that does what Ctrl+O does. It is what most first runs show: with no file named Rasterware
+opens Pictures, and Windows keeps pictures in folders under it (Screenshots, Camera Roll) rather than in it. The mark
+is the About window's, `/pix.pair`, which the icon plugin bakes from `src/main/rc/pix.svg`.
+
 Run from `mvn exec:exec`, the process is `java.exe`, so the window and its taskbar button wear the mark but Windows
 groups the button with other Java programs, and pinning it pins Java. The native executable has neither problem.
 

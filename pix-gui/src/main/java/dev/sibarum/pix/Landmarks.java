@@ -26,6 +26,10 @@ final class Landmarks {
     /** What is said in the picture's place when a file is not a picture Rasterware can show. */
     static final String NOTE = "note";
 
+    /** What the stage shows while no picture is wanted, and its button that opens one. */
+    static final String SPLASH = "splash";
+    static final String SPLASH_OPEN = "splash.open";
+
     /** The buttons at the stage's sides. */
     static final String PREVIOUS = "previous";
     static final String NEXT = "next";

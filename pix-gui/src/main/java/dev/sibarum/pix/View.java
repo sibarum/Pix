@@ -113,6 +113,7 @@ final class View {
     private final Ui ui;
     private final Sender<Step> step;
     private final Sender<Span> span;
+    private final Sender<Open> open;
     private final Sender<WindowCommand> window;
 
     /** Whether the main window is full screen, as the framework last said. */
@@ -185,6 +186,7 @@ final class View {
         this.window = window;
         this.step = step;
         this.span = span;
+        this.open = open;
         gui.hear(ui.bar(), NodeEvent.RESIZE, layout -> {
             barW = layout.content().w();
             sizeStrip();
@@ -391,6 +393,7 @@ final class View {
     @Subscribe
     public void caption(Caption m) {
         ui.name(m.name());
+        ui.splash(m.name().isEmpty());
         if (shown == null || !m.name().equals(String.valueOf(shown.path().getFileName()))) {
             say(Details.KIND, "");
             say(Details.BYTES, "");
@@ -465,10 +468,12 @@ final class View {
         }
     }
 
-    /** Previous and Next, as ← and →; the bar's − and +; Keep shown, on or off. */
+    /** Previous and Next, as ← and →; the bar's − and +; Keep shown, on or off; the splash's button, as Ctrl+O. */
     @Subscribe
     public void pressed(Button.Pressed p) {
-        if (p.button().equals(ui.previousAddress())) {
+        if (p.button().equals(ui.splashOpenAddress())) {
+            open.send(new Open(false));
+        } else if (p.button().equals(ui.previousAddress())) {
             step.send(new Step(-1));
         } else if (p.button().equals(ui.nextAddress())) {
             step.send(new Step(1));
