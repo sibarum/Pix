@@ -40,6 +40,10 @@
         <vexelray.version>0.1.3-SNAPSHOT</vexelray.version>
         <tactroller.version>1.3-SNAPSHOT</tactroller.version>
         <vexelray-codec.version>0.2.0-SNAPSHOT</vexelray-codec.version>
+        <!-- imagelib's static library and the linker arguments beside it, staged by imagelib-wrapper's
+             native/build.sh in the sibling checkout. Only the native image reads them; a JVM run extracts the DLL
+             from the jar. From the reactor's root, so -gui resolves it the same as this pom would. -->
+        <imagelib.static.dir>${maven.multiModuleProjectDirectory}/../imagelib-wrapper/imagelib-wrapper-windows/native/static/windows-x86_64</imagelib.static.dir>
         <junit.version>5.11.4</junit.version>
 
         <app.mainClass>dev.sibarum.pix.Pix</app.mainClass>
