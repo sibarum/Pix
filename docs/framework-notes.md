@@ -221,3 +221,15 @@ and go in a frame. The framework's own context menu met the same wall in the sam
 before hiding. What would stop it: a `remove` that refuses a handle used again (a startup error rather than a silent
 no-op), and a way to take a node out of view with the presence motion and keep it, `visible(false)` eased as an
 add and a removal are.
+
+## FN-20 · The title bar hands the wordmark a paint, and a raster cannot hold one 🔬
+
+`TitleBar.Wordmark.ink` takes a `Paint` (`Role.INK` at rest, `Role.ACCENT` in the pointer's state under it) since
+2026-11-05, so a theme swapped later reaches the bar's own text wordmark at draw time. Rasterware's wordmark is a
+raster lit in a colour, and a `Feed` has no tint a paint could feed: `Wordmark.bar` resolves the paint against
+`gui.theme()` when the bar hands it over and keeps one raster per colour. So after a theme swap the mark stays in the
+old theme's ink until the pointer next crosses the lockup.
+
+What the framework could do: a paint-valued image tint on `Node` (`imageTint(Paint)`, multiplied in the shader), so a
+mark drawn white once is lit in whatever the theme says, every frame. Then `bar` would hold one white raster and pass
+the paint straight through, as the framework's own text wordmark does.

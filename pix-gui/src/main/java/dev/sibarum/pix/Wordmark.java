@@ -6,6 +6,7 @@ import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.layout.Length;
+import dev.vexelray.gui.core.style.Paint;
 import dev.vexelray.gui.core.style.Role;
 import dev.vexelray.gui.widget.TitleBar;
 import dev.vexelray.vulkan.present.MipChain;
@@ -76,6 +77,10 @@ final class Wordmark {
      * The wordmark for the title bar's lockup: the raster, re-lit in whatever ink the bar hands it as the pointer comes
      * and goes. A raster per ink, made the first time that ink is asked for and kept, since the bar asks for the same
      * two or three over and over.
+     *
+     * <p>The bar hands over a paint, and a raster cannot hold one: its pixels are lit in a colour. So the paint is
+     * resolved against the theme drawing when the bar hands it over, and the raster keeps that colour until the bar
+     * hands over the next.
      */
     static TitleBar.Wordmark bar(Gui gui) {
         Node node = node(gui, gui.theme().color(Role.INK));
@@ -87,8 +92,8 @@ final class Wordmark {
             }
 
             @Override
-            public void ink(Color ink) {
-                node.image(lit.computeIfAbsent(ink, Wordmark::feed));
+            public void ink(Paint ink) {
+                node.image(lit.computeIfAbsent(ink.in(gui.theme()), Wordmark::feed));
             }
         };
     }
