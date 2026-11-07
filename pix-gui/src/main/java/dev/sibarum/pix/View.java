@@ -32,6 +32,7 @@ import dev.vexelray.gui.core.NodeEvent;
 import dev.vexelray.gui.core.input.DragEvent;
 import dev.vexelray.gui.core.input.PinchEvent;
 import dev.vexelray.gui.core.input.Shortcut;
+import dev.vexelray.gui.keymap.Keymap;
 import dev.vexelray.gui.core.layout.NodeLayout;
 import dev.vexelray.gui.widget.Button;
 import sibarum.atchung.Sender;
@@ -179,8 +180,9 @@ final class View {
     private final boolean[] over = new boolean[3];
     private boolean kept;
 
-    View(Gui gui, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span, Sender<Open> open,
-         Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey, Sender<EscKey> escKey) {
+    View(Gui gui, Keymap keys, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span,
+         Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
+         Sender<EscKey> escKey) {
         this.gui = gui;
         this.ui = ui;
         this.window = window;
@@ -257,27 +259,34 @@ final class View {
                 look(state.lens().moved(d.dx(), d.dy()));
             }
         });
-        gui.shortcut(Shortcut.of(Key.RIGHT), step, new Step(1));
-        gui.shortcut(Shortcut.of(Key.LEFT), step, new Step(-1));
-        gui.shortcut(Shortcut.of(Key.PAGE_DOWN), step, new Step(1));
-        gui.shortcut(Shortcut.of(Key.PAGE_UP), step, new Step(-1));
-        gui.shortcut(Shortcut.of(Key.HOME), edge, new Edge(false));
-        gui.shortcut(Shortcut.of(Key.END), edge, new Edge(true));
-        gui.shortcut(Shortcut.of(Key.O, Modifier.CONTROL), open, new Open(false));
-        gui.shortcut(Shortcut.of(Key.O, Modifier.CONTROL, Modifier.SHIFT), open, new Open(true));
+        // Every window-wide command is the keymap's, so Key bindings… lists it and the person can change its chords.
+        // The id is what their changes are stored under, so it is the part to keep stable.
+        keys.action("view.next", "Next picture", Shortcut.of(Key.RIGHT), Shortcut.of(Key.PAGE_DOWN))
+                .sends(step, new Step(1));
+        keys.action("view.previous", "Previous picture", Shortcut.of(Key.LEFT), Shortcut.of(Key.PAGE_UP))
+                .sends(step, new Step(-1));
+        keys.action("view.first", "First picture", Shortcut.of(Key.HOME)).sends(edge, new Edge(false));
+        keys.action("view.last", "Last picture", Shortcut.of(Key.END)).sends(edge, new Edge(true));
+        keys.action("file.open", "Open a picture", Shortcut.of(Key.O, Modifier.CONTROL)).sends(open, new Open(false));
+        keys.action("file.open-folder", "Open a folder", Shortcut.of(Key.O, Modifier.CONTROL, Modifier.SHIFT))
+                .sends(open, new Open(true));
         gui.hear(ui.nameNode(), NodeEvent.CLICK, c -> open.send(new Open(false)));
-        gui.shortcut(Shortcut.of(Key.F11), window, WindowCommand.toggleFullScreen(CloseRequested.MAIN));
-        gui.shortcut(Shortcut.of(Key.ESCAPE), escKey, new EscKey());
+        keys.action("window.full-screen", "Full screen", Shortcut.of(Key.F11))
+                .sends(window, WindowCommand.toggleFullScreen(CloseRequested.MAIN));
+        keys.action("window.leave", "Leave full screen, or close", Shortcut.of(Key.ESCAPE)).sends(escKey, new EscKey());
         // The stage's own: Previous and Next take their double clicks, so pressing one twice quickly only steps twice.
         gui.hear(ui.stage(), NodeEvent.DOUBLE_CLICK,
                 c -> window.send(WindowCommand.toggleFullScreen(CloseRequested.MAIN)));
-        gui.shortcut(Shortcut.of(Key.DIGIT_0), fitKey, new FitKey());
-        gui.shortcut(Shortcut.of(Key.EQUAL, Modifier.CONTROL), zoomKey, new ZoomKey(1));
-        gui.shortcut(Shortcut.of(Key.MINUS, Modifier.CONTROL), zoomKey, new ZoomKey(-1));
-        gui.shortcut(Shortcut.of(Key.DIGIT_0, Modifier.CONTROL), zoomKey, new ZoomKey(0));
-        gui.shortcut(Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL), zoomKey, new ZoomKey(1));
-        gui.shortcut(Shortcut.of(Key.NUMPAD_SUBTRACT, Modifier.CONTROL), zoomKey, new ZoomKey(-1));
-        gui.shortcut(Shortcut.of(Key.NUMPAD_0, Modifier.CONTROL), zoomKey, new ZoomKey(0));
+        keys.action("view.fit", "Fit the picture", Shortcut.of(Key.DIGIT_0)).sends(fitKey, new FitKey());
+        keys.action("view.zoom-in", "Larger controls",
+                Shortcut.of(Key.EQUAL, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL))
+                .sends(zoomKey, new ZoomKey(1));
+        keys.action("view.zoom-out", "Smaller controls",
+                Shortcut.of(Key.MINUS, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_SUBTRACT, Modifier.CONTROL))
+                .sends(zoomKey, new ZoomKey(-1));
+        keys.action("view.zoom-reset", "Controls as they started",
+                Shortcut.of(Key.DIGIT_0, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_0, Modifier.CONTROL))
+                .sends(zoomKey, new ZoomKey(0));
 
         gui.hear(ui.details(), NodeEvent.RESIZE, layout -> {
             room = layout.content().w();

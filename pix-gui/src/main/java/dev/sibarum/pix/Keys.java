@@ -4,8 +4,9 @@ import sibarum.atchung.Topic;
 
 /**
  * What a key chord asks of the {@link View} itself, rather than of the viewer: the message the chord was declared to
- * send. A chord is a declaration ({@code gui.shortcut(chord, sender, message)}, threading.md T7.5): the dispatcher
- * sends this when it is pressed and runs nothing of Rasterware's, and the view hears it in the frame like any other message.
+ * send. A chord is a declaration (a keymap action's {@code sends(sender, message)}, threading.md T7.5): the
+ * dispatcher sends this when it is pressed and runs nothing of Rasterware's, and the view hears it in the frame like
+ * any other message.
  * How the picture is looked at, and how big the controls are, are the view's alone, so these never reach {@code -core}.
  */
 final class Keys {
