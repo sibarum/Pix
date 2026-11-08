@@ -20,6 +20,9 @@
     <properties>
         <!-- The one module with an application to run: exec:exec from the parent runs it here. -->
         <app.run.skip>false</app.run.skip>
+        <!-- imagelib's static library and its link arguments, unpacked from Maven by imagelib-static (below). Only
+             the native image reads them. -->
+        <imagelib.static.dir>${project.build.directory}/imagelib-static/windows-x86_64</imagelib.static.dir>
     </properties>
 
     <dependencies>
@@ -254,6 +257,22 @@
                                 <includeArtifactIds>ffmpeg-wrapper-record-windows</includeArtifactIds>
                                 <includes>natives/record/windows-x86_64/**</includes>
                                 <outputDirectory>${project.build.directory}/ffmpeg-wrapper-record</outputDirectory>
+                                <overWriteReleases>true</overWriteReleases>
+                                <overWriteSnapshots>true</overWriteSnapshots>
+                            </configuration>
+                        </execution>
+                        <!-- imagelib's static library and its link arguments, which the native image links in
+                             (imagelib.static.dir, read by build-native): imagelib-wrapper-windows's static jar, at the
+                             version the build resolved, unpacked into target/imagelib-static. From Maven, so no
+                             imagelib-wrapper checkout need sit beside this one. A JVM run extracts the DLL instead. -->
+                        <execution>
+                            <id>imagelib-static</id>
+                            <phase>prepare-package</phase>
+                            <goals><goal>unpack-dependencies</goal></goals>
+                            <configuration>
+                                <includeArtifactIds>imagelib-wrapper-windows</includeArtifactIds>
+                                <classifier>static</classifier>
+                                <outputDirectory>${project.build.directory}/imagelib-static</outputDirectory>
                                 <overWriteReleases>true</overWriteReleases>
                                 <overWriteSnapshots>true</overWriteSnapshots>
                             </configuration>
