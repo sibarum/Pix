@@ -54,9 +54,11 @@ final class Splash {
             mark.sdg(art);
         }
         Node word = gui.box().role("wordmark")
-                .size(Length.dp(Wordmark.SPLIT_W), Length.dp(Wordmark.SPLIT_H))
-                .image(Wordmark.split(gui.theme().color(Role.INK)))
-                .imageFilter(ImageFilter.SHARP_BILINEAR, Wordmark.SPLIT_W, Wordmark.SPLIT_H);
+                .size(Length.dp(Wordmark.SPLIT_W), Length.dp(Wordmark.SPLIT_H));
+        ImageSdg tape = Wordmark.split();
+        if (tape != null) {
+            word.sdg(tape);
+        }
         Node scan = gui.box().width(Length.percent(100f)).height(Length.percent(100f)).hitInert(true)
                 .floatAt(Length.ZERO, Length.ZERO)
                 .image(scanlines(SCAN_ROWS)).imageFilter(ImageFilter.SHARP_BILINEAR, 1, SCAN_ROWS);

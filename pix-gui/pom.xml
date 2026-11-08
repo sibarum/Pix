@@ -267,7 +267,8 @@
                  as the mark itself (/pix.sdgb, which the splash and About draw), its art pair (/pix.pair, which
                  About condenses as it opens) and its icon (/pix.ico, which the window wears and pix.rc links into
                  the executable, found in target/generated-rc); the hidden windows' icon, redrawn at 16 and 24 px;
-                 and the file types' icons, for the installer. -->
+                 the wordmark and its tape, as drawings whose face is in a theme role (Wordmark); and the file
+                 types' icons, for the installer. -->
             <plugin>
                 <groupId>dev.vexelray.gui</groupId>
                 <artifactId>vexelray-gui-icons-maven-plugin</artifactId>
@@ -284,6 +285,20 @@
                                     <art>src/main/rc/pix.svg</art>
                                     <name>pix</name>
                                     <icon>pix.ico</icon>
+                                </pair>
+                                <pair>
+                                    <art>src/main/rc/wordmark.svg</art>
+                                    <name>wordmark</name>
+                                    <pair>false</pair>
+                                    <texels>316</texels>
+                                    <roles><role>face=tint</role></roles>
+                                </pair>
+                                <pair>
+                                    <art>src/main/rc/wordmark-split.svg</art>
+                                    <name>wordmark-split</name>
+                                    <pair>false</pair>
+                                    <texels>640</texels>
+                                    <roles><role>face=ink</role></roles>
                                 </pair>
                                 <pair>
                                     <art>src/main/rc/pix-background.svg</art>

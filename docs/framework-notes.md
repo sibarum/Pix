@@ -234,6 +234,11 @@ What the framework could do: a paint-valued image tint on `Node` (`imageTint(Pai
 mark drawn white once is lit in whatever the theme says, every frame. Then `bar` would hold one white raster and pass
 the paint straight through, as the framework's own text wordmark does.
 
+**Fixed upstream 2026-11-08** (SDG plan, slice 5), not as asked but to the same end: the wordmark is a drawing now,
+`/wordmark.sdgb`, its face in the SDG role `tint`, and a drawing with no tint of its own takes its node's text colour,
+a paint resolved in each frame's theme. So `Wordmark.bar` sets `textColor(ink)` as the text wordmark does, holds one
+drawing, and follows a theme swap and the pointer.
+
 ## FN-21 · An SDG drawing could not cross the bus, because it holds arrays 🔬
 
 Rasterware opened `.sdg` drawings from the first day codec-image read them, but drew the poster: `ReadPicture`

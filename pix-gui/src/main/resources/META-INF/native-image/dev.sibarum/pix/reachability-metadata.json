@@ -3,7 +3,7 @@
     "This program's own native-image metadata: the entry point the launcher reaches by JNI, and the JDK's",
     "locale and time-zone data a native run of the calculator was seen to read. Everything else registers",
     "itself: the libraries carry their own (Win32, tactroller, DXGI, the shaders, the font atlas), and the processor writes the icon's.",
-    "The processor does not write the art pair's, which the splash reads too, so /pix.pair and its atlases are listed below.",
+    "The processor registers the mark's drawing and art pair beside its icon; the wordmark's drawings, which the title bar and the splash read, are listed below.",
     "Add to it when a native run of this program fails on something the JVM run did not: run it on a JVM",
     "under -agentlib:native-image-agent and keep only the entries naming this program."
   ],
@@ -70,10 +70,10 @@
       "glob": "META-INF/services/java.time.zone.ZoneRulesProvider"
     },
     {
-      "glob": "pix.pair"
+      "glob": "wordmark.sdgb"
     },
     {
-      "glob": "pix-*.vxpx"
+      "glob": "wordmark-split.sdgb"
     }
   ]
 }
