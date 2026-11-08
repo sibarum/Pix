@@ -11,6 +11,7 @@ import dev.vexelray.framework.api.Configuration;
  * here as if it were its own, and checks every message between them. A new component or job in this module goes on
  * this list, or nothing builds it.
  */
-@Configuration(components = Viewer.class, jobs = {Begin.class, ListPictures.class, ReadPicture.class, ReadThumbnail.class})
+@Configuration(components = Viewer.class, jobs = {Begin.class, ListPictures.class, ReadPicture.class, ReadThumbnail.class,
+        TracePicture.class, SaveDrawing.class})
 public final class Core {
 }

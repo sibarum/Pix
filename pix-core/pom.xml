@@ -49,6 +49,12 @@
             <artifactId>vexelray-codec-image</artifactId>
             <version>${vexelray-codec.version}</version>
         </dependency>
+        <!-- Convert.rasterToSdg: a picture traced into an SDG drawing (docs/trace.md), on a job. -->
+        <dependency>
+            <groupId>dev.vexelray.fields</groupId>
+            <artifactId>vexelray-fields-convert</artifactId>
+            <version>${vexelray-fields.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>

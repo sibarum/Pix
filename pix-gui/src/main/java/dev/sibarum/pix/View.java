@@ -2,6 +2,7 @@ package dev.sibarum.pix;
 
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
+import dev.sibarum.pix.Keys.TraceKey;
 import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
 import dev.sibarum.pix.core.Messages.Clear;
@@ -18,6 +19,11 @@ import dev.sibarum.pix.core.Messages.Show;
 import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
+import dev.sibarum.pix.core.Messages.SaveTrace;
+import dev.sibarum.pix.core.Messages.TraceSettings;
+import dev.sibarum.pix.core.Messages.TraceWritten;
+import dev.sibarum.pix.core.Messages.Traced;
+import dev.sibarum.pix.core.Messages.Tracing;
 import dev.vexelray.framework.api.Draw;
 import dev.vexelray.framework.api.Subscribe;
 import dev.vexelray.framework.core.CloseRequested;
@@ -29,12 +35,15 @@ import dev.vexelray.gui.core.Frame;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
+import dev.vexelray.gui.core.input.CursorShape;
 import dev.vexelray.gui.core.input.DragEvent;
 import dev.vexelray.gui.core.input.PinchEvent;
 import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.keymap.Keymap;
 import dev.vexelray.gui.core.layout.NodeLayout;
 import dev.vexelray.gui.widget.Button;
+import dev.vexelray.gui.widget.Segment;
+import dev.vexelray.gui.widget.Slider;
 import sibarum.atchung.Sender;
 import sibarum.tactroller.api.Key;
 import sibarum.tactroller.api.Modifier;
@@ -45,6 +54,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -104,11 +114,30 @@ final class View {
     /**
      * What the asked half draws: the layer in front and how its picture is looked at, the other layer and how a step
      * threw the one picture in and the other out, the controls and how far they are shown, and the filmstrip's cells
-     * and how far along a step glides them, and the shades of what comes and goes.
+     * and how far along a step glides them, and the shades of what comes and goes; and the trace compared with the
+     * picture, drawn as it is.
      */
     record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade, List<Node> cells,
-                   Glide glide, List<Shade> shades) {
+                   Glide glide, List<Shade> shades, Compare compare) {
     }
+
+    /**
+     * The trace, drawn at the picture's zoom and offset, and moved {@code shift} px across and {@code drop} px down from the
+     * top left of the box right of the split, where it is laid out, to where the picture is ({@link TracePanel}); and the line, {@code lineShift} px left, so its
+     * middle is on the split.
+     */
+    record Compare(Node traced, float shift, float drop, Node line, float lineShift) {
+    }
+
+    /** The Trace panel's settings, the trace shown, where the split is (0 to 1 of the stage), and what is out. */
+    private boolean tracing;
+    private TraceSettings settings = TraceSettings.FIRST;
+    private Traced traced;
+    private float split = 0.5f;
+    private boolean splitting;
+    private boolean saving;
+    private final Sender<Tracing> tracingOut;
+    private final Sender<SaveTrace> saveTrace;
 
     private final Gui gui;
     private final Ui ui;
@@ -182,9 +211,11 @@ final class View {
 
     View(Gui gui, Keymap keys, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span,
          Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
-         Sender<EscKey> escKey) {
+         Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace) {
         this.gui = gui;
         this.ui = ui;
+        this.tracingOut = tracingOut;
+        this.saveTrace = saveTrace;
         this.window = window;
         this.step = step;
         this.span = span;
@@ -218,7 +249,8 @@ final class View {
         }
         shades[NOTE] = Shade.at(ui.noteNode(), 0f);
         this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
-                ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE, List.of(shades));
+                ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE, List.of(shades),
+                new Compare(ui.tracePanel().traced(), 0f, 0f, ui.tracePanel().line(), 0f));
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
         gui.hear(gui.root(), NodeEvent.POINTER, p -> {
             if (p.over()) {
@@ -239,10 +271,13 @@ final class View {
             stageW = layout.rect().w();
             stageH = layout.rect().h();
             refit();
+            compare();
         });
         gui.hear(ui.stage(), NodeEvent.POINTER, p -> {
             pointerX = p.localX() - p.nodeW() / 2f;
             pointerY = p.localY() - p.nodeH() / 2f;
+            gui.cursor(ui.stage(), splitting || nearLine(p.localX()) ? CursorShape.RESIZE_HORIZONTAL
+                    : CursorShape.DEFAULT);
         });
         gui.hear(ui.stage(), NodeEvent.WHEEL, w -> {
             // Windows may hand a pinch to the window as Ctrl+wheel as well: while one is in flight, it zooms once.
@@ -254,9 +289,16 @@ final class View {
             pinching = p.phase() != PinchEvent.Phase.END;
             look(state.lens().pinched(p.scale(), pointerX, pointerY, System.nanoTime()));
         });
+        // A drag that starts on the trace's line moves the line; any other moves the picture.
         gui.hear(ui.stage(), NodeEvent.DRAG, d -> {
-            if (d.phase() == DragEvent.Phase.MOVE) {
+            if (d.phase() == DragEvent.Phase.START) {
+                splitting = nearLine(d.x() - d.nodeX());
+            } else if (d.phase() == DragEvent.Phase.MOVE && splitting) {
+                split(split + d.dx() / Math.max(1f, stageW));
+            } else if (d.phase() == DragEvent.Phase.MOVE) {
                 look(state.lens().moved(d.dx(), d.dy()));
+            } else {
+                splitting = false;
             }
         });
         // Every window-wide command is the keymap's, so Key bindings… lists it and the person can change its chords.
@@ -278,6 +320,7 @@ final class View {
         gui.hear(ui.stage(), NodeEvent.DOUBLE_CLICK,
                 c -> window.send(WindowCommand.toggleFullScreen(CloseRequested.MAIN)));
         keys.action("view.fit", "Fit the picture", Shortcut.of(Key.DIGIT_0)).sends(fitKey, new FitKey());
+        keys.action("view.trace", "Trace to SDG", Shortcut.of(Key.T)).sends(traceKey, new TraceKey());
         keys.action("view.zoom-in", "Larger controls",
                 Shortcut.of(Key.EQUAL, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL))
                 .sends(zoomKey, new ZoomKey(1));
@@ -357,9 +400,13 @@ final class View {
         onLayer[front] = feed == null ? null : p;
         shown = p;
         state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
-                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades));
+                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades), state.compare());
         closeLetGo();
         sayZoom();
+        if (tracing) {
+            retrace();
+            compare();
+        }
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
         showSaid();
@@ -379,8 +426,9 @@ final class View {
         onLayer[front] = null;
         shades[NOTE] = shades[NOTE].toward(0f, now);
         state = new Drawing(ui.layer(front), ui.layer(1 - front), state.lens(), toss, state.faded(), state.fade(),
-                state.cells(), state.glide(), List.of(shades));
+                state.cells(), state.glide(), List.of(shades), state.compare());
         closeLetGo();
+        closeTrace();
         say(Details.KIND, "");
         say(Details.BYTES, "");
         showSaid();
@@ -424,7 +472,7 @@ final class View {
         float slot = (Strip.CELL_W + Strip.GAP) * remPx;
         Glide glide = state.glide().shifted(shift, slot, slot * (cells / 2), System.nanoTime());
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), glide, state.shades());
+                state.cells(), glide, state.shades(), state.compare());
     }
 
     /** A thumbnail to keep; one held already for that picture is put back, and closed once nothing draws it. */
@@ -458,6 +506,10 @@ final class View {
     /** Esc leaves full screen; in the window, it closes Rasterware, by the route the close button takes. */
     @Subscribe
     public void escKey(EscKey k) {
+        if (tracing) {
+            closeTrace();
+            return;
+        }
         window.send(full ? WindowCommand.windowed(CloseRequested.MAIN) : WindowCommand.close(CloseRequested.MAIN));
     }
 
@@ -494,7 +546,165 @@ final class View {
             kept = !kept;
             ui.keep(kept);
             wake();
+        } else if (p.button().equals(ui.traceAddress())) {
+            traceKey(new TraceKey());
+        } else if (p.button().equals(ui.tracePanel().closeAddress())
+                || p.button().equals(ui.tracePanel().cancelAddress())) {
+            closeTrace();
+        } else if (p.button().equals(ui.tracePanel().saveAddress()) && tracing && !saving) {
+            saving = true;
+            ui.tracePanel().save(drawingName(), true);
+            ui.tracePanel().status("");
+            saveTrace.send(new SaveTrace());
         }
+    }
+
+    // ------------------------------------------------------------------ tracing (docs/trace.md)
+
+    /** T, or Trace in the bar: the panel opened on the picture shown, if it is one made of pixels, or closed. */
+    @Subscribe
+    public void traceKey(TraceKey k) {
+        if (tracing) {
+            closeTrace();
+        } else if (traceable(shown)) {
+            tracing = true;
+            ui.tracing(true);
+            ui.tracePanel().split(split * 100f);
+            compare();
+            retrace();
+        }
+    }
+
+    /** The colours slider moved: traced again with that many, as it moves. */
+    @Subscribe
+    public void slid(Slider.Changed c) {
+        if (c.slider().equals(ui.tracePanel().colourAddress())) {
+            int n = TracePanel.colours(c.value());
+            if (n != settings.colours()) {
+                settings(new TraceSettings(n, settings.texture()));
+            }
+        }
+    }
+
+    /** Gradients flattened or kept. */
+    @Subscribe
+    public void chose(Segment.Changed c) {
+        if (c.segment().equals(ui.tracePanel().gradientsAddress()) && c.value() instanceof Boolean texture
+                && texture != settings.texture()) {
+            settings(new TraceSettings(settings.colours(), texture));
+        }
+    }
+
+    /**
+     * A trace landed. Shown if it is of the picture shown and the panel is open, whatever settings it was traced with:
+     * the latest the viewer has, until a newer one lands, marked as tracing while the settings shown are not its own.
+     */
+    @Subscribe
+    public void traced(Traced m) {
+        if (!tracing || shown == null || !m.path().equals(shown.path())) {
+            return;
+        }
+        boolean current = m.settings().equals(settings);
+        if (m.drawing().isEmpty()) {
+            ui.tracePanel().status(m.why());
+            return;
+        }
+        traced = m;
+        Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
+        ui.tracePanel().drawing(m.drawing().get(), fit.widthPercent(), fit.heightPercent());
+        ui.tracePanel().result(m.palette(), Details.bytes(m.bytes()), String.valueOf(m.layers()));
+        ui.tracePanel().tags(shown.identity(), "SDG · " + m.layers() + (m.layers() == 1 ? " layer" : " layers"));
+        ui.tracePanel().status(current ? "" : TracePanel.TRACING);
+        compare();
+    }
+
+    /** The save answered: written, the viewer shows the drawing, which closes the panel; not, the panel says why. */
+    @Subscribe
+    public void traceWritten(TraceWritten m) {
+        saving = false;
+        if (tracing) {
+            ui.tracePanel().save(drawingName(), false);
+            if (m.file().isEmpty()) {
+                ui.tracePanel().status(m.why());
+            }
+        }
+    }
+
+    /** Whether {@code p} can be traced: a picture shown from its pixels, not a drawing already, nor a file that is none. */
+    private static boolean traceable(Pictured p) {
+        return p != null && p.feed().isPresent() && p.drawing().isEmpty();
+    }
+
+    /** The settings changed: shown, and traced again. */
+    private void settings(TraceSettings next) {
+        settings = next;
+        retrace();
+    }
+
+    /**
+     * Ask for the picture shown to be traced with the settings shown; a picture that cannot be closes the panel. The
+     * trace shown stays until the new one lands, unless it is of another picture.
+     */
+    private void retrace() {
+        if (!traceable(shown)) {
+            closeTrace();
+            return;
+        }
+        if (traced != null && !traced.path().equals(shown.path())) {
+            traced = null;
+            ui.tracePanel().drawing(null, 0f, 0f);
+            ui.tracePanel().result(List.of(), "", "");
+        }
+        ui.tracePanel().settings(settings);
+        ui.tracePanel().before(Details.bytes(shown.bytes()));
+        ui.tracePanel().save(drawingName(), saving);
+        ui.tracePanel().status(TracePanel.TRACING);
+        tracingOut.send(new Tracing(Optional.of(shown.path()), settings));
+    }
+
+    /** The panel closed, the stage whole, the trace let go, and the viewer told nothing is wanted traced. */
+    private void closeTrace() {
+        if (!tracing) {
+            return;
+        }
+        tracing = false;
+        traced = null;
+        splitting = false;
+        ui.tracing(false);
+        tracingOut.send(new Tracing(Optional.empty(), settings));
+    }
+
+    /** What Save writes, as the panel names it: the picture's name with {@code .sdg}. */
+    private String drawingName() {
+        if (shown == null) {
+            return "";
+        }
+        String name = String.valueOf(shown.path().getFileName());
+        int dot = name.lastIndexOf('.');
+        return (dot > 0 ? name.substring(0, dot) : name) + ".sdg";
+    }
+
+    /** Whether {@code x}, px from the stage's left, is on the trace's line, which is there while a trace is shown. */
+    private boolean nearLine(float x) {
+        return tracing && traced != null && Math.abs(x - split * stageW) <= TracePanel.GRAB_REM * remPx;
+    }
+
+    /** The split moved to {@code value}, kept a little in from either edge so the line can be taken again. */
+    private void split(float value) {
+        split = Math.clamp(value, 0.02f, 0.98f);
+        ui.tracePanel().split(split * 100f);
+        compare();
+    }
+
+    /** The trace and the line drawn where the split and the stage put them. */
+    private void compare() {
+        Compare c = state.compare();
+        Lens l = state.lens();
+        float lineW = TracePanel.GRIP_REM * remPx;
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
+                state.cells(), state.glide(), state.shades(),
+                new Compare(c.traced(), (stageW - l.fitW()) / 2f - split * stageW, (stageH - l.fitH()) / 2f,
+                        c.line(), -lineW / 2f));
     }
 
     /**
@@ -531,15 +741,24 @@ final class View {
             out.offset(s.picture(), l.to().x(), l.to().y());
             out.opacity(s.picture(), 1f);
             out.opacity(s.leaving(), 0f);
+            drawCompare(s.compare(), l.to().zoom(), l.to().x(), l.to().y(), out);
             return fadeDue;
         }
         out.scale(s.picture(), l.zoom(t));
         out.offset(s.picture(), l.x(t) + k.in(t), l.y(t));
         out.opacity(s.picture(), k.inOpacity(t));
+        drawCompare(s.compare(), l.zoom(t), l.x(t) + k.in(t), l.y(t), out);
         out.scale(s.leaving(), k.from().zoom());
         out.offset(s.leaving(), k.out(t), k.from().y());
         out.opacity(s.leaving(), k.outOpacity(t));
         return l.moving(t) || k.moving(t) || g.moving(t) || shading ? frame.presentNanos() : fadeDue;
+    }
+
+    /** The trace at the picture's zoom and offset, moved left as {@link Compare} says, and the line on the split. */
+    private static void drawCompare(Compare c, float zoom, float x, float y, Drawn out) {
+        out.scale(c.traced(), zoom);
+        out.offset(c.traced(), x + c.shift(), y + c.drop());
+        out.offset(c.line(), c.lineShift(), 0f);
     }
 
     /**
@@ -554,7 +773,7 @@ final class View {
 
     private void fade(Fade fade) {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade,
-                state.cells(), state.glide(), state.shades());
+                state.cells(), state.glide(), state.shades(), state.compare());
     }
 
     private void say(int detail, String text) {
@@ -591,7 +810,7 @@ final class View {
     /** The shades as they now are, for the asked half. */
     private void shade() {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide(), List.of(shades));
+                state.cells(), state.glide(), List.of(shades), state.compare());
     }
 
     /** Where the picture in front is drawn at {@code now}: its zoom, and its offset from the stage's centre. */
@@ -602,7 +821,7 @@ final class View {
 
     private void look(Lens lens) {
         state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide(), state.shades());
+                state.cells(), state.glide(), state.shades(), state.compare());
         sayZoom();
     }
 
@@ -654,8 +873,8 @@ final class View {
      * viewer told how far either side that reaches, so it reads those thumbnails and no others.
      */
     private void sizeStrip() {
-        // Keep shown, the zoom, and the three gaps between the bar's four parts.
-        float room = barW - zoomW - remPx * (Ui.TOOL_REM + 3 * Ui.MARGIN_REM);
+        // Trace and Keep shown, the zoom, and the four gaps between the bar's five parts.
+        float room = barW - zoomW - remPx * (2 * Ui.TOOL_REM + 4 * Ui.MARGIN_REM);
         int n = Strip.cells(room, remPx);
         ui.strip(n, barW > 0f ? Strip.width(n, remPx) / barW * 100f : 0f);
         cells = n;
@@ -722,6 +941,7 @@ final class View {
                 ui.fit(i, fit.widthPercent(), fit.heightPercent());
                 if (i == front) {
                     look(state.lens().measured(fitW(fit), fitH(fit), stageW, stageH));
+                    ui.tracePanel().fit(fit.widthPercent(), fit.heightPercent());
                 }
             }
         }

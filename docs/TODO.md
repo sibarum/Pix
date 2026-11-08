@@ -21,12 +21,21 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
 - [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
 
+## Trace, the rest (docs/trace.md)
+
+- [ ] **Trace at the picture's own size.** Both the preview and Save trace at 512 px, so a picture larger than that
+      loses detail in its drawing (an 883 px screenshot's thin curves step). Save could trace at the picture's size up to
+      1024 px, about 15 to 20 s at full quality: then it wants a progress and a Cancel of its own.
+- [ ] **The trace shown over the picture drawn by hand** (FN-25): the compare repeats the picture's transform in
+      `View.draw`; a `Drawn.follow` would replace it.
+
 ## Waiting on the stack
 
 - [ ] **Animated GIF, WebP and APNG**, played: a feed of three slots, paced by an asked half
       (`frame-contract.md` step 5, the codec on it). Shown by their first frame until then.
 - [ ] **Video and its sound**, the transport, the seek preview, the poster in the filmstrip: the same step.
 - [ ] **Recording from the camera** (`vexelray-codec-record`, still in `pix-gui`'s pom from 0.1's).
+- [ ] **Corners** in the Trace panel, fit sharp or as traced: the tracer has no corner fitting (FN-22).
 
 ## Later
 

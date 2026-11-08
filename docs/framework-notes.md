@@ -251,3 +251,41 @@ Fixed upstream on 2026-11-08 rather than worked round: `Shareable` names `ImageS
 handle, built once by a job and only read by the GUI thread (`anSdgDrawingMayCrossInAPayloadThoughItHoldsArrays`). The
 cost is the same trust a feed already has, that its maker never changes it after. What would remove the trust: the
 copier T2.4 rules for, or a drawing whose pages are feeds.
+
+## FN-22 · The tracer cannot fit sharp corners 🔬
+
+The canvas's Trace board offers **Corners**: *round, as the pixels are*, or *fit sharp corners*. vexelray-fields'
+`Trace.Options` has colours, texels, spread, under, oversample and flatness, and nothing that finds a corner: an edge is
+cut on the fine grid and comes out as round as the pixels made it. So the panel has no Corners control (docs/trace.md).
+What the stack could do: a corner fit in `Trace` (a region's boundary fitted to lines and arcs where it turns sharply, as
+an MSDF keeps its corners), as an option, with its own case in the conversions bench.
+
+## FN-23 · A node's box is reported where it is drawn, so a view that measures what it moves chases itself 🔬
+
+The trace is compared with its picture by drawing it, at the picture's zoom and offset, in a box right of the line
+(`TracePanel`). The first way: centre it in that box as the picture is centred in the stage, measure where layout put it
+(`NodeEvent.RESIZE`), and move it by the difference. Two things the framework does made that fail:
+
+1. **A child wider than a centring parent is laid out from its start**, not centred about the parent's middle as CSS
+   does, so where it lands was not where the arithmetic said, and the trace was drawn 149 px off.
+2. **The box a `RESIZE` (and `tree`) reports includes the node's `Drawn.offset`.** Measuring the trace after moving it
+   gave the moved box, the next move was computed from that, and it swung between two places every frame; `settle`
+   timed out ("frame still owed").
+
+Done instead: the trace is laid out at its box's top left, and moved by what the picture's fit says, measuring nothing.
+What the framework could do: report the laid-out box apart from where it is drawn (`NodeLayout.rect()` the layout's, a
+`drawn()` beside it), and centre an overflowing child as CSS's `justify-content: center` does.
+
+## FN-24 · A segment stretched to its row leaves its options at the start and the rest dead 🔬
+
+`Segment`'s node in a column that stretches its children is as wide as the column, its options packed at its start and
+the rest an empty track that looks pressable and is not: `click trace.gradients` landed in the middle and changed
+nothing. It is wrapped in a row so it keeps its own width. What vexelray-gui could do: a segment given a width shares
+it among its options, as a tab strip does, or keeps its own width whatever its parent asks.
+
+## FN-25 · Drawing one node as another is drawn is the view's own arithmetic 💡
+
+The trace must move and zoom with the picture exactly, wherever the lens and a step's throw put it. `View.draw` repeats
+the picture's scale and offset on the trace's node every frame, plus a fixed shift. Any compare, a before/after, an
+onion skin (the Frames board) will want the same. What the framework could do: a `Drawn.follow(node, leader)` that draws
+a node with another's transform, so a second view of a picture is one line and cannot fall a frame behind.

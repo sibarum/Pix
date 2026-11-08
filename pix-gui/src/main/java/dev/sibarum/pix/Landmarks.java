@@ -62,6 +62,24 @@ final class Landmarks {
     /** Keep shown, in the bar's tools: the controls pinned, and given room of their own. */
     static final String KEEP = "bar.keep";
 
+    /** Trace, in the bar's tools: opens the Trace panel on the picture shown (docs/trace.md). */
+    static final String TRACE = "bar.trace";
+
+    /**
+     * The Trace panel and its parts: the colours slider, the gradients segment, what the trace comes to (its size as a
+     * file, its layers), what it says while tracing or when something failed, and Save. On the stage, the trace drawn
+     * right of the line, and the line.
+     */
+    static final String TRACE_PANEL = "trace";
+    static final String TRACE_COLOURS = "trace.colours";
+    static final String TRACE_GRADIENTS = "trace.gradients";
+    static final String TRACE_AFTER = "trace.after";
+    static final String TRACE_LAYERS = "trace.layers";
+    static final String TRACE_STATUS = "trace.status";
+    static final String TRACE_SAVE = "trace.save";
+    static final String TRACED = "stage.traced";
+    static final String TRACE_LINE = "stage.trace-line";
+
     private Landmarks() {
     }
 }

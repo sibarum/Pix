@@ -22,6 +22,12 @@ import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.sibarum.pix.core.Messages.Thumbnailed;
+import dev.sibarum.pix.core.Messages.SaveTrace;
+import dev.sibarum.pix.core.Messages.Trace;
+import dev.sibarum.pix.core.Messages.TraceWritten;
+import dev.sibarum.pix.core.Messages.Traced;
+import dev.sibarum.pix.core.Messages.Tracing;
+import dev.sibarum.pix.core.Messages.WriteTrace;
 import dev.vexelray.codec.image.Pictures;
 import dev.vexelray.framework.api.Component;
 import dev.vexelray.framework.api.Hears;
@@ -78,9 +84,11 @@ import java.util.Optional;
  */
 @Component
 @Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Go.class, Span.class, Open.class,
-        Picked.class, Pictured.class, Thumbnailed.class})
+        Picked.class, Pictured.class, Thumbnailed.class, Tracing.class, Traced.class, SaveTrace.class,
+        TraceWritten.class})
 @Publishes({Recall.class, ListFolder.class, Read.class, ReadThumb.class, PickFile.class, Hold.class, Show.class,
-        Clear.class, Release.class, HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class})
+        Clear.class, Release.class, HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class, Trace.class,
+        WriteTrace.class})
 public final class Viewer {
 
     static final int CAPACITY = 64;
@@ -112,6 +120,33 @@ public final class Viewer {
     static final List<PickFile.Filter> PICTURES = List.of(new PickFile.Filter("Pictures", Pictures.extensions()));
 
     /**
+     * The Trace panel's part of the state (docs/trace.md): the trace the person wants now, none with the panel closed;
+     * the one asked of {@link TracePicture} and not answered, of which there is at most one; and the save asked of
+     * {@link SaveDrawing} and not answered, of which there is at most one too; and the trace last asked for while the
+     * panel was open, which is not asked for twice. Closing the panel forgets it, since the view lets its drawing go.
+     */
+    record Tracer(Optional<Trace> wanted, Optional<Trace> out, Optional<WriteTrace> saving, Optional<Trace> last) {
+
+        static final Tracer NONE = new Tracer(Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+
+        Tracer wanting(Optional<Trace> value) {
+            return new Tracer(value, out, saving, value.isEmpty() ? Optional.empty() : last);
+        }
+
+        Tracer out(Optional<Trace> value) {
+            return new Tracer(wanted, value, saving, last);
+        }
+
+        Tracer saving(Optional<WriteTrace> value) {
+            return new Tracer(wanted, out, value, last);
+        }
+
+        Tracer last(Optional<Trace> value) {
+            return new Tracer(wanted, out, saving, value);
+        }
+    }
+
+    /**
      * Everything the viewer knows, in one value.
      *
      * @param folder   the folder stepped through, once known
@@ -126,10 +161,11 @@ public final class Viewer {
      * @param thumbs   the thumbnails the view holds
      * @param picks    the last dialog id given out
      * @param picking  the dialog asked for and not yet answered
+     * @param tracer   what the Trace panel wants traced, what is being traced, and whether a save is out
      */
     record State(Optional<Path> folder, List<Path> pictures, boolean listed, int at, Optional<Path> wanted,
                  Optional<Path> reading, Optional<Path> shown, List<Held> held, int radius, List<Path> thumbs,
-                 long picks, Optional<Picking> picking) {
+                 long picks, Optional<Picking> picking, Tracer tracer) {
 
         State {
             pictures = List.copyOf(pictures);
@@ -139,52 +175,58 @@ public final class Viewer {
 
         static State initial() {
             return new State(Optional.empty(), List.of(), false, -1, Optional.empty(), Optional.empty(),
-                    Optional.empty(), List.of(), 0, List.of(), 0L, Optional.empty());
+                    Optional.empty(), List.of(), 0, List.of(), 0L, Optional.empty(), Tracer.NONE);
         }
 
         /** In a folder not listed yet, wanting nothing in it so far. */
         State inFolder(Path value) {
             return new State(Optional.of(value), List.of(), false, -1, Optional.empty(), reading, shown, held, radius,
-                    thumbs, picks, picking);
+                    thumbs, picks, picking, tracer);
         }
 
         State listed(List<Path> value, int place) {
-            return new State(folder, value, true, place, wanted, reading, shown, held, radius, thumbs, picks, picking);
+            return new State(folder, value, true, place, wanted, reading, shown, held, radius, thumbs, picks, picking, tracer);
         }
 
         State wanting(Path value, int place) {
             return new State(folder, pictures, listed, place, Optional.of(value), reading, shown, held, radius,
-                    thumbs, picks, picking);
+                    thumbs, picks, picking, tracer);
         }
 
         State reading(Optional<Path> value) {
-            return new State(folder, pictures, listed, at, wanted, value, shown, held, radius, thumbs, picks, picking);
+            return new State(folder, pictures, listed, at, wanted, value, shown, held, radius, thumbs, picks, picking, tracer);
         }
 
         State shown(Optional<Path> value) {
             return new State(folder, pictures, listed, at, wanted, reading, value, held, radius, thumbs, picks,
-                    picking);
+                    picking, tracer);
         }
 
         State held(List<Held> value) {
             return new State(folder, pictures, listed, at, wanted, reading, shown, value, radius, thumbs, picks,
-                    picking);
+                    picking, tracer);
         }
 
         State radius(int value) {
             return new State(folder, pictures, listed, at, wanted, reading, shown, held, value, thumbs, picks,
-                    picking);
+                    picking, tracer);
         }
 
         State thumbs(List<Path> value) {
             return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, value, picks,
-                    picking);
+                    picking, tracer);
         }
 
         /** Asking for a dialog with the next id, or, with none, no longer asking. */
         State picking(Optional<Picking> value) {
             long ids = value.map(Picking::id).orElse(picks);
-            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, thumbs, ids, value);
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, thumbs, ids, value,
+                    tracer);
+        }
+
+        State tracer(Tracer value) {
+            return new State(folder, pictures, listed, at, wanted, reading, shown, held, radius, thumbs, picks,
+                    picking, value);
         }
 
         boolean holds(Path p) {
@@ -210,7 +252,11 @@ public final class Viewer {
                 .on(Messages.OPEN_TOPIC, b.step("open", Viewer::open))
                 .on(Picked.TOPIC, b.step("picked", Viewer::picked))
                 .on(Messages.PICTURED_TOPIC, b.step("pictured", Viewer::pictured))
-                .on(Messages.THUMBNAILED_TOPIC, b.step("thumbnailed", Viewer::thumbnailed));
+                .on(Messages.THUMBNAILED_TOPIC, b.step("thumbnailed", Viewer::thumbnailed))
+                .on(Messages.TRACING_TOPIC, b.step("tracing", Viewer::tracing))
+                .on(Messages.TRACED_TOPIC, b.step("traced", Viewer::traced))
+                .on(Messages.SAVE_TRACE_TOPIC, b.step("save trace", Viewer::saveTrace))
+                .on(Messages.TRACE_WRITTEN_TOPIC, b.step("trace written", Viewer::traceWritten));
         ledger = b.build(inbox, "viewer", CAPACITY);
     }
 
@@ -346,6 +392,60 @@ public final class Viewer {
     /** A thumbnail read on its own landed: hold it, and read on. */
     static State thumbnailed(State s, Thumbnailed t, Out out) {
         return advance(holdThumb(s.reading(Optional.empty()), t.thumb(), out), out);
+    }
+
+    /**
+     * The Trace panel wants this traced now, or, with no path, nothing: the panel closed. Traced at once unless a trace is
+     * already out, in which case the answer to that one asks for this ({@link #traced}).
+     */
+    static State tracing(State s, Tracing m, Out out) {
+        Optional<Trace> wanted = m.path().map(p -> new Trace(p, m.settings()));
+        return traceNext(s.tracer(s.tracer().wanting(wanted)), out);
+    }
+
+    /** A trace landed: the view shows it if it is still wanted. Trace whatever is wanted now, if it is not this. */
+    static State traced(State s, Traced m, Out out) {
+        Trace answered = new Trace(m.path(), m.settings());
+        if (!s.tracer().out().equals(Optional.of(answered))) {
+            return s;
+        }
+        return traceNext(s.tracer(s.tracer().out(Optional.empty())), out);
+    }
+
+    /** Save the trace wanted beside its picture, at full quality. One save at a time; nothing wanted, nothing saved. */
+    static State saveTrace(State s, SaveTrace m, Out out) {
+        Optional<Trace> wanted = s.tracer().wanted();
+        if (wanted.isEmpty() || s.tracer().saving().isPresent()) {
+            return s;
+        }
+        WriteTrace w = new WriteTrace(wanted.get().path(), wanted.get().settings());
+        out.send(Messages.WRITE_TRACE_TOPIC, w);
+        return s.tracer(s.tracer().saving(Optional.of(w)));
+    }
+
+    /**
+     * The drawing written: its folder listed again and the drawing wanted, as a picture opened is; the picture from
+     * before stays shown until it is. Not written, the view says why, and nothing else changes.
+     */
+    static State traceWritten(State s, TraceWritten m, Out out) {
+        if (s.tracer().saving().map(w -> !w.path().equals(m.picture())).orElse(true)) {
+            return s;
+        }
+        State next = s.tracer(s.tracer().saving(Optional.empty()));
+        if (m.file().isEmpty() || m.file().get().getParent() == null) {
+            return next;
+        }
+        return recalled(next, new Recalled(m.file().get().getParent(), m.file()), out);
+    }
+
+    /** With no trace out, trace the one wanted, unless it is what was traced last. */
+    private static State traceNext(State s, Out out) {
+        Tracer t = s.tracer();
+        if (t.out().isPresent() || t.wanted().isEmpty() || t.wanted().equals(t.last())) {
+            return s;
+        }
+        out.send(Messages.TRACE_TOPIC, t.wanted().get());
+        return s.tracer(t.out(t.wanted()).last(t.wanted()));
     }
 
     // ------------------------------------------------------------------ what the steps share

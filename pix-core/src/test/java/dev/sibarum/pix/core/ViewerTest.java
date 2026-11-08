@@ -22,6 +22,13 @@ import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.sibarum.pix.core.Messages.Thumbnailed;
+import dev.sibarum.pix.core.Messages.SaveTrace;
+import dev.sibarum.pix.core.Messages.Trace;
+import dev.sibarum.pix.core.Messages.TraceSettings;
+import dev.sibarum.pix.core.Messages.TraceWritten;
+import dev.sibarum.pix.core.Messages.Traced;
+import dev.sibarum.pix.core.Messages.Tracing;
+import dev.sibarum.pix.core.Messages.WriteTrace;
 import dev.vexelray.framework.core.PickFile;
 import dev.vexelray.framework.core.Picked;
 import dev.vexelray.framework.core.WindowOpened;
@@ -74,7 +81,8 @@ class ViewerTest {
         for (Topic<?> t : List.of(Messages.RECALL_TOPIC, Messages.LIST_FOLDER_TOPIC, Messages.READ_TOPIC,
                 Messages.HOLD_TOPIC, Messages.SHOW_TOPIC, Messages.RELEASE_TOPIC, Messages.CAPTION_TOPIC,
                 Messages.READ_THUMB_TOPIC, Messages.HOLD_THUMB_TOPIC, Messages.RELEASE_THUMB_TOPIC,
-                Messages.FILMSTRIP_TOPIC, Messages.CLEAR_TOPIC, PickFile.TOPIC)) {
+                Messages.FILMSTRIP_TOPIC, Messages.CLEAR_TOPIC, PickFile.TOPIC, Messages.TRACE_TOPIC,
+                Messages.WRITE_TRACE_TOPIC)) {
             listen(heard, t);
         }
     }
@@ -460,5 +468,96 @@ class ViewerTest {
         tell(Messages.EDGE_TOPIC, new Edge(false));
         answerAll();
         assertEquals(List.of(new Show(A, -1)), took(Show.class), "earlier: in from the left");
+    }
+
+    // ------------------------------------------------------------------ tracing (docs/trace.md)
+
+    private static final TraceSettings SIX = TraceSettings.FIRST;
+    private static final TraceSettings FOUR = new TraceSettings(4, true);
+    private static final TraceSettings FLAT = new TraceSettings(4, false);
+
+    private void wantTrace(Path p, TraceSettings s) {
+        tell(Messages.TRACING_TOPIC, new Tracing(Optional.of(p), s));
+    }
+
+    private void answerTrace(Trace t) {
+        tell(Messages.TRACED_TOPIC, new Traced(t.path(), t.settings(), Optional.empty(), 0, 0, List.of(), ""));
+    }
+
+    @Test
+    void theTraceWantedIsTracedAtOnce() {
+        wantTrace(A, SIX);
+        assertEquals(List.of(new Trace(A, SIX)), took(Trace.class));
+    }
+
+    /** Dragging the colours slider asks for a trace at every stop; only the one out and the last are traced. */
+    @Test
+    void whileATraceIsOutOnlyTheLatestSettingsAreTracedNext() {
+        wantTrace(A, SIX);
+        took(Trace.class);
+        wantTrace(A, FOUR);
+        wantTrace(A, FLAT);
+        assertEquals(List.of(), took(Trace.class), "one trace out at a time");
+        answerTrace(new Trace(A, SIX));
+        assertEquals(List.of(new Trace(A, FLAT)), took(Trace.class), "four colours with gradients was passed by");
+        answerTrace(new Trace(A, FLAT));
+        assertEquals(List.of(), took(Trace.class), "what is wanted is what was traced");
+    }
+
+    @Test
+    void theSameTraceIsNotAskedForTwiceButIsAgainOnceThePanelReopens() {
+        wantTrace(A, SIX);
+        answerTrace(took(Trace.class).getFirst());
+        wantTrace(A, SIX);
+        assertEquals(List.of(), took(Trace.class));
+        tell(Messages.TRACING_TOPIC, new Tracing(Optional.empty(), SIX));
+        wantTrace(A, SIX);
+        assertEquals(List.of(new Trace(A, SIX)), took(Trace.class), "the view let its drawing go when it closed");
+    }
+
+    @Test
+    void aClosedPanelTracesNothingMoreWhenTheTraceOutLands() {
+        wantTrace(A, SIX);
+        took(Trace.class);
+        tell(Messages.TRACING_TOPIC, new Tracing(Optional.empty(), SIX));
+        answerTrace(new Trace(A, SIX));
+        assertEquals(List.of(), took(Trace.class));
+    }
+
+    @Test
+    void saveWritesTheTraceWantedOnceAndNothingWithThePanelClosed() {
+        tell(Messages.SAVE_TRACE_TOPIC, new SaveTrace());
+        assertEquals(List.of(), took(WriteTrace.class), "nothing wanted");
+        wantTrace(A, FOUR);
+        tell(Messages.SAVE_TRACE_TOPIC, new SaveTrace());
+        tell(Messages.SAVE_TRACE_TOPIC, new SaveTrace());
+        assertEquals(List.of(new WriteTrace(A, FOUR)), took(WriteTrace.class), "one save at a time");
+    }
+
+    @Test
+    void aDrawingWrittenIsListedWithItsFolderAndShown() {
+        startedOn(A);
+        answerAll();
+        Path drawing = FOLDER.resolve("a.sdg");
+        wantTrace(A, FOUR);
+        tell(Messages.SAVE_TRACE_TOPIC, new SaveTrace());
+        took(ListFolder.class);
+        took(WriteTrace.class);
+        tell(Messages.TRACE_WRITTEN_TOPIC, new TraceWritten(A, Optional.of(drawing), ""));
+        assertEquals(List.of(new ListFolder(FOLDER)), took(ListFolder.class));
+        assertEquals(List.of(new Read(drawing)), took(Read.class));
+        tell(Messages.SAVE_TRACE_TOPIC, new SaveTrace());
+        assertEquals(1, took(WriteTrace.class).size(), "the save answered, another may go");
+    }
+
+    @Test
+    void aDrawingNotWrittenChangesNothing() {
+        startedOn(A);
+        answerAll();
+        wantTrace(A, FOUR);
+        tell(Messages.SAVE_TRACE_TOPIC, new SaveTrace());
+        tell(Messages.TRACE_WRITTEN_TOPIC, new TraceWritten(A, Optional.empty(), "disk full"));
+        assertEquals(List.of(), took(ListFolder.class));
+        assertEquals(List.of(), took(Read.class));
     }
 }

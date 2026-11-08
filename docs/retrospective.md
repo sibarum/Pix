@@ -29,6 +29,42 @@ reasons and the full method.
     ### What to keep exactly as it is
     What carried the milestone, and why.
 
+## Trace · 2026-11-08
+
+The count: 4 findings (FN-22 to FN-25), one architectural (FN-23, where a view reads a box it also moves).
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-22 | the stack's tracer is the gold standard SDG conversion | it has no corner fitting, so the board's Corners has nothing to ask for | a control left off the panel |
+| FN-23 | a view can measure what layout did | the reported box includes the drawn offset, and an overflowing child is not centred | a trace drawn 149 px off, then swinging every frame |
+| FN-24 | a widget fits wherever it is put | a stretched segment is a dead track with its options at one end | a scripted click that changed nothing |
+| FN-25 | the asked half draws what the view says | a second view of the picture is the picture's transform repeated by hand | a fixed shift added in `draw` |
+
+### What would stop each
+1. FN-22: a corner option in `Trace`, benchmarked as every conversion is.
+2. FN-23: `NodeLayout` reports the laid-out box apart from the drawn one; an overflowing child centres as CSS does.
+3. FN-24: a segment shares the width it is given among its options.
+4. FN-25: `Drawn.follow(node, leader)`.
+
+### My own mistakes
+- **I computed where layout would put a node instead of asking it, then asked it in a way that included my own
+  move.** The first compare assumed centring; the second measured the moved box. Rule: a node the asked half moves is
+  laid out where nothing about its placement is a guess (a corner of its parent), and is never measured to place it.
+- **I wrote a scripted check whose assertion was a guess** (`await trace.after 22` after Flatten; it was 23 KB). The
+  screenshot showed it worked, the run said it failed. Rule: await what a step changes in kind (a word, a count the
+  step sets), not a number the step only estimates.
+- **I nearly proposed a viewer → view relay for every trace**, when the view can hear the job's answer itself. Rule:
+  before adding a forwarding message, ask whether the part at the end can subscribe to the topic directly.
+
+### What to keep exactly as it is
+- **One trace out at a time, the latest settings next, as state** (`Viewer.Tracer`): a slider dragged across ten stops
+  traces twice, and `ViewerTest` holds it with no thread in sight. The reads' pattern carried over unchanged.
+- **Preview coarse, Save fine, measured first.** The oversample numbers came from a bench run before any code, so the
+  panel answers in under a second instead of five.
+- **Save writes beside, never over, and the viewer opens the result by the route Open takes**, so the new drawing is
+  listed, shown and stepped to with no new path through the viewer.
+
 ## Still pictures on a feed · 2026-10-31
 
 The count: 5 findings (FN-1 to FN-5), one architectural (FN-1, resolved upstream by building the feed).

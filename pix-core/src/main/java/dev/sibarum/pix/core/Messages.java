@@ -199,6 +199,79 @@ public final class Messages {
         }
     }
 
+    // ------------------------------------------------------------------ tracing a picture into a drawing (docs/trace.md)
+
+    /**
+     * How a picture is traced: into {@code colours} regions, each a layer, and whether a region whose colour varies keeps
+     * it as a texture ({@code texture}) or is flattened to its mean. Not a message: what {@link Tracing}, {@link Trace},
+     * {@link Traced} and {@link WriteTrace} carry.
+     */
+    public record TraceSettings(int colours, boolean texture) {
+
+        /** The fewest and most colours the panel offers. */
+        public static final int FEWEST = 2, MOST = 12;
+
+        /** What the panel opens on: the board's six colours, gradients kept. */
+        public static final TraceSettings FIRST = new TraceSettings(6, true);
+
+        public TraceSettings {
+            colours = Math.clamp(colours, FEWEST, MOST);
+        }
+    }
+
+    /**
+     * The view tells the viewer what the person wants traced now: the picture shown, with the panel's settings, or, with
+     * no path, nothing, the panel closed. Only the latest matters.
+     */
+    public static final Topic<Tracing> TRACING_TOPIC = Topic.state(Tracing.class);
+
+    public record Tracing(Optional<Path> path, TraceSettings settings) {
+    }
+
+    /**
+     * The viewer asks {@link TracePicture} to trace a picture, for the panel to compare. One at a time: the next only
+     * once this is answered, and then only if the person has asked for another since.
+     */
+    public static final Topic<Trace> TRACE_TOPIC = Topic.edge(Trace.class);
+
+    public record Trace(Path path, TraceSettings settings) {
+    }
+
+    /**
+     * A picture traced: the drawing, its layer count, the size it would be as a file, and its regions' colours, straight
+     * {@code 0xRRGGBBAA}, bottom layer first; or no drawing and {@code why}. Heard by the viewer, which traces again if
+     * the person has moved on, and by the view, which shows it if it is still of the picture shown.
+     */
+    public static final Topic<Traced> TRACED_TOPIC = Topic.edge(Traced.class);
+
+    public record Traced(Path path, TraceSettings settings, Optional<ImageSdg> drawing, int layers, long bytes,
+                         List<Integer> palette, String why) {
+        public Traced {
+            palette = List.copyOf(palette);
+        }
+    }
+
+    /** The view asks for the trace wanted to be saved as a drawing beside its picture. */
+    public static final Topic<SaveTrace> SAVE_TRACE_TOPIC = Topic.edge(SaveTrace.class);
+
+    public record SaveTrace() {
+    }
+
+    /** The viewer asks {@link WriteTrace} to trace a picture at full quality and write it beside the picture. */
+    public static final Topic<WriteTrace> WRITE_TRACE_TOPIC = Topic.edge(WriteTrace.class);
+
+    public record WriteTrace(Path path, TraceSettings settings) {
+    }
+
+    /**
+     * The drawing written, or none and why. The viewer then lists the folder again and wants the new file; the view says
+     * why when there is none.
+     */
+    public static final Topic<TraceWritten> TRACE_WRITTEN_TOPIC = Topic.edge(TraceWritten.class);
+
+    public record TraceWritten(Path picture, Optional<Path> file, String why) {
+    }
+
     /**
      * A picture's thumbnail: a feed of its own at most {@code ReadPicture.THUMB} px on its longer side, and that size;
      * no feed for a file that is not a picture. Not a message: what {@link Pictured}, {@link Thumbnailed} and

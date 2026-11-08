@@ -84,6 +84,11 @@ final class Ui {
     private final Node nextSide;
     private final Node bar;
     private final IconButton keep;
+    /** Trace, in the bar's tools, and the panel it opens. */
+    private final IconButton trace;
+    private final TracePanel tracePanel;
+    private boolean kept;
+    private boolean tracing;
     /** The bar's zoom: − and + either side of how large the picture is. */
     private final IconButton zoomOut;
     private final IconButton zoomIn;
@@ -134,17 +139,25 @@ final class Ui {
         gui.landmark(Landmarks.NEXT, next.node());
 
         splash = new Splash(gui);
+        tracePanel = new TracePanel(gui);
 
         previousSide = side(gui, previous, Length.ZERO);
         nextSide = side(gui, next, Length.percent(100f));
         // The splash is there from the start, since nothing is wanted until the folder is listed, and Previous and
         // Next are not (splash).
         stage = gui.box()
-                .width(Length.FILL).height(Length.grow(1f))
+                .width(Length.grow(1f)).height(Length.percent(100f))
                 .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                 .clip(true)
-                .children(layers[0], layers[1], note, splash.node(), previousSide.visible(false),
-                        nextSide.visible(false));
+                .children(layers[0], layers[1]);
+        // The trace and its line lie over the picture's layers, which front() keeps the first two children.
+        for (Node n : tracePanel.overStage()) {
+            stage.append(n);
+        }
+        stage.append(note);
+        stage.append(splash.node());
+        stage.append(previousSide.visible(false));
+        stage.append(nextSide.visible(false));
         splashed = true;
         gui.landmark(Landmarks.STAGE, stage);
 
@@ -211,19 +224,26 @@ final class Ui {
         keep = new IconButton(gui, Icon.PIN_UP, "Keep shown").toggle(true).size(TOOL, TOOL_ICON)
                 .tip("Keep shown");
         gui.landmark(Landmarks.KEEP, keep.node());
+        trace = new IconButton(gui, Icon.BEZIER, "Trace to SDG").toggle(true).size(TOOL, TOOL_ICON)
+                .tip("Trace to SDG (T)");
+        gui.landmark(Landmarks.TRACE, trace.node());
 
         // The bar is the root's last child, so floating it puts it over the bottom of the stage, which then has the
         // whole window under the title bar; unfloated, it takes room of its own below the stage (keep). The zoom
         // joins it with the first picture wanted (splash).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words, strip, zoom.visible(false), keep.node());
+                .children(words, strip, zoom.visible(false), trace.node().visible(false), keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
+        // The stage and, while a picture is traced, the Trace panel at its right.
+        Node middle = gui.row().width(Length.FILL).height(Length.grow(1f)).scroll(false, false)
+                .children(stage, tracePanel.panel());
+
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
-                .children(titleBar.node(), stage, bar);
+                .children(titleBar.node(), middle, bar);
     }
 
     /** A column the stage's height, floating at {@code x}, with {@code button} halfway up it. */
@@ -369,7 +389,34 @@ final class Ui {
     /** Keep shown on: the bar in the window's flow, below the picture; off, floating over the picture's bottom. */
     void keep(boolean kept) {
         keep.on(kept).icon(kept ? Icon.PIN_DOWN : Icon.PIN_UP);
-        if (kept) {
+        this.kept = kept;
+        flow();
+    }
+
+    /**
+     * The Trace panel open beside the stage, or closed. Open, the bar is in the window's flow as Keep shown puts it, so
+     * it never covers the panel's buttons.
+     */
+    void tracing(boolean open) {
+        tracing = open;
+        trace.on(open);
+        tracePanel.open(open);
+        flow();
+    }
+
+    /** The Trace panel and the split it makes of the stage. */
+    TracePanel tracePanel() {
+        return tracePanel;
+    }
+
+    /** The address Trace presses with. */
+    String traceAddress() {
+        return trace.address();
+    }
+
+    /** The bar below the picture while Keep shown is on or the Trace panel is open; else floating over it. */
+    private void flow() {
+        if (kept || tracing) {
             bar.unfloat();
         } else {
             bar.floatAt(Length.ZERO, Length.percent(100f));
@@ -447,6 +494,7 @@ final class Ui {
         previousSide.visible(!shown);
         nextSide.visible(!shown);
         zoom.visible(!shown);
+        trace.node().visible(!shown);
     }
 
     /** The address the splash's button presses with. */
