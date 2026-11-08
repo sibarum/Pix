@@ -88,6 +88,26 @@ final class Landmarks {
     static final String CONVERT_STATUS = "convert.status";
     static final String CONVERT_SAVE = "convert.save";
 
+    /**
+     * Layers, in the bar's tools for a drawing, and the Layers panel (docs/layers.md): its rows front first
+     * ({@code layers.0} and on), the picked layer's name, its role, the peel and how far apart, the light page, what it
+     * says, and Save roles. On the stage, the backmost layer's node.
+     */
+    static final String LAYERS = "bar.layers";
+    static final String LAYERS_PANEL = "layers";
+    static final String LAYER_PICKED = "layers.picked";
+    static final String LAYER_ROLE = "layers.role";
+    static final String LAYERS_PEEL = "layers.peel";
+    static final String LAYERS_APART = "layers.apart";
+    static final String LAYERS_LIGHT = "layers.light";
+    static final String LAYERS_STATUS = "layers.status";
+    static final String LAYERS_SAVE = "layers.save";
+    static final String LAYERS_STAGE = "stage.layer";
+
+    static String layer(int i) {
+        return LAYERS_PANEL + "." + i;
+    }
+
     static String convertTo(dev.sibarum.pix.core.Messages.Format f) {
         return CONVERT_PANEL + "." + f.extension();
     }

@@ -3,6 +3,7 @@ package dev.sibarum.pix;
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
 import dev.sibarum.pix.Keys.ConvertKey;
+import dev.sibarum.pix.Keys.LayersKey;
 import dev.sibarum.pix.Keys.TraceKey;
 import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
@@ -22,6 +23,7 @@ import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.sibarum.pix.core.Messages.Convert;
 import dev.sibarum.pix.core.Messages.Format;
+import dev.sibarum.pix.core.Messages.SaveRoles;
 import dev.sibarum.pix.core.Messages.SaveTrace;
 import dev.sibarum.pix.core.Messages.TraceSettings;
 import dev.sibarum.pix.core.Messages.Written;
@@ -36,6 +38,10 @@ import dev.vexelray.gui.core.Drawn;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Frame;
 import dev.vexelray.gui.core.Gui;
+import dev.vexelray.gui.core.ImageSdg;
+import dev.vexelray.gui.core.style.SdgRoles;
+import dev.vexelray.gui.core.style.Theme;
+import dev.vexelray.fields.sdg.Sdg;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
 import dev.vexelray.gui.core.input.CursorShape;
@@ -121,7 +127,19 @@ final class View {
      * picture, drawn as it is.
      */
     record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade, List<Node> cells,
-                   Glide glide, List<Shade> shades, Compare compare) {
+                   Glide glide, List<Shade> shades, Compare compare, Peel peel) {
+    }
+
+    /**
+     * A drawing's layers, one node each, back first: {@code count} of them drawn at the picture's zoom and offset, each
+     * {@code step} px further down and right than the one behind it, at {@code shrink} of the picture's size so the fan
+     * fits the stage, faint but for {@code picked} (-1: none picked,
+     * all whole). None drawn, the picture is; any, the picture is not, since they are it.
+     */
+    /** How much of a layer not picked is drawn while one is: enough to see where it lies. */
+    static final float FAINT = 0.45f;
+
+    record Peel(List<Node> nodes, int count, float step, float shrink, int picked) {
     }
 
     /**
@@ -146,6 +164,21 @@ final class View {
     private boolean converting;
     private Format chosen = Format.PNG;
     private final Sender<Convert> convertOut;
+
+    /**
+     * The Layers panel: open or not, the drawing it shows, each layer's role as set and as saved, the layer picked (-1
+     * none), the peel and how far apart, the light page, a drawing a layer as drawn, and the sender Save roles asks with.
+     */
+    private boolean layering;
+    private Sdg drawingShown;
+    private List<String> roles = new ArrayList<>();
+    private List<String> rolesSaved = List.of();
+    private int picked = -1;
+    private boolean peeled = true;
+    private float apart = 1f;
+    private boolean lightPage;
+    private final ImageSdg[] images = new ImageSdg[LayersPanel.MOST_DRAWN];
+    private final Sender<SaveRoles> saveRolesOut;
 
     private final Gui gui;
     private final Ui ui;
@@ -220,7 +253,9 @@ final class View {
     View(Gui gui, Keymap keys, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span,
          Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
          Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace,
-         Sender<ConvertKey> convertKey, Sender<Convert> convertOut) {
+         Sender<ConvertKey> convertKey, Sender<Convert> convertOut, Sender<LayersKey> layersKey,
+         Sender<SaveRoles> saveRolesOut) {
+        this.saveRolesOut = saveRolesOut;
         this.convertOut = convertOut;
         this.gui = gui;
         this.ui = ui;
@@ -260,7 +295,8 @@ final class View {
         shades[NOTE] = Shade.at(ui.noteNode(), 0f);
         this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
                 ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE, List.of(shades),
-                new Compare(ui.tracePanel().traced(), 0f, 0f, ui.tracePanel().line(), 0f));
+                new Compare(ui.tracePanel().traced(), 0f, 0f, ui.tracePanel().line(), 0f),
+                new Peel(ui.layersPanel().drawnNodes(), 0, 0f, 1f, -1));
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
         gui.hear(gui.root(), NodeEvent.POINTER, p -> {
             if (p.over()) {
@@ -282,6 +318,10 @@ final class View {
             stageH = layout.rect().h();
             refit();
             compare();
+            if (layering) {
+                drawLayers();
+                peel();
+            }
         });
         gui.hear(ui.stage(), NodeEvent.POINTER, p -> {
             pointerX = p.localX() - p.nodeW() / 2f;
@@ -334,6 +374,11 @@ final class View {
         keys.action("view.convert", "Convert to another format", Shortcut.of(Key.C))
                 .sends(convertKey, new ConvertKey());
         gui.hear(ui.convertPanel().badge(), NodeEvent.CLICK, c -> convertKey.send(new ConvertKey()));
+        keys.action("view.layers", "Layers of a drawing", Shortcut.of(Key.L)).sends(layersKey, new LayersKey());
+        for (int r = 0; r < LayersPanel.MOST_LISTED; r++) {
+            int row = r;
+            gui.hear(ui.layersPanel().row(r), NodeEvent.CLICK, c -> pickRow(row));
+        }
         keys.action("view.zoom-in", "Larger controls",
                 Shortcut.of(Key.EQUAL, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL))
                 .sends(zoomKey, new ZoomKey(1));
@@ -367,8 +412,10 @@ final class View {
 
     @Subscribe
     public void hold(Hold m) {
+        // A picture held again in its own place (read again after Rasterware wrote over it) lets the old one go even
+        // while it is shown: letGo keeps its feed until no layer draws it, and the viewer shows the new one next.
         Pictured was = held.put(m.picture().path(), m.picture());
-        if (was != null && was != shown) {
+        if (was != null && was != m.picture()) {
             letGo(was);
         }
     }
@@ -413,7 +460,7 @@ final class View {
         onLayer[front] = feed == null ? null : p;
         shown = p;
         state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
-                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades), state.compare());
+                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades), state.compare(), state.peel());
         closeLetGo();
         sayZoom();
         if (tracing) {
@@ -422,6 +469,12 @@ final class View {
         }
         closeConvert();
         ui.convertPanel().format(badge(p));
+        ui.kind(traceable(p), p.drawing().isPresent());
+        if (layering && p.drawing().isPresent()) {
+            loadLayers();
+        } else {
+            closeLayers();
+        }
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
         showSaid();
@@ -441,11 +494,13 @@ final class View {
         onLayer[front] = null;
         shades[NOTE] = shades[NOTE].toward(0f, now);
         state = new Drawing(ui.layer(front), ui.layer(1 - front), state.lens(), toss, state.faded(), state.fade(),
-                state.cells(), state.glide(), List.of(shades), state.compare());
+                state.cells(), state.glide(), List.of(shades), state.compare(), state.peel());
         closeLetGo();
         closeTrace();
         closeConvert();
         ui.convertPanel().format("");
+        closeLayers();
+        ui.kind(false, false);
         say(Details.KIND, "");
         say(Details.BYTES, "");
         showSaid();
@@ -489,7 +544,7 @@ final class View {
         float slot = (Strip.CELL_W + Strip.GAP) * remPx;
         Glide glide = state.glide().shifted(shift, slot, slot * (cells / 2), System.nanoTime());
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), glide, state.shades(), state.compare());
+                state.cells(), glide, state.shades(), state.compare(), state.peel());
     }
 
     /** A thumbnail to keep; one held already for that picture is put back, and closed once nothing draws it. */
@@ -523,6 +578,10 @@ final class View {
     /** Esc leaves full screen; in the window, it closes Rasterware, by the route the close button takes. */
     @Subscribe
     public void escKey(EscKey k) {
+        if (layering) {
+            closeLayers();
+            return;
+        }
         if (converting) {
             closeConvert();
             return;
@@ -567,6 +626,23 @@ final class View {
             kept = !kept;
             ui.keep(kept);
             wake();
+        } else if (p.button().equals(ui.layersAddress())) {
+            layersKey(new LayersKey());
+        } else if (p.button().equals(ui.layersPanel().closeAddress())) {
+            closeLayers();
+        } else if (p.button().equals(ui.layersPanel().peelAddress()) && layering) {
+            peeled = !peeled;
+            paintLayers();
+            peel();
+        } else if (p.button().equals(ui.layersPanel().lightAddress()) && layering) {
+            lightPage = !lightPage;
+            drawLayers();
+            paintLayers();
+        } else if (p.button().equals(ui.layersPanel().saveAddress()) && layering && !saving) {
+            saving = true;
+            ui.layersPanel().status("");
+            paintLayers();
+            saveRolesOut.send(new SaveRoles(shown.path(), roles));
         } else if (p.button().equals(ui.convertPanel().saveAddress())) {
             convertSave();
         } else if (p.button().equals(ui.traceAddress())) {
@@ -591,6 +667,7 @@ final class View {
             closeTrace();
         } else if (traceable(shown)) {
             closeConvert();
+            closeLayers();
             tracing = true;
             ui.tracing(true);
             ui.tracePanel().split(split * 100f);
@@ -602,6 +679,7 @@ final class View {
     /** The colours slider moved: traced again with that many, as it moves. */
     @Subscribe
     public void slid(Slider.Changed c) {
+        apartSlid(c);
         if (c.slider().equals(ui.tracePanel().colourAddress())) {
             int n = TracePanel.colours(c.value());
             if (n != settings.colours()) {
@@ -613,6 +691,7 @@ final class View {
     /** Gradients flattened or kept. */
     @Subscribe
     public void chose(Segment.Changed c) {
+        roleChosen(c);
         if (c.segment().equals(ui.tracePanel().gradientsAddress()) && c.value() instanceof Boolean texture
                 && texture != settings.texture()) {
             settings(new TraceSettings(settings.colours(), texture));
@@ -652,9 +731,203 @@ final class View {
                 ui.tracePanel().status(m.why());
             }
         }
+        if (layering) {
+            paintLayers();
+            if (m.file().isEmpty()) {
+                ui.layersPanel().status(m.why());
+            }
+        }
         if (converting) {
             paintConvert();
             ui.convertPanel().status(m.file().isEmpty() ? m.why() : "");
+        }
+    }
+
+    // ------------------------------------------------------------------ a drawing's layers (docs/layers.md)
+
+    /** L, or Layers in the bar: the Layers panel opened on the drawing shown, or closed. */
+    @Subscribe
+    public void layersKey(LayersKey k) {
+        if (layering) {
+            closeLayers();
+            return;
+        }
+        if (shown == null || shown.drawing().isEmpty()) {
+            return;
+        }
+        closeTrace();
+        closeConvert();
+        layering = true;
+        picked = -1;
+        ui.layering(true);
+        loadLayers();
+    }
+
+    /**
+     * The drawing shown, its layers read again: as it is on disk, its roles as saved, the one picked kept if it is still
+     * there. A drawing re-read after Save roles comes here, and so does one stepped to with the panel open.
+     */
+    private void loadLayers() {
+        drawingShown = shown.drawing().get().source();
+        roles = new ArrayList<>();
+        for (Sdg.Layer l : drawingShown.layers()) {
+            roles.add(!l.isGroup() && l.paint() instanceof Sdg.Paint.Solid s ? s.role() : "");
+        }
+        rolesSaved = List.copyOf(roles);
+        if (picked >= drawingShown.layers().size()) {
+            picked = -1;
+        }
+        int n = drawingShown.layers().size();
+        ui.layersPanel().size(Math.round(drawingShown.width()) + " × " + Math.round(drawingShown.height())
+                + " units · " + n + (n == 1 ? " layer" : " layers") + " · front at the top");
+        ui.layersPanel().status(n > LayersPanel.MOST_DRAWN
+                ? "Drawn whole: picking and peeling take " + LayersPanel.MOST_DRAWN + " layers at most." : "");
+        drawLayers();
+        paintLayers();
+        peel();
+    }
+
+    /** A node a layer, each its own drawing with the roles as set, laid out as the picture is; none past the most. */
+    private void drawLayers() {
+        int n = drawnCount();
+        Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
+        for (int i = 0; i < LayersPanel.MOST_DRAWN; i++) {
+            images[i] = i < n ? layerImage(i) : null;
+            ui.layersPanel().drawn(i, images[i], fit.widthPercent(), fit.heightPercent());
+        }
+    }
+
+    /** How many layers are drawn one a node: all of them, or none when there are more than the panel draws. */
+    private int drawnCount() {
+        int n = drawingShown == null ? 0 : drawingShown.layers().size();
+        return n > LayersPanel.MOST_DRAWN ? 0 : n;
+    }
+
+    /**
+     * Layer {@code i} alone, as a drawing: its solid paint following the role set for it, or, on the light page, the
+     * colour that role takes in the framework's light theme, since the window's own theme is dark.
+     */
+    private ImageSdg layerImage(int i) {
+        Sdg.Layer l = drawingShown.layers().get(i);
+        if (!l.isGroup() && l.paint() instanceof Sdg.Paint.Solid s) {
+            String role = roles.get(i);
+            Sdg.Paint.Solid paint = lightPage
+                    ? new Sdg.Paint.Solid(SdgRoles.rgba(Theme.LIGHT, role, s.rgba()))
+                    : s.as(role);
+            l = new Sdg.Layer(l.name(), l.stencil(), paint, l.opacity());
+        }
+        return ImageSdg.of(new Sdg(drawingShown.width(), drawingShown.height(), drawingShown.pages(), List.of(l)));
+    }
+
+    /** The rows front first, the picked layer's card, the tools and Save roles, as they now are. */
+    private void paintLayers() {
+        LayersPanel panel = ui.layersPanel();
+        int n = drawingShown.layers().size();
+        int listed = Math.min(n, LayersPanel.MOST_LISTED);
+        for (int r = 0; r < listed; r++) {
+            int i = n - 1 - r;
+            panel.row(r, swatch(i), layerName(i), kind(i), i == picked);
+        }
+        panel.rows(listed, n - listed);
+        if (picked >= 0) {
+            Sdg.Layer l = drawingShown.layers().get(picked);
+            boolean solid = !l.isGroup() && l.paint() instanceof Sdg.Paint.Solid;
+            String detail = solid
+                    ? String.format("#%06x · %s", ((Sdg.Paint.Solid) l.paint()).rgba() >>> 8, l.stencil().kind())
+                            .toUpperCase(java.util.Locale.ROOT)
+                    : kind(picked);
+            panel.picked(swatch(picked), layerName(picked), detail, solid, roles.get(picked));
+        } else {
+            panel.picked(null, "No layer picked", "Pick one to see it alone, and to give a solid one a theme colour.",
+                    false, "");
+        }
+        panel.tools(peeled, apart, lightPage);
+        panel.save(!roles.equals(rolesSaved), saving);
+    }
+
+    private String layerName(int i) {
+        String name = drawingShown.layers().get(i).name();
+        return name == null || name.isBlank() ? "Layer " + (i + 1) : name;
+    }
+
+    /** What a layer is: its stencil's kind (or a group), its paint, and its role if it follows one. */
+    private String kind(int i) {
+        Sdg.Layer l = drawingShown.layers().get(i);
+        if (l.isGroup()) {
+            return "group";
+        }
+        String paint = l.paint() instanceof Sdg.Paint.Solid ? "solid"
+                : l.paint() instanceof Sdg.Paint.Sampled ? "sampled" : "unknown";
+        String role = roles.get(i);
+        return l.stencil().kind().toUpperCase(java.util.Locale.ROOT) + " · " + paint
+                + (role.isEmpty() ? "" : " · " + role);
+    }
+
+    /** A solid layer's colour as it is drawn now, its role followed in the theme shown; none for any other. */
+    private Integer swatch(int i) {
+        Sdg.Layer l = drawingShown.layers().get(i);
+        if (l.isGroup() || !(l.paint() instanceof Sdg.Paint.Solid s)) {
+            return null;
+        }
+        return SdgRoles.rgba(lightPage ? Theme.LIGHT : gui.theme(), roles.get(i), s.rgba());
+    }
+
+    /** Row {@code r} (front first) clicked: that layer picked, or, picked already, none. */
+    private void pickRow(int r) {
+        if (!layering || r >= drawingShown.layers().size()) {
+            return;
+        }
+        int i = drawingShown.layers().size() - 1 - r;
+        picked = picked == i ? -1 : i;
+        paintLayers();
+        peel();
+    }
+
+    /** The layers fanned as far apart as the slider says while the peel is on; together while it is off. */
+    private void peel() {
+        int count = layering ? drawnCount() : 0;
+        boolean fanned = peeled && count > 1 && apart > 0f;
+        // Smaller as they spread, so the fan stays on the stage: across, what the shrunk picture leaves; down, half that.
+        float shrink = fanned ? 1f - 0.45f * apart : 1f;
+        Lens l = state.lens();
+        float room = Math.min(stageW - shrink * l.fitW(), 2f * (stageH - shrink * l.fitH())) * 0.9f;
+        float step = fanned ? Math.max(0f, room) / (count - 1) : 0f;
+        ui.layersPanel().frames(layering && fanned, picked);
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
+                state.cells(), state.glide(), state.shades(), state.compare(),
+                new Peel(state.peel().nodes(), count, step, shrink, picked < count ? picked : -1));
+    }
+
+    private void closeLayers() {
+        if (!layering) {
+            return;
+        }
+        layering = false;
+        drawingShown = null;
+        java.util.Arrays.fill(images, null);
+        ui.layering(false);
+        peel();
+    }
+
+    /** The picked layer's theme colour chosen: drawn so at once, and Save roles offered. */
+    private void roleChosen(Segment.Changed c) {
+        if (layering && picked >= 0 && c.segment().equals(ui.layersPanel().roleAddress())
+                && c.value() instanceof String role && !role.equals(roles.get(picked))) {
+            roles.set(picked, role);
+            if (picked < drawnCount()) {
+                Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
+                images[picked] = layerImage(picked);
+                ui.layersPanel().drawn(picked, images[picked], fit.widthPercent(), fit.heightPercent());
+            }
+            paintLayers();
+        }
+    }
+
+    /** How far apart the peel fans the layers. */
+    private void apartSlid(Slider.Changed c) {
+        if (layering && c.slider().equals(ui.layersPanel().apartAddress())) {
+            apart = (float) c.value();
+            peel();
         }
     }
 
@@ -670,6 +943,7 @@ final class View {
         if (shown == null || shown.feed().isEmpty()) {
             return;
         }
+        closeLayers();
         closeTrace();
         converting = true;
         chosen = offered(Format.PNG) ? Format.PNG : Format.SDG;
@@ -840,7 +1114,7 @@ final class View {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
                 state.cells(), state.glide(), state.shades(),
                 new Compare(c.traced(), (stageW - l.fitW()) / 2f - split * stageW, (stageH - l.fitH()) / 2f,
-                        c.line(), -lineW / 2f));
+                        c.line(), -lineW / 2f), state.peel());
     }
 
     /**
@@ -878,12 +1152,14 @@ final class View {
             out.opacity(s.picture(), 1f);
             out.opacity(s.leaving(), 0f);
             drawCompare(s.compare(), l.to().zoom(), l.to().x(), l.to().y(), out);
+            drawPeel(s.peel(), l.to().zoom(), l.to().x(), l.to().y(), s.picture(), out);
             return fadeDue;
         }
         out.scale(s.picture(), l.zoom(t));
         out.offset(s.picture(), l.x(t) + k.in(t), l.y(t));
         out.opacity(s.picture(), k.inOpacity(t));
         drawCompare(s.compare(), l.zoom(t), l.x(t) + k.in(t), l.y(t), out);
+        drawPeel(s.peel(), l.zoom(t), l.x(t) + k.in(t), l.y(t), s.picture(), out);
         out.scale(s.leaving(), k.from().zoom());
         out.offset(s.leaving(), k.out(t), k.from().y());
         out.opacity(s.leaving(), k.outOpacity(t));
@@ -891,6 +1167,22 @@ final class View {
     }
 
     /** The trace at the picture's zoom and offset, moved left as {@link Compare} says, and the line on the split. */
+    /** The layers at the picture's zoom and offset, fanned by the peel and faint but for the one picked; the picture not. */
+    private static void drawPeel(Peel p, float zoom, float x, float y, Node picture, Drawn out) {
+        if (p.count() == 0) {
+            return;
+        }
+        out.opacity(picture, 0f);
+        float middle = (p.count() - 1) / 2f;
+        for (int k = 0; k < p.count(); k++) {
+            Node n = p.nodes().get(k);
+            float along = (k - middle) * p.step();
+            out.scale(n, zoom * p.shrink());
+            out.offset(n, x * p.shrink() + along, y * p.shrink() + along * 0.5f);
+            out.opacity(n, p.picked() < 0 || p.picked() == k ? 1f : FAINT);
+        }
+    }
+
     private static void drawCompare(Compare c, float zoom, float x, float y, Drawn out) {
         out.scale(c.traced(), zoom);
         out.offset(c.traced(), x + c.shift(), y + c.drop());
@@ -909,7 +1201,7 @@ final class View {
 
     private void fade(Fade fade) {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade,
-                state.cells(), state.glide(), state.shades(), state.compare());
+                state.cells(), state.glide(), state.shades(), state.compare(), state.peel());
     }
 
     private void say(int detail, String text) {
@@ -946,7 +1238,7 @@ final class View {
     /** The shades as they now are, for the asked half. */
     private void shade() {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide(), List.of(shades), state.compare());
+                state.cells(), state.glide(), List.of(shades), state.compare(), state.peel());
     }
 
     /** Where the picture in front is drawn at {@code now}: its zoom, and its offset from the stage's centre. */
@@ -957,7 +1249,7 @@ final class View {
 
     private void look(Lens lens) {
         state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide(), state.shades(), state.compare());
+                state.cells(), state.glide(), state.shades(), state.compare(), state.peel());
         sayZoom();
     }
 

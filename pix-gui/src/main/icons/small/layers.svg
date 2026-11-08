@@ -1,0 +1,6 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- A drawing's layers, peeled: a sheet on top, the two under it showing their edges. -->
+  <path d="M8 1.75 L14.25 5 L8 8.25 L1.75 5 Z" fill="none" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M1.75 8 L8 11.25 L14.25 8" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M1.75 11 L8 14.25 L14.25 11" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

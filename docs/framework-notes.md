@@ -308,3 +308,26 @@ draws the focus ring on Previous, at the stage's left, which nothing touched. Fo
 node when the focused one is hidden, and to show its ring as if the keyboard had moved it. Not worked round. What
 the framework could do: a focus that leaves a node hidden by a pointer press goes nowhere visible (or to the node that
 opened the panel, the badge here), and a ring only follows the keyboard.
+
+## FN-28 · No turn and no perspective, so a peel can only fan flat 🔬
+
+The Layers board peels a drawing's layers apart in 3D: the stack tilted back and turned, each layer lifted along the
+depth. `Drawn` has a scale, an offset and an opacity, and nothing that turns a node or sets it in perspective (the TODO
+already waits on a `Drawn.turn` for R / Shift+R). So the peel fans the layers flat, down and right, smaller as they
+spread, each framed as a sheet (`View.peel`, `LayersPanel.frames`). It reads, but it is not the board.
+What the framework could do: `Drawn.turn(node, radians)` first, then a node transform with a perspective (a 4×4, or a
+tilt about x and a depth), drawn by the canvas as a quad with its corners where the transform puts them.
+
+## FN-29 · A layer's distance field cannot be shown as itself 💡
+
+The board's *Show distance fields* draws each layer's field as bands about its edge. A node draws an SDG as the
+drawing it is (`Node.sdg`); nothing draws the field under a stencil (its distance as colour, or isolines). Left out.
+What the stack could do: a look for an SDG layer that paints its distance, `Look.distanceBands(spacing)`, as the
+effects on SDG already take a look per layer.
+
+## FN-30 · `-gui` compiled alone against an older `-core` crashes the processor 🔬
+
+`mvn -pl pix-gui compile`, after `-core` gained a message but before it was installed, failed with
+`NullPointerException: ... "element" is null` from the compiler, naming no file, no class and no message. Built from
+the parent with `-am` it compiled. What the framework's processor could do: when a class `Core` lists is not on the
+class path as compiled, or lacks what a `@Hears` names, say which and that the module before it needs building.

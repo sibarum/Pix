@@ -34,6 +34,11 @@ final class Keys {
         static final Topic<ConvertKey> TOPIC = Topic.edge(ConvertKey.class);
     }
 
+    /** L, or Layers in the bar: the Layers panel opened on the drawing shown, or closed. */
+    record LayersKey() {
+        static final Topic<LayersKey> TOPIC = Topic.edge(LayersKey.class);
+    }
+
     /**
      * Ctrl+= ({@code 1}), Ctrl+- ({@code -1}) and Ctrl+0 ({@code 0}): the controls a step larger, smaller, or as they
      * started. The window's zoom, which sizes the controls and not the words (layout.md, <i>Sizes</i>).

@@ -37,6 +37,8 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **Recording from the camera** (`vexelray-codec-record`, still in `pix-gui`'s pom from 0.1's).
 - [ ] **Corners** in the Trace panel, fit sharp or as traced: the tracer has no corner fitting (FN-22).
 - [ ] **JPEG, WebP, GIF and SVG** in the Convert panel, with the board's knobs: the stack has no encoder for them (FN-26).
+- [ ] **Layers, the rest**: the 3D peel (FN-28), the distance-field view (FN-29), a layer's opacity, and roles inside
+      a group (only top-level solid layers take one).
 
 ## Later
 
@@ -46,6 +48,7 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] Packaging, as 0.1 had it: `installer.json` (carried over, still at 0.1.2) with its `appId` checked against the
       build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
 - [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read
-      shows as it was until it is let go. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
+      shows as it was until it is let go. Rasterware's own writes over a file (Save roles) read it again (`readAgain`);
+      a change made by another program does not. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
       compare it. Open can reopen the file shown now, and shows it as it was.
 - [ ] Vexplore's hand-off (`pix <file>`), and one Rasterware per picture rather than one per hand-off.

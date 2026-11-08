@@ -77,5 +77,7 @@ stage, Esc back) hides the title bar and leaves the bar floating as before (FN-1
 (`Toss`), as 0.1 did, without 0.1's lean, and the filmstrip's thumbnails glide a cell along with it (`Glide`). What can be clicked shows a pointer, lifts under it and shows a press at once; what Rasterware shows and hides fades (`Shade`), and a picture put in another's place without a throw fades over it. Not yet:
 
 - **Trace** (T) is the first tool: it opens the Trace panel at the stage's right ([trace.md](trace.md)).
+- **Layers** (L) takes Trace's place for a drawing: it opens the Layers panel ([layers.md](layers.md)). The format badge
+  (C) starts the bar and opens Convert ([convert.md](convert.md)).
 - **The transport and the tools** come with what they are for: the transport in the filmstrip's place for a
   picture that plays, Turn, Background, Settings. The ⋯ fold comes with the tools.

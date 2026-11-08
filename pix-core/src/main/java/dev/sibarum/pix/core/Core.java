@@ -12,6 +12,7 @@ import dev.vexelray.framework.api.Configuration;
  * this list, or nothing builds it.
  */
 @Configuration(components = Viewer.class, jobs = {Begin.class, ListPictures.class, ReadPicture.class, ReadThumbnail.class,
-        TracePicture.class, SaveDrawing.class, ConvertPicture.class})
+        TracePicture.class, SaveDrawing.class, ConvertPicture.class,
+        RoleDrawing.class})
 public final class Core {
 }

@@ -29,6 +29,38 @@ reasons and the full method.
     ### What to keep exactly as it is
     What carried the milestone, and why.
 
+## Layers · 2026-11-08
+
+The count: 3 findings (FN-28 to FN-30), one architectural (FN-28: the canvas has no turn or perspective).
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-28 | the asked half draws any motion a view describes | scale, offset and opacity only: no turn, no depth | a 3D peel drawn as a flat fan of framed sheets |
+| FN-29 | SDG is the stack's own format, with tools to see it | nothing draws a layer's field as itself | the board's distance-field view left out |
+| FN-30 | a compile error names what is wrong | a stale `-core` jar crashed the processor with an NPE naming nothing | `-pl pix-gui compile` failing where `-am` passed |
+
+### What would stop each
+1. FN-28: `Drawn.turn`, then a perspective transform drawn as a quad.
+2. FN-29: a `Look` for an SDG layer that paints its distance as bands.
+3. FN-30: the processor checks the classes `Core` lists and names the module to build first.
+
+### My own mistakes
+- **I fanned full-size layers and called the peel done in my head before I saw it.** It was a mush; framing the
+  layers as sheets and shrinking them as they spread is what made it read. Rule: a picture-shaped feature is designed
+  from the screenshot, not from the arithmetic.
+- **I wrote in the design that the view lets go of a re-read picture's old feed, and did not build it** until reading
+  the as-built notes back. Every proposal line is a checklist item: read the proposal against the diff before
+  writing "as built".
+- **A scripted step assumed the folder's order** (Right from `dusk.sdg` to `shot.png`; it was `dusk.svg`). Rule: a
+  script goes to a picture by its cell or by Home and End, not by counting.
+
+### What to keep exactly as it is
+- **A file written over itself is read again by the viewer, as state** (`readAgain`): forgotten as held and shown,
+  advanced, and shown when read. No new message, and the stale-picture TODO is half closed by it.
+- **A node a layer, made once and shown or hidden**, so picking, peeling, roles and the light page are each a paint of
+  what is there.
+
 ## Convert · 2026-11-08
 
 The count: 2 findings (FN-26, FN-27), one architectural (FN-26: the stack reads every format and writes two).

@@ -89,6 +89,13 @@ final class Ui {
     private final TracePanel tracePanel;
     private final ConvertPanel convertPanel;
     private boolean converting;
+    /** Layers, in the bar for a drawing, and the panel it opens. */
+    private final IconButton layersTool;
+    private final LayersPanel layersPanel;
+    private boolean layering;
+    /** What the picture shown is: a raster, which Trace takes, or a drawing, which Layers takes; or neither. */
+    private boolean raster;
+    private boolean drawing;
     private boolean kept;
     private boolean tracing;
     /** The bar's zoom: − and + either side of how large the picture is. */
@@ -143,6 +150,7 @@ final class Ui {
         splash = new Splash(gui);
         tracePanel = new TracePanel(gui);
         convertPanel = new ConvertPanel(gui);
+        layersPanel = new LayersPanel(gui);
 
         previousSide = side(gui, previous, Length.ZERO);
         nextSide = side(gui, next, Length.percent(100f));
@@ -154,6 +162,9 @@ final class Ui {
                 .clip(true)
                 .children(layers[0], layers[1]);
         // The trace and its line lie over the picture's layers, which front() keeps the first two children.
+        for (Node n : layersPanel.overStage()) {
+            stage.append(n);
+        }
         for (Node n : tracePanel.overStage()) {
             stage.append(n);
         }
@@ -231,6 +242,9 @@ final class Ui {
         trace = new IconButton(gui, Icon.BEZIER, "Trace to SDG").toggle(true).size(TOOL, TOOL_ICON)
                 .tip("Trace to SDG (T)");
         gui.landmark(Landmarks.TRACE, trace.node());
+        layersTool = new IconButton(gui, PixIcon.LAYERS, "Layers").toggle(true).size(TOOL, TOOL_ICON)
+                .tip("Layers (L)");
+        gui.landmark(Landmarks.LAYERS, layersTool.node());
 
         // The bar is the root's last child, so floating it puts it over the bottom of the stage, which then has the
         // whole window under the title bar; unfloated, it takes room of its own below the stage (keep). The zoom
@@ -238,13 +252,13 @@ final class Ui {
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
                 .children(convertPanel.badge(), words, strip, zoom.visible(false), trace.node().visible(false),
-                        keep.node());
+                        layersTool.node().visible(false), keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
         // The stage and, while a picture is traced, the Trace panel at its right.
         Node middle = gui.row().width(Length.FILL).height(Length.grow(1f)).scroll(false, false)
-                .children(stage, tracePanel.panel());
+                .children(stage, tracePanel.panel(), layersPanel.panel());
 
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
@@ -416,6 +430,34 @@ final class Ui {
         flow();
     }
 
+    /** The Layers panel open beside the stage, the bar in the flow below it as for Trace; or closed. */
+    void layering(boolean open) {
+        layering = open;
+        layersTool.on(open);
+        layersPanel.open(open);
+        flow();
+    }
+
+    LayersPanel layersPanel() {
+        return layersPanel;
+    }
+
+    String layersAddress() {
+        return layersTool.address();
+    }
+
+    /** The picture shown is a raster, a drawing, or neither: Trace shows for the one, Layers for the other. */
+    void kind(boolean raster, boolean drawing) {
+        this.raster = raster;
+        this.drawing = drawing;
+        tools();
+    }
+
+    private void tools() {
+        trace.node().visible(!splashed && raster);
+        layersTool.node().visible(!splashed && drawing);
+    }
+
     /** The format badge and the Convert panel. */
     ConvertPanel convertPanel() {
         return convertPanel;
@@ -433,7 +475,7 @@ final class Ui {
 
     /** The bar below the picture while Keep shown is on or the Trace panel is open; else floating over it. */
     private void flow() {
-        if (kept || tracing || converting) {
+        if (kept || tracing || converting || layering) {
             bar.unfloat();
         } else {
             bar.floatAt(Length.ZERO, Length.percent(100f));
@@ -511,7 +553,7 @@ final class Ui {
         previousSide.visible(!shown);
         nextSide.visible(!shown);
         zoom.visible(!shown);
-        trace.node().visible(!shown);
+        tools();
     }
 
     /** The address the splash's button presses with. */

@@ -32,6 +32,8 @@ import dev.sibarum.pix.core.Messages.WriteTrace;
 import dev.sibarum.pix.core.Messages.Convert;
 import dev.sibarum.pix.core.Messages.Format;
 import dev.sibarum.pix.core.Messages.WriteCopy;
+import dev.sibarum.pix.core.Messages.SaveRoles;
+import dev.sibarum.pix.core.Messages.WriteRoles;
 import dev.vexelray.framework.core.PickFile;
 import dev.vexelray.framework.core.Picked;
 import dev.vexelray.framework.core.WindowOpened;
@@ -85,7 +87,7 @@ class ViewerTest {
                 Messages.HOLD_TOPIC, Messages.SHOW_TOPIC, Messages.RELEASE_TOPIC, Messages.CAPTION_TOPIC,
                 Messages.READ_THUMB_TOPIC, Messages.HOLD_THUMB_TOPIC, Messages.RELEASE_THUMB_TOPIC,
                 Messages.FILMSTRIP_TOPIC, Messages.CLEAR_TOPIC, PickFile.TOPIC, Messages.TRACE_TOPIC,
-                Messages.WRITE_TRACE_TOPIC, Messages.WRITE_COPY_TOPIC)) {
+                Messages.WRITE_TRACE_TOPIC, Messages.WRITE_COPY_TOPIC, Messages.WRITE_ROLES_TOPIC)) {
             listen(heard, t);
         }
     }
@@ -597,5 +599,32 @@ class ViewerTest {
         tell(Messages.WRITTEN_TOPIC, new Written(B, Optional.empty(), ""));
         tell(Messages.CONVERT_TOPIC, new Convert(C, Format.PNG));
         assertEquals(List.of(), took(WriteCopy.class));
+    }
+
+    // ------------------------------------------------------------------ a drawing's roles (docs/layers.md)
+
+    @Test
+    void aDrawingWrittenOverItselfIsReadAgainAndShownWithNoListing() {
+        startedOn(A);
+        answerAll();
+        took(ListFolder.class);
+        shown();
+        held();
+        tell(Messages.SAVE_ROLES_TOPIC, new SaveRoles(A, List.of("accent", "")));
+        assertEquals(List.of(new WriteRoles(A, List.of("accent", ""))), took(WriteRoles.class));
+        tell(Messages.WRITTEN_TOPIC, new Written(A, Optional.of(A), ""));
+        assertEquals(List.of(), took(ListFolder.class), "nothing new in the folder");
+        assertEquals(List.of(new Read(A)), took(Read.class), "what was read of it is out of date");
+        assertEquals(List.of(), took(Release.class), "the view lets the old one go when the new is held");
+        tell(Messages.PICTURED_TOPIC, read(A));
+        assertEquals(List.of(A), held());
+        assertEquals(List.of(A), shown(), "shown again, from its new read");
+    }
+
+    @Test
+    void rolesAreOneWriteAmongTheOthers() {
+        tell(Messages.CONVERT_TOPIC, new Convert(A, Format.PNG));
+        tell(Messages.SAVE_ROLES_TOPIC, new SaveRoles(B, List.of("muted")));
+        assertEquals(List.of(), took(WriteRoles.class));
     }
 }

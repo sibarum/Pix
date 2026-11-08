@@ -30,6 +30,8 @@ import dev.sibarum.pix.core.Messages.Tracing;
 import dev.sibarum.pix.core.Messages.WriteTrace;
 import dev.sibarum.pix.core.Messages.Convert;
 import dev.sibarum.pix.core.Messages.WriteCopy;
+import dev.sibarum.pix.core.Messages.SaveRoles;
+import dev.sibarum.pix.core.Messages.WriteRoles;
 import dev.vexelray.codec.image.Pictures;
 import dev.vexelray.framework.api.Component;
 import dev.vexelray.framework.api.Hears;
@@ -87,10 +89,10 @@ import java.util.Optional;
 @Component
 @Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Go.class, Span.class, Open.class,
         Picked.class, Pictured.class, Thumbnailed.class, Tracing.class, Traced.class, SaveTrace.class,
-        Written.class, Convert.class})
+        Written.class, Convert.class, SaveRoles.class})
 @Publishes({Recall.class, ListFolder.class, Read.class, ReadThumb.class, PickFile.class, Hold.class, Show.class,
         Clear.class, Release.class, HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class, Trace.class,
-        WriteTrace.class, WriteCopy.class})
+        WriteTrace.class, WriteCopy.class, WriteRoles.class})
 public final class Viewer {
 
     static final int CAPACITY = 64;
@@ -265,6 +267,7 @@ public final class Viewer {
                 .on(Messages.TRACED_TOPIC, b.step("traced", Viewer::traced))
                 .on(Messages.SAVE_TRACE_TOPIC, b.step("save trace", Viewer::saveTrace))
                 .on(Messages.CONVERT_TOPIC, b.step("convert", Viewer::convert))
+                .on(Messages.SAVE_ROLES_TOPIC, b.step("save roles", Viewer::saveRoles))
                 .on(Messages.WRITTEN_TOPIC, b.step("trace written", Viewer::written));
         ledger = b.build(inbox, "viewer", CAPACITY);
     }
@@ -456,7 +459,34 @@ public final class Viewer {
         if (m.file().isEmpty() || m.file().get().getParent() == null) {
             return next;
         }
+        if (m.file().get().equals(m.picture())) {
+            return readAgain(next, m.picture(), out);
+        }
         return recalled(next, new Recalled(m.file().get().getParent(), m.file()), out);
+    }
+
+    /** Save a drawing's roles into it, in place. One file written at a time, as {@link #convert} says. */
+    static State saveRoles(State s, SaveRoles m, Out out) {
+        if (s.saving().isPresent()) {
+            return s;
+        }
+        out.send(Messages.WRITE_ROLES_TOPIC, new WriteRoles(m.path(), m.roles()));
+        return s.saving(Optional.of(m.path()));
+    }
+
+    /**
+     * {@code path} was written over: what was read of it is out of date. Forgotten as held and as shown, without a
+     * {@link Release}, since the view lets the old picture go when the new one is held in its place; then read again,
+     * and shown again if it is still wanted. Nothing else of the folder changes.
+     */
+    private static State readAgain(State s, Path path, Out out) {
+        List<Held> held = new ArrayList<>(s.held());
+        held.removeIf(h -> h.path().equals(path));
+        State next = s.held(held);
+        if (next.shown().equals(Optional.of(path))) {
+            next = next.shown(Optional.empty());
+        }
+        return advance(next, out);
     }
 
     /** With no trace out, trace the one wanted, unless it is what was traced last. */

@@ -326,8 +326,32 @@ public final class Messages {
     public record WriteCopy(Path path, Format to) {
     }
 
+    // ------------------------------------------------------------------ a drawing's layers (docs/layers.md)
+
     /**
-     * A picture written beside another, by a trace's save or a conversion, or none and why. The viewer then lists the
+     * The view asks for a drawing's roles to be saved into it: a theme role for each of its top-level layers, in the
+     * drawing's order, {@code ""} for none. Only a solid layer takes one; any other's is ignored.
+     */
+    public static final Topic<SaveRoles> SAVE_ROLES_TOPIC = Topic.edge(SaveRoles.class);
+
+    public record SaveRoles(Path path, List<String> roles) {
+        public SaveRoles {
+            roles = List.copyOf(roles);
+        }
+    }
+
+    /** The viewer asks {@link RoleDrawing} to write those roles into the drawing, in place. */
+    public static final Topic<WriteRoles> WRITE_ROLES_TOPIC = Topic.edge(WriteRoles.class);
+
+    public record WriteRoles(Path path, List<String> roles) {
+        public WriteRoles {
+            roles = List.copyOf(roles);
+        }
+    }
+
+    /**
+     * A picture written beside another, by a trace's save or a conversion, or over itself, by a save of its roles; or
+     * none and why. The viewer then lists the
      * folder again and wants the new file; the view says why when there is none.
      */
     public static final Topic<Written> WRITTEN_TOPIC = Topic.edge(Written.class);
