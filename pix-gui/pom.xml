@@ -98,14 +98,6 @@
             <resource>
                 <directory>src/main/resources</directory>
             </resource>
-            <!-- The mark, on the class path for the window: the same file src/main/rc/pix.rc links into the
-                 executable, so the two are one file and cannot drift. @VexelApp(icon) names it. -->
-            <resource>
-                <directory>src/main/rc</directory>
-                <includes>
-                    <include>pix.ico</include>
-                </includes>
-            </resource>
         </resources>
         <pluginManagement>
             <plugins>
@@ -210,6 +202,9 @@
                                         <arg value="/dVI_MINOR=${parsedVersion.minorVersion}"/>
                                         <arg value="/dVI_PATCH=${parsedVersion.incrementalVersion}"/>
                                         <arg value="/dVI_IMAGE=${native.imageName}.exe"/>
+                                        <!-- the icons the pair goal made from src/main/rc's drawings -->
+                                        <arg value="/i"/>
+                                        <arg file="${project.build.directory}/generated-rc"/>
                                         <arg value="/fo"/>
                                         <arg file="${project.build.directory}/pix.res"/>
                                         <arg file="${project.basedir}/src/main/rc/pix.rc"/>
@@ -268,9 +263,11 @@
             </plugins>
         </pluginManagement>
         <plugins>
-            <!-- The mark as an art pair, for the About window to condense it out of its distance field as it opens:
-                 /pix.pair beside /pix.ico, which is where the framework looks for it, from the drawing the .ico
-                 was made from. Without it the window shows the .ico, still. -->
+            <!-- The marks, each made from its drawing in src/main/rc at build time, so no icon is committed: pix.svg
+                 as the mark itself (/pix.sdgb, which the splash and About draw), its art pair (/pix.pair, which
+                 About condenses as it opens) and its icon (/pix.ico, which the window wears and pix.rc links into
+                 the executable, found in target/generated-rc); the hidden windows' icon, redrawn at 16 and 24 px;
+                 and the file types' icons, for the installer. -->
             <plugin>
                 <groupId>dev.vexelray.gui</groupId>
                 <artifactId>vexelray-gui-icons-maven-plugin</artifactId>
@@ -286,6 +283,39 @@
                                 <pair>
                                     <art>src/main/rc/pix.svg</art>
                                     <name>pix</name>
+                                    <icon>pix.ico</icon>
+                                </pair>
+                                <pair>
+                                    <art>src/main/rc/pix-background.svg</art>
+                                    <name>pix-background</name>
+                                    <pair>false</pair>
+                                    <drawing>false</drawing>
+                                    <icon>pix-background.ico</icon>
+                                    <smalls>
+                                        <small>16=src/main/rc/pix-background-16.svg</small>
+                                        <small>24=src/main/rc/pix-background-24.svg</small>
+                                    </smalls>
+                                </pair>
+                                <pair>
+                                    <art>src/main/rc/file-images.svg</art>
+                                    <name>file-images</name>
+                                    <pair>false</pair>
+                                    <drawing>false</drawing>
+                                    <icon>file-images.ico</icon>
+                                </pair>
+                                <pair>
+                                    <art>src/main/rc/file-vector-graphics.svg</art>
+                                    <name>file-vector-graphics</name>
+                                    <pair>false</pair>
+                                    <drawing>false</drawing>
+                                    <icon>file-vector-graphics.ico</icon>
+                                </pair>
+                                <pair>
+                                    <art>src/main/rc/file-video.svg</art>
+                                    <name>file-video</name>
+                                    <pair>false</pair>
+                                    <drawing>false</drawing>
+                                    <icon>file-video.ico</icon>
                                 </pair>
                             </pairs>
                         </configuration>

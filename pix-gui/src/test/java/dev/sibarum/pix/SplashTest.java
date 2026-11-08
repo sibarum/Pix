@@ -1,20 +1,22 @@
 package dev.sibarum.pix;
 
 import dev.vexelray.gui.core.Feed;
+import dev.vexelray.gui.core.ImageSdg;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The splash's pictures: the mark the About window condenses, and the scanlines over it. */
+/** The splash's pictures: the mark's drawing, and the scanlines over it. */
 class SplashTest {
 
     @Test
-    void theMarkIsTheBakeAboutUses() {
-        Feed mark = Splash.mark();
-        assertNotNull(mark, "/pix.pair should be on the classpath; the icon plugin's pair goal bakes it");
-        assertEquals(Splash.MARK_SIZE, mark.width());
-        assertEquals(Splash.MARK_SIZE, mark.height());
+    void theMarkIsTheDrawingThePairGoalMakes() {
+        ImageSdg mark = Splash.mark();
+        assertNotNull(mark, "/pix.sdgb should be on the classpath; the icon plugin's pair goal makes it");
+        assertEquals(mark.drawing().width(), mark.drawing().height(), "a square mark");
+        assertTrue(mark.drawing().layers().size() > 1, "in colour: more than one layer");
     }
 
     @Test

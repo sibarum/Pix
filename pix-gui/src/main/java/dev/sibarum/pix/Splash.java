@@ -8,19 +8,22 @@ import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.layout.LayoutEnums.AlignItems;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.core.style.Role;
-import dev.vexelray.gui.icons.ArtPair;
+import dev.vexelray.gui.core.ImageSdg;
+import dev.vexelray.fields.sdg.SdgFile;
 import dev.vexelray.gui.widget.Button;
 import sibarum.probe.Log;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * What the stage shows while no picture is wanted: the lockup (the mark and the wordmark, worn as the suite canvas's
  * lockup is) and a button that opens a picture. That is the first thing most people see, since Windows keeps pictures
  * in folders under Pictures and not in it, so a launch with no file finds none.
  *
- * <p>The mark is the one the About window condenses, {@code /pix.pair} as the icon plugin bakes it from
- * {@code src/main/rc/pix.svg}; its colour square is shown as a still. Read from the classpath, which in the native
+ * <p>The mark is the drawing itself, {@code /pix.sdgb} as the icon plugin makes it from {@code src/main/rc/pix.svg}
+ * (the drawing the About window's art pair and the {@code .ico} are converted from too), drawn as SDG: sharp at any
+ * display scale. Read from the classpath, which in the native
  * image is the binary itself, once, while the tree is built.
  */
 final class Splash {
@@ -30,9 +33,6 @@ final class Splash {
     /** The mark's side, and the room between it and the wordmark, as the canvas's lockup has them. */
     static final Length MARK = Length.dp(72f);
     static final Length LOCKUP_GAP = Length.dp(22f);
-
-    /** The size of the mark's bake shown: a mip chain, so read at the level nearest the size it is drawn. */
-    static final int MARK_SIZE = 208;
 
     /** Scanlines: one dark texel row in three, drawn a dp to the texel over the lockup. */
     static final int SCAN_PERIOD = 3;
@@ -49,9 +49,9 @@ final class Splash {
 
     Splash(Gui gui) {
         Node mark = gui.box().size(MARK, MARK);
-        Feed art = mark();
+        ImageSdg art = mark();
         if (art != null) {
-            mark.image(art);
+            mark.sdg(art);
         }
         Node word = gui.box().role("wordmark")
                 .size(Length.dp(Wordmark.SPLIT_W), Length.dp(Wordmark.SPLIT_H))
@@ -83,30 +83,14 @@ final class Splash {
         return open.address();
     }
 
-    /** The mark's colour square at {@link #MARK_SIZE}, alpha made straight; none, said once, if the bake is missing. */
-    static Feed mark() {
-        try {
-            ArtPair pair = ArtPair.read(Splash.class, "/pix");
-            if (pair == null) {
-                LOG.warn("no /pix.pair on the classpath; the splash shows the wordmark alone");
+    /** The mark's drawing, {@code /pix.sdgb}; none, said once, if it is missing or does not read. */
+    static ImageSdg mark() {
+        try (InputStream in = Splash.class.getResourceAsStream("/pix.sdgb")) {
+            if (in == null) {
+                LOG.warn("no /pix.sdgb on the classpath; the splash shows the wordmark alone");
                 return null;
             }
-            int size = pair.sizeFor(MARK_SIZE);
-            ArtPair.Atlas atlas = pair.atlas(size);
-            byte[] rgba = new byte[size * size * 4];
-            for (int y = 0; y < size; y++) {
-                for (int x = 0; x < size; x++) {
-                    int from = ((atlas.colourY() + y) * atlas.width() + atlas.colourX() + x) * 4;
-                    int to = (y * size + x) * 4;
-                    int a = atlas.rgba()[from + 3] & 0xff;
-                    for (int c = 0; c < 3; c++) {
-                        int v = atlas.rgba()[from + c] & 0xff;
-                        rgba[to + c] = (byte) (a == 0 ? 0 : Math.min(255, Math.round(v * 255f / a)));
-                    }
-                    rgba[to + 3] = (byte) a;
-                }
-            }
-            return Feed.still(size, size, true, MipChain.of(rgba, size, size));
+            return ImageSdg.of(SdgFile.read(in.readAllBytes()));
         } catch (IOException | RuntimeException e) {
             LOG.warn("the splash's mark could not be read; it shows the wordmark alone", e);
             return null;

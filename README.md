@@ -105,7 +105,8 @@ wordmark worn as on a tape (a red and a cyan ghost either side, `Wordmark.split`
 *Open a picture…* button that does what Ctrl+O does; Previous, Next and the zoom are hidden until a picture
 is wanted. It is what most first runs show: with no file named Rasterware
 opens Pictures, and Windows keeps pictures in folders under it (Screenshots, Camera Roll) rather than in it. The mark
-is the About window's, `/pix.pair`, which the icon plugin bakes from `src/main/rc/pix.svg`.
+is the drawing itself, `/pix.sdgb`, drawn as SDG, which the icon plugin makes from `src/main/rc/pix.svg` with the
+About window's art pair and the `.ico` beside it.
 
 Run from `mvn exec:exec`, the process is `java.exe`, so the window and its taskbar button wear the mark but Windows
 groups the button with other Java programs, and pinning it pins Java. The native executable has neither problem.

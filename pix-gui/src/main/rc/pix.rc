@@ -3,10 +3,10 @@
 // Ordinal 1, and it is the only icon here, because Windows shows a program's *lowest-numbered* icon resource
 // wherever it shows the program itself -- Explorer, the taskbar's pinned button, a shortcut, the Apps entry.
 //
-// The running window wears the same file: the pom also puts pix.ico on the class path, and @VexelApp's
-// icon names it, so the window, its taskbar button and the .exe cannot drift apart. It starts as the framework's
-// "new app" mark, and pix.svg is its source. To make it yours, draw an SVG and render it at every size
-// Windows asks for (16 to 256 px) into this one .ico; vex-suite-common's tools/Ico.java does exactly that.
+// The running window wears the same file: the build makes pix.ico from pix.svg (the icon plugin's pair goal, an
+// SDG rendered at every size Windows asks for, 16 to 256 px), puts it on the class path, where @VexelApp's icon
+// names it, and in target/generated-rc, where rc.exe finds it by /i. So the window, its taskbar button and the .exe
+// cannot drift apart, and no .ico is committed: change pix.svg.
 1 ICON "pix.ico"
 
 // The manifest: PerMonitorV2 DPI awareness and the OS compatibility java.exe declares, so this executable is
