@@ -1,77 +1,54 @@
 # TODO
 
-## To ship
+Work on **Rasterware** that is known about and not done. Distinct from
+[framework-notes.md](framework-notes.md), which is about the framework rather than about this application —
+if the fix belongs upstream, it goes there instead.
 
-- ~~A mark~~ — done: `src/main/rc/pix.svg` from the suite icon canvas, rendered to `pix.ico` and linked into the
-  executable through `pix.rc`. The window, file and light variants are beside it; the file icon is for the
-  associations below.
-- ~~The debug native build~~ — done: `-Pnative` builds `pix-debug.exe`, and ottermate drives it (video posters were
-  checked that way).
-- ~~`installer.json` and the suite~~ — done: `installer.json` (id `pix`, on PATH, the icon, associations for every
-  type imagelib decodes), and Pix is a member of the suite in `vexelray-dist/installer-suite.json` (with
-  `vexelray-framework/docs/apps/pix.md`).
-- ~~FFmpeg beside the native build~~ — done: ffmpeg-wrapper carries its downcall metadata and looks for an `ffmpeg`
-  folder beside the running executable; both native builds fill `target/ffmpeg/` and zip it, and `installer.json`
-  installs the zip there as the archive `pix-ffmpeg` (checked by generating into a scratch folder, not published).
-  The DLLs stay separate, replaceable files, as FFmpeg's LGPL asks of a shared build, with its licence and source
-  pointer beside them. What is left:
-  - *Not released.* The next release uploads `pix-ffmpeg-windows-x86_64.zip` beside `pix.exe`. vexelray-dist's
-    `build.cmd` does not build ffmpeg-wrapper, whose libraries come from its own `native/build.sh` (Git Bash and the
-    Visual Studio build tools) before `mvn install`; vexelray-codec now needs it installed first.
-  - *The size*: about 55 MB more to download, beside `pix.exe`. A custom FFmpeg configured with
-    `--disable-everything` and only the decoders and demuxers wanted is a fraction of that, and changes nothing above
-    ffmpeg-wrapper's `build.sh`.
-  - ~~*File associations* for videos~~ — done, now that Pix plays them rather than showing a poster: every extension
-    in `Videos.EXTENSIONS` (`.mp4 .m4v .mov .mkv .webm .avi .wmv .flv .mpg .mpeg .ts .m2ts .mts .3gp .ogv`), with the
-    video family's icon, `file-video.ico`. Pix becomes the default only where nothing else has claimed the type, so
-    a `.ts` already opened by an editor stays with it. A trimmed FFmpeg must keep the demuxers for all of these, or
-    the list here and in `installer.json` shrinks with it.
-- ~~The first release~~ — done: `pix.exe` 0.1.0 is published from
-  [`vexelray-dist`](https://github.com/sibarum/vexelray-dist) (`apps/pix/`, release `pix-v0.1.0`). Its
-  [DEPLOYING.md](https://github.com/sibarum/vexelray-dist/blob/main/DEPLOYING.md) says how the next one goes out;
-  the install page is <https://sibarum.github.io/vexelray-framework/install/>.
+Keep an entry short enough that it does not need editing, and delete it when it is done rather than ticking it.
 
-## The suite
+The v0.2 port starts from the template, and Pix 0.1's features come back one slice at a time. 0.1's README
+(`develop`) says what each did; this list is what is still to bring back, roughly in order.
 
-- ~~Vexplore hands pictures to Pix~~ — done: Enter, double-click and *View in Pix* start `pix <file>` when Pix's install
-  record is there, and Vexplore keeps its own viewer when it is not.
-- **One Pix per picture.** Each hand-off starts a new Pix; a second could go to the one already open.
-- **The order.** Pix steps by name; Vexplore steps in whatever order its list is sorted. A hand-off that should keep
-  the explorer's order needs a way to say it on the command line.
+## Next
 
-## The viewer
+- [ ] **Look closely, the rest.** The wheel zoom, the drag and 0 are in (`Lens`). Still to come: R / Shift+R and
+      Ctrl+drag to turn, and Shift+wheel for a fine turn (FN-6), never a touch gesture, which need a `Drawn.turn`; H
+      and V to mirror, a non-uniform scale the canvas cannot draw yet; and 0.1's feel: a drag past the limit against a
+      rubber band that springs back, and a fling that glides. Each is a term in `Lens`'s closed form or a spring solved
+      for its moment. `Drawn.turn` also brings back the throw's lean, 7° a whole width out (`Toss`).
+- [ ] **The bar, the rest**: the tools and their ⋯ fold come with the tools ([layout.md](layout.md), *Where it stands*);
+      Keep shown remembered between runs comes with Rasterware's settings.
+- [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
+- [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
 
-- ~~Zoom and pan~~ — done, with turning, in `vex-suite-common`'s `PictureViewer` (its `Lens`), so Vexplore has them too.
-  ~~Bilinear at rest~~ — done: once still, the part on screen is made again from the file's own pixels (`Sharpen`).
-- ~~A setting for how pictures are scaled~~ — done: the Settings menu, moving and at rest, eight filters each.
-  ~~Mipmaps and linear light while moving~~ — done: a picture's texture carries its mip chain, made in linear light,
-  and is sRGB, so the GPU blends in light; the kernels' taps read the level of their own spacing. What still differs
-  at rest: it is made from the file's own pixels, where moving reads the 2560 px copy.
-- ~~Animations as movies~~ — done: an animated GIF, WebP or APNG is listed as its first frame and played from the file
-  (`Movie`, `Playback` in `vexelray-codec-image`), streamed through `GuiApp.stream`, with a transport in the suite's
-  `PictureViewer`, held while the window is not in front. What is left: a held picture's play button still shows
-  Pause, since pressing it would pause; seeking back past the kept frames (512 MB) walks forward from the start, with
-  nothing on screen saying so; and the filmstrip's thumbnails do not fill in on the first picture until a step (seen
-  with stills too, so older than this).
-- Show the file's pixels untouched at exactly 100%, whatever the filter: at that scale they are the honest answer.
-- The backdrop is forgotten on close.
-- Watch the folder: a file added, removed or renamed while Pix is open is not seen until it is opened again.
-- ~~Turn and mirror controls~~ — done: the Turn menu and H and V, in `PictureViewer`, the mirror drawn by reading
-  the texture the other way (`ImageView.Pose`). What is left: at rest, a picture turned by a quarter or a half is made
-  again from the file but not laid on whole pixels, as an upright one is (`Lens.visible` snaps only at 0°), so it is a
-  little softer than the same picture upright. Mirrored and upright, it is snapped as usual.
-- Delete, copy, rotate: nothing here changes a file yet. A turn or mirror is only how it is looked at; saving it
-  (or writing the EXIF orientation) is not offered.
-- Drop a file on the window to open it. (~~An Open… for a file~~ — done: Ctrl+O, Ctrl+Shift+O and a
-  click on the name.)
-- One dialog that picks a file or a folder, for the click on the name: it picks only a file.
+## Trace, the rest (docs/trace.md)
 
-## Beyond pictures
+- [ ] **Trace at the picture's own size.** Both the preview and Save trace at 512 px, so a picture larger than that
+      loses detail in its drawing (an 883 px screenshot's thin curves step). Save could trace at the picture's size up to
+      1024 px, about 15 to 20 s at full quality: then it wants a progress and a Cancel of its own.
+- [ ] **The trace shown over the picture drawn by hand** (FN-25): the compare repeats the picture's transform in
+      `View.draw`; a `Drawn.follow` would replace it.
 
-- ~~Video posters~~ — done: a video is listed among the pictures and shown as one still frame a tenth of the way in,
-  with its codec, size and length (`Videos.poster` in `vexelray-codec-video`). One frame, by choice: a contact strip
-  or cycling frames were weighed and left out. Playback is a player's, on its own code path. What is left: the count
-  still says *Image 2 of 5* for a video; and the native build, see *To ship*.
+## Waiting on the stack
 
-"All the formats" means decoders the stack does not have: audio and PDF. The document's `Decoded` is the seam a
-second kind of content would come in through, and `PictureViewer.Showing` the one it would be drawn through.
+- [ ] **Animated GIF, WebP and APNG**, played: a feed of three slots, paced by an asked half
+      (`frame-contract.md` step 5, the codec on it). Shown by their first frame until then.
+- [ ] **Video and its sound**, the transport, the seek preview, the poster in the filmstrip: the same step.
+- [ ] **Recording from the camera** (`vexelray-codec-record`, still in `pix-gui`'s pom from 0.1's).
+- [ ] **Corners** in the Trace panel, fit sharp or as traced: the tracer has no corner fitting (FN-22).
+- [ ] **JPEG, WebP, GIF and SVG** in the Convert panel, with the board's knobs: the stack has no encoder for them (FN-26).
+- [ ] **Layers, the rest**: the 3D peel (FN-28), the distance-field view (FN-29), a layer's opacity, and roles inside
+      a group (only top-level solid layers take one).
+
+## Later
+
+- [ ] **A drawing holds its poster too.** `ReadPicture` answers a `.sdg` with the drawing and, as its feed, the CPU poster
+  (up to 1024 px, with its mips), which is only drawn in the filmstrip's thumbnail. The feed could be the thumbnail's
+  alone, once `View` stops reading "no feed" as "not a picture".
+- [ ] Packaging, as 0.1 had it: `installer.json` (carried over, still at 0.1.2) with its `appId` checked against the
+      build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
+- [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read
+      shows as it was until it is let go. Rasterware's own writes over a file (Save roles) read it again (`readAgain`);
+      a change made by another program does not. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
+      compare it. Open can reopen the file shown now, and shows it as it was.
+- [ ] Vexplore's hand-off (`pix <file>`), and one Rasterware per picture rather than one per hand-off.

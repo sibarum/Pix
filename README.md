@@ -1,165 +1,234 @@
-# Pix
+# Rasterware
 
-Pictures, animations and video, with sound: one at a time, as large as the window allows, and the rest of the folder a key
-press away. Video is decoded a few frames ahead and streamed to the GPU, so it plays smoothly at any size. Built on
-[vexelray-gui](../vexelray-gui) through [vexelray-framework](../vexelray-framework), and the third member of the suite
-with [VexelRay IDE](../text-editor-vexel-demo) and [Vexplore](../vexplore).
+Pictures, one at a time, as large as the window allows, and the rest of the folder a key press away.
 
-**Install it** on Windows, with the other VexelRay applications, from [sibarum.github.io](https://sibarum.github.io/).
-
-Pix began as Vexplore's viewer, and the two still share it. In Vexplore the viewer is a second window that drives
-the explorer's selection; here it is the whole application, so `pix <file>` opens a picture without an explorer
-behind it. Vexplore hands pictures to Pix when Pix is installed.
+A VexelRay desktop application on the 0.2 message model, generated from the `vexel-desktop` template and rebuilt as
+a picture viewer. This branch (`v0.2`) is the port: it starts again from the template rather than from Pix 0.1, and
+the 0.1 viewer's features come back one slice at a time ([docs/TODO.md](docs/TODO.md) lists what is still to come).
+Rasterware is the first application of vexelray-gui's **feed** (`frame-contract.md` D): a job decodes a picture into a
+feed, and the feed, not its pixels, is what crosses to the view.
 
 ## Run it
+
+From this folder, the parent of the two modules:
 
 ```
 mvn compile exec:exec
 mvn compile exec:exec "-Dapp.args=C:/Users/me/Pictures/holiday/IMG_0412.jpg"
 mvn compile exec:exec "-Dapp.args=C:/Users/me/Pictures/holiday"
-mvn test
+mvn compile exec:exec -Dautomation=0                      # a driving socket on a free port (see Taking a screenshot)
+mvn test                                                  # the viewer, the jobs, the fit
 ```
 
-Needs the stack installed to the local Maven repository first, in the order in
-[vexelray-gui/CLAUDE.md](../vexelray-gui/CLAUDE.md), then [`vexelray-codec`](../vexelray-codec), and imagelib's
-native library (`imagelib-wrapper`) behind it.
+`exec:exec` rather than `exec:java`, so native access can be enabled for Panama FFM.
 
 | Command | Opens |
 | --- | --- |
-| `pix <file>` | that picture, stepping through the images in its folder |
-| `pix <folder>` | the folder's first image |
-| `pix` | the first image in the user's Pictures folder, or their home |
+| `pix <file>` | that picture, stepping through the pictures in its folder |
+| `pix <folder>` | the folder's first picture |
+| `pix` | the first picture in the person's Pictures folder, or their home |
 
-The file asked for is shown before its folder has been read; the count says *reading the folder…* until it has.
+The file asked for is shown before its folder has been read; the bar says *reading the folder…* until it
+has.
 
-## What it does
+## A native executable
 
-- **Every format imagelib decodes**: PNG, JPEG, GIF, WebP, BMP, TIFF, SVG, ICO and the rest, animated where the file
-  is. A file that is not a picture, or will not decode, says why in place of the picture.
-- **An animated GIF, WebP or APNG plays like a movie**, of any length and size: a transport takes the filmstrip's place in
-  the bar, so the picture keeps its height, and has play and
-  pause, a frame back and on, a seek bar to drag, the clock and frame, and loop. **Space** plays and pauses,
-  **,** and **.** step a frame (with **Shift**, a second), **L** turns looping off and on. It plays as soon as it is
-  shown, round and round, and pauses where it is while Pix is not the window in front, playing on when it is again
-  (a pause of your own stays). Its frames are decoded as it plays, a few ahead, each scaled to at most 2560 px with
-  its mip chain, and streamed to the GPU; up to 512 MB of the frames already shown are kept, so seeking back within
-  them is instant.
-- **Videos play the same way**: an MP4, MKV, WebM, MOV (and AVI, M4V, TS and the others FFmpeg reads) is listed among
-  the pictures, with what it is under the name (*H.264 video · 1920 × 1080 · 0:42*), and played from its first frame
-  with the same transport, keys and looping as an animated GIF, held while Pix is not in front, and zoomed, moved and
-  turned like any picture. Fitted, a video fills the window (or the screen), as players show it, however small the
-  clip; a picture is never enlarged past its own pixels. A frame is a number at the rate the stream declares, so
-  **,** and **.** step exactly one. Frames are decoded a few ahead at no more than 2560 px, given their mips and
-  streamed to the GPU; up to 256 MB of those already shown are kept, so stepping back is instant, and a seek further
-  off is FFmpeg's exact seek. **Its sound plays with it**, out of the system's default output, and the pictures keep
-  time by what is being heard, so they never drift from it; the sound stops with a pause, a step, the end, and while
-  Pix is not in front,
-  and goes wherever a seek or the loop sends the picture. A video with no sound, or a machine with no sound device,
-  plays silently as before. `-Dvexelray.sound=off` (or `nowhere`, which drains it to no device in real time) keeps it
-  quiet. **A video with sound has Mute and a volume slider** after Loop in the transport, and **M** mutes and unmutes;
-  dragging the slider unmutes it. The level and the mute carry from one video to the next and are kept between runs
-  (`sound.volume` and `sound.muted` in `~/.pix/settings.properties`); muted, the pictures keep time as before.
-  **While a video is in front the arrows are its**: **←** and **→** seek 5 s back and on, **↑** and **↓** turn it up
-  and down 5% (up unmutes it); **PgUp/PgDn** still step through the folder, and on a picture or an animated GIF the
-  arrows step as before. Like every key they can be changed in the key bindings (*Seek a video back*, and so on).
-  **With the pointer on a video's seek bar, the frame there shows above it**, with its time, following the pointer
-  along the bar and through a drag, so you can see where a click would go before you click. Those frames come from the
-  file opened a second time, small (at most 400 px), so looking never moves what is playing. Moving right decodes up
-  to the next frame, and anywhere else is sought. The last 64 frames shown are kept. An animated GIF shows no preview. In the
-  filmstrip a video is a still from a
-  tenth of the way in (no further than 5 s). A video that does not say how long it is or how fast it plays is shown by
-  that still alone. Decoded through [`ffmpeg-wrapper`](../ffmpeg-wrapper)'s FFmpeg, by `vexelray-codec-video`'s `Videos.poster` and `Footage`.
-- **Full screen**: a double click on the picture, or **F11**, gives Pix the whole screen, the title bar gone and the
-  controls floating and fading over the picture as before; a double click, **F11** or **Esc** comes back to the window
-  as it was, maximized if it was. A window closed full screen opens as the window it was. Borderless, not a change of
-  display mode, so switching away is instant.
-- **←/→, PgUp/PgDn, Home/End** step through the folder (on a video, ←/→ seek it instead, and PgUp/PgDn step), in name order with numbers compared as numbers (`IMG_9`
-  before `IMG_10`). Holding an arrow key decodes only where it stops; the next images are read ahead, and recent ones
-  kept, so going back is instant. A picture is thrown in across the window from the side it is on, and the old one
-  flung out the other way.
-- **Look closely**: the wheel zooms about the pointer and a drag moves the picture. Smaller than the window, it stays
-  inside it; larger, it always covers at least a quarter of it, and pulled further it gives against the hand and
-  springs back with the momentum it had. **R** and **Shift+R** turn it a quarter (a fitted picture is fitted again the
-  new way round); **Ctrl+drag** turns it to any angle with the pointer, and **Shift+wheel** a few degrees at a time.
-  **H** mirrors it left and right and **V** top and bottom, as it is seen, whichever way it is turned. **Turn** (the
-  tile beside Background) has the quarter turns and the mirrors as a menu, and *As the file is*: upright, not
-  mirrored, fitted. **0** fits it again (a double click is full screen). The next picture starts fitted, upright and
-  not mirrored. Nothing is written to the file.
-- **The touchpad, read finger by finger** (a precision touchpad, on Windows), not through the wheel the OS makes of
-  it, which Pix ignores while fingers are down:
-  - **Two fingers are always a pan**: they carry the picture with them, 16 px for each millimetre, against the same
-    give at the edges as a drag, and a pan lets go of it at the speed they were going. The picture follows them
-    a few hundredths of a second behind, so a pad's jitter never reaches it.
-  - **A zoom joins** once the fingers' spread has changed by half as much as they have travelled, and catches up as
-    it joins, so the picture is zoomed as far as the fingers are, about the pointer. Zoomed past the limits it gives
-    a little and comes back.
-  - **A turn is locked** until the fingers have twisted 30°: short of that the picture leans with them, a few degrees
-    and less the further they go, and springs back upright when they lift. Past it the lock gives, the picture
-    swings round to where the fingers are and turns freely with them. A picture already turned off a quarter (by
-    Ctrl+drag, Shift+wheel or the fingers) turns with them from the start.
-  - **Quarter turns and the fitted size are magnets** while the fingers are down. Within 7° of a quarter turn the
-    picture is pulled onto it and held, giving only a little, until the fingers are 10° away and it lets go with a
-    jump; within 10% of its fitted size, it is pulled to that size and towards the centre, until 14% away. What it
-    shows is what lifting does: held on a quarter it settles there, still about the point the fingers were at; held
-    at its fitted size it is fitted and centred; anywhere else it stays as it was left.
-  - **Three fingers swiping** left go to the next picture and right to the previous, as a page turns. The step happens
-    once the fingers have gone 12 mm, while they are still moving, or on a quick flick.
-  - **A two-finger double tap** goes from fitted to the picture's own pixels about the pointer (twice its size if it
-    already fits at that), and from anything else back to fitted.
+Two builds, made with GraalVM native-image (a GraalVM JDK as `JAVA_HOME`, and Visual Studio with the "Desktop
+development with C++" workload):
 
-  Windows uses three-finger swipes to switch applications unless *Settings → Bluetooth & devices → Touchpad* says
-  otherwise. Pix sees the fingers either way, but Windows acts on them too.
-- **Sharp at rest**: while the picture moves it is drawn from a copy at most 2560 px across; a moment after it stops,
-  what is on screen is made again from the file's own pixels at exactly the size shown, in linear light, on whole
-  screen pixels.
-- **Settings** (the gear) chooses how the picture is scaled **while moving** (on the GPU, every frame) and **at
-  rest** (made again, as above), from the same eight: Nearest, Sharp bilinear (square pixels with clean edges),
-  Bilinear, Gaussian (the bell read at points), Normal (the bell's area over each pixel, with the B-spline's spread),
-  B-spline, Mitchell and Lanczos, each with its icon from the icon set. Bilinear and Lanczos at first; the choice is
-  kept in Pix's settings (`scaling.moving`, `scaling.resting`).
-- **The filmstrip** shows the neighbours as they are read; a click shows one.
-- **Background**: Auto, dark, light, checker, magenta or green behind the picture, across the whole window. **Auto**,
-  the first, is the picture's own: behind a picture with any transparency the checkerboard, and behind an opaque one
-  the colour of the room it is in — its pixels averaged in Oklab, the edges counting most, then dimmed and its colour
-  tempered, so the picture seems lit by itself. It fades from one picture's room to the next as you step.
-- **The picture has the whole window**, and the controls float over it and fade when the pointer rests, wherever it
-  rests, on them too; moving the mouse, a click or Tab brings them back. Only an open menu (Turn, Background,
-  Settings) keeps them up until it is closed. **Keep shown** (the pin) pins them: they stop fading and take room of
-  their own, so none of them covers the picture. **Previous and Next are always at the window's left and right
-  sides**, halfway up, so the filmstrip has the bar's middle to itself; in a narrow window what does not fit is
-  hidden.
-- **Ctrl+O**, or a click on the name (the words beside Close, which say *Open a picture…* while nothing is open)
-  opens a picture, among the images in its folder;
-  **Ctrl+Shift+O** opens a folder on its first image. The OS's own dialogs, starting in the folder open.
-- **Esc** closes the background menu, leaves full screen, or closes Pix. **Ctrl+= / Ctrl+- / Ctrl+0** size the controls.
-- **Every key and gesture can be changed**: the keyboard in the title bar opens the key bindings, where each command
-  lists its keys and touchpad gestures together. Click one and press a key or make a gesture on the touchpad to change
-  it, and × removes it. What changes is kept in `~/.pix/keys.properties` (only what differs from the defaults, by
-  command: `view.next = Right ThreeFingerSwipeLeft`).
+```
+native-build.cmd -Pnative-release package -DskipTests   # pix-gui/target/pix.exe        what ships: no console
+native-build.cmd -Pnative package -DskipTests           # pix-gui/target/pix-debug.exe  a console: prints the automation port line
+```
+
+Both carry the automation sockets, off until asked for ([Automation](#automation)), so ottermate can drive either.
+
+On Linux there is one build, with no console subsystem or icon step to choose, and plain `mvn`:
+
+```
+mvn -Pnative-linux package -DskipTests                  # pix-gui/target-linux/pix
+```
+
+`native-build.cmd` is `mvn` inside a Visual Studio developer environment: native-image needs the MSVC `link.exe` and
+the icon step needs `rc.exe`, and neither is on `PATH` in a plain shell. Under Git Bash it is worse, since coreutils'
+own `link.exe` comes first. The script finds `vcvars64.bat` with `vswhere`, loads it, and runs `mvn` with the
+arguments it was given (`./native-build.cmd ...` from Git Bash). Plain `mvn` works too from a developer prompt; from
+anywhere else the icon step stops and says to use the script.
+
+This program's own native-image metadata is `pix-gui/src/main/resources/META-INF/native-image/.../reachability-metadata.json`,
+and it is short because almost nothing is this program's: the libraries register their own, and the processor
+registers the icon. If a native run fails on something the JVM run did not (a `Missing...RegistrationError`), run it
+on a JVM under `-agentlib:native-image-agent=config-output-dir=...`, do the thing that failed, and add
+only the entries that name this program.
+
+## The icon
+
+`pix-gui/src/main/rc/pix.ico` is the application's mark, and it is one file read three ways: the window and its
+taskbar button wear it (`@VexelApp(icon = Pix.ICON)`; the pom puts it on the class path), and so does the
+title bar the framework draws; the `.exe` links it (`src/main/rc/pix.rc`), and so Explorer, a shortcut and a
+pinned button show it too. Its source is `pix.svg` beside it, the suite icon canvas's Rasterware mark.
+
+A second window — a viewer, a settings window — wears the window mark, on the taskbar and in its title bar, with
+nothing to write: declare it in a recipe with `windows.named(...)`, and the framework builds its tree and claims it
+wearing `shell.windowMark()`. That mark is this same one unless
+a `pix-window.ico` sits beside it, which is then found by name and registered for the native image with
+the mark. The VexelRay suite's applications ship one: a band of the application's colour over its glyph, so a
+second window reads as its own and is still told apart from the main one.
+
+To make it yours, draw a 64x64 SVG and render it at every size Windows asks for, 16 to 256 px, into that `.ico` —
+`vex-suite-common`'s `tools/Ico.java` does exactly this, from each size's own rasterisation rather than shrinking the
+largest. Its javadoc's class path is older than imagelib's split into an API and per-OS natives, so it needs all
+three jars now; from `vex-suite-common`, with `M=~/.m2/repository/sibarum/imagelib` and `V=0.1.3-SNAPSHOT`:
+
+```
+java --enable-native-access=ALL-UNNAMED \
+     -cp "$M/imagelib-wrapper/$V/imagelib-wrapper-$V.jar;$M/imagelib-wrapper-api/$V/imagelib-wrapper-api-$V.jar;$M/imagelib-wrapper-windows/$V/imagelib-wrapper-windows-$V.jar" \
+     tools/Ico.java ../Pix/pix-gui/src/main/rc/pix.svg ../Pix/pix-gui/src/main/rc/pix.ico
+```
+
+`pix-background.ico` is made the same way, with `16=pix-background-16.svg 24=pix-background-24.svg` after it.
+Replace the file, and the window and the executable change together. An `.ico` or `.png` that is missing is
+a compile error; one that does not decode costs the window its mark, logged, and nothing else.
+
+### The wordmark
+
+The title bar's lockup is the mark and then RASTERWARE, the suite canvas's wordmark, before the picture's name: Press
+Start 2P's capitals, which sit on an eight-pixel grid, so the word is a raster 79 by 7 and is kept as one, written out
+pixel by pixel in
+`Wordmark.java`, rather than as the font. It is lit in the theme's ink, in the accent while the pointer is on the
+lockup (`Wordmark.bar`, given to the bar as its `TitleBar.Wordmark`), and shown with square pixels
+(`SHARP_BILINEAR`), a pixel and a half to each of its own. A click on the lockup opens the framework's app menu:
+About, the camera, and the debug run's ports and restart.
+
+While no picture is wanted, the stage shows the splash (`Splash.java`): the canvas's lockup, the mark beside the
+wordmark worn as on a tape (a red and a cyan ghost either side, `Wordmark.split`, and scanlines over both), and an
+*Open a picture…* button that does what Ctrl+O does; Previous, Next and the zoom are hidden until a picture
+is wanted. It is what most first runs show: with no file named Rasterware
+opens Pictures, and Windows keeps pictures in folders under it (Screenshots, Camera Roll) rather than in it. The mark
+is the drawing itself, `/pix.sdgb`, drawn as SDG, which the icon plugin makes from `src/main/rc/pix.svg` with the
+About window's art pair and the `.ico` beside it.
+
+Run from `mvn exec:exec`, the process is `java.exe`, so the window and its taskbar button wear the mark but Windows
+groups the button with other Java programs, and pinning it pins Java. The native executable has neither problem.
+
+## Using it
+
+| Input | Does |
+| --- | --- |
+| → / ← and Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends. The picture is thrown in from the side it is on and the one before flung out the other way; a step back mid-throw brings the one going out back from where it had got to. With motion reduced it is simply there |
+| Home / End | the folder's first picture / its last |
+| The wheel | zoom in (up) or out, about the pointer |
+| Two fingers spread or pinched on the touchpad | zoom in (spread) or out, about the pointer, as far as the fingers go. Nothing else on the touchpad does anything but the wheel the OS makes of two fingers swiping |
+| Drag | move the picture; it stays where at least a quarter of the window still shows it |
+| 0 | fit the picture again, in the middle (every picture arrives fitted) |
+| ‹ and › at the window's sides | the picture before / the next one, as ← and → |
+| Ctrl+= / Ctrl+- / Ctrl+0 | the controls larger / smaller / as they were. The words stay the size they are, and the window too: what the controls give up is the picture's |
+| the pin at the bar's right | Keep shown: the bar and the arrows stay, and the bar takes room of its own below the picture |
+| a thumbnail in the bar | that picture |
+| Ctrl+O, or a click on the name | open a picture, among the pictures in its folder, through the OS's own dialog starting in the folder open. While nothing is shown the name says *Open a picture…* |
+| Ctrl+Shift+O | open a folder, on its first picture. A folder with none shows nothing and says so |
+| F11, or a double click on the picture | full screen: the picture has the whole display, the title bar goes, and the controls float and fade as before. F11 or a double click again comes back to the window as it was, maximized if it was. Borderless, not a change of display mode, so switching away is instant |
+| Esc | out of full screen; in the window, closes Rasterware |
+
+The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
+imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
+file shows its first frame for now. A file that is not a picture, or will not decode, says why in its place. Holding
+an arrow key decodes the picture it stops on and at most one on the way.
+
+While you look, Rasterware reads ahead: the next picture, then the previous, then the one after next, so a step finds its
+picture waiting. Every picture read is kept, up to 256 MB of pixels, the least recently shown let go first, so going
+back is instant too.
+
+The bar along the bottom says the picture's name, cut in the middle when it is too long so its start and its
+extension both show, and under it what the picture is and its own size, the file's size, and where it is in the folder
+(*12 of 340*). In a narrow window the file's size goes first, then what the picture is; the place stays.
+
+Beside the words, the filmstrip: the picture's neighbours as thumbnails, itself in the middle and marked, filled in as
+they are read. It takes at most half the bar, as many cells as fit there, from three to fifteen, so a narrow window
+shows fewer and the name keeps its half; smaller controls fit more. A click on one shows that picture. A step
+glides the thumbnails along into their new cells as the picture is thrown in, as film pulled through; with motion
+reduced they are simply there. Whatever can be clicked shows a pointer and lifts under it, and shows a press at once:
+the name turns the accent, a cell takes an edge, the buttons a deeper fill. Nothing Rasterware shows or hides changes in a
+frame: a picture with no throw (the first, one opened, a file that is not a picture) fades over the one before, and
+a cell, a thumbnail read and the note fade in.
+
+The picture has the whole window under the title bar: the bar floats over its bottom, and the bar and the arrows fade
+when the pointer has rested two seconds, coming back as soon as it moves, or a step shows another name. They stay
+while the pointer is on them. With Keep shown on, they never fade, and the bar moves off the picture into room of its
+own.
 
 ## How it is put together
 
-```
-files/     Folder: the images (and videos) in a folder, in order. Blocking: run it on Gui.offload().
-Doc        the one state: the folder, its images, which one is shown and its picture.
-Model      the only way to change it, and an onChange that never delivers an older document after a newer one.
-Previewer  reads the picture of whatever is shown: one worker, latest request wins, read-ahead, an LRU by bytes.
-Opener     opens a place: the command line's, or one picked in the open or folder dialog.
-Viewer     the suite's PictureViewer as the whole tree: draws the document, and a step changes it.
-Recipes    what is built; the wiring is generated from it.
-```
+Two modules under this folder, split where the dependency edge falls, and four kinds of part that never hold each
+other: **components** (logic, reached only by messages: the viewer runs on the framework's logic lane), **views**
+(presentation, run on the GUI thread in each frame, `@View`), **jobs** (slow work on the offload lane, a request in
+and a reply out), and **recipes** (a part built once and handed to whoever takes it). The parts talk by messages, and
+every message is in one file. Read these in this order.
 
-Everything else is shared. [`vexelray-codec`](../vexelray-codec)'s image module has the pictures: `Pictures` and
-`Picture` (decoding and packing), `Textures`, `ImageView` and `Lru`, and `ImageStarter`, which `PixApp` names so the
-textures are built and bound to the window. [`vex-suite-common`](../vex-suite-common), shared with Vexplore, has the
-sizes they are decoded at, `PictureViewer` (the tree and its bar), `Filmstrip`, `Tile`, `Icons` and the palette. Both
-are sibling checkouts, installed to the local Maven repository (`mvn install`) before this one builds.
+**`pix-core`, the controller.** It builds against no widget, so its tests need no window.
+
+| File | What belongs in it |
+| --- | --- |
+| `Messages.java` | **every message the parts send each other**, grouped by who sends it to whom, each record beside its topic. A record crosses as itself, so it holds only immutable values, and one handle: a `Feed`. |
+| `Viewer.java` | **the controller**: which picture is wanted, what is read and when, and which pictures are kept, as declared steps on one immutable state, held by a ledger. One read is out at a time, so a held arrow key decodes only where it stops; idle, that read goes ahead to the neighbours, then to the thumbnails the filmstrip lacks. Its state names pictures by path; the view holds them. It asks for the OS's open dialogs (the framework's `PickFile`) and takes what is picked as it takes the command line's place. |
+| `Begin.java`, `ListPictures.java`, `ReadPicture.java`, `ReadThumbnail.java` | the jobs: where to start, a folder's pictures in order, a picture decoded into a feed with its thumbnail from the same decode, and a thumbnail alone. What can go wrong is part of the reply. |
+| `Core.java` | the list of this module's component and jobs. The processor compiling `-gui` sees only `-gui`'s sources, so this list, named among `PixApp`'s starters, is how the wiring hears of them. A new component or job goes on it. |
+
+**`pix-gui`, the view and the framework integration.**
+
+| File | What belongs in it |
+| --- | --- |
+| `Recipes.java` | **what this module builds.** One `@Provides` method per part; `PixAppWiring`, which builds them and the components and jobs in order, is generated while it compiles. |
+| `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its asked half (`@Draw`) draws that on every frame as a scale and an offset, and the controls' `Fade` as an opacity. |
+| `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, held where it can be seen, eased in closed form so a frame is drawn from the value and its moment alone; and the stops the bar's − and + step between. |
+| `Keys.java` | the chords that ask something of the view itself: 0, to fit, and Ctrl+= / Ctrl+- / Ctrl+0, the controls' size. |
+| `Fade.java` | how far the controls are shown, as a value: fading once the pointer has rested, in closed form, drawn by the view's asked half as the lens is. |
+| `Toss.java` | a step's throw, as a value: the new picture in across the stage from its side, the one before out the other way, in closed form, drawn by the view's asked half on two layers, the newest in front. |
+| `Fit.java` | where a picture sits on the stage: whole, at its own aspect, never past its own pixels. |
+| `Ui.java` | the window: the stage, Previous and Next at its sides, and the bar floating over its bottom, or below it with Keep shown. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state; it shows what the view hands it. |
+| `Details.java` | the details under the name, which of them a narrow bar keeps (they go whole, the file's size first), and a file's size in words. |
+| `Strip.java` | how many thumbnails the filmstrip shows and how wide it is, from the bar's width and a rem, and which picture each cell is, and how many cells a step moved them. |
+| `Glide.java` | the filmstrip's glide, as a value: at a step every thumbnail starts where it was drawn and eases into its new cell over the throw's time, the cells themselves staying put. |
+| `Shade.java` | how far one node is shown, eased: what Rasterware shows and hides itself (a cell, a thumbnail read, the note, the words when they change) comes and goes over 150 ms rather than in a frame. |
+
+`Pix.java` is the entry point and the constants, and nothing else. The application edge — input, the
+clipboard, window memory, the clock, the frame loop with its wakes and its pacing, the dialogs, the command line and
+the shutdown order — is `vexelray-framework`'s. `Look.java` and `Landmarks.java` are the vocabularies: colour, and
+the names an automation script is allowed to depend on.
+
+### Threading, in one paragraph
+
+The GUI loop runs on the main thread, which owns Vulkan, the window and present, and nothing of this application's
+runs there but the view, which is presentation and nothing else. The viewer runs on the framework's logic lane, one
+message at a time, and its state changes only by its declared steps, which the processor reads: a step that touches
+the disk, waits or reaches outside itself does not compile. Every read of the disk is a job on the offload lane, so a
+slow disk is a slow reply and never a frozen window. **A picture reaches the screen as a feed**: `ReadPicture`
+decodes it, builds its mip chain and writes it into a one-slot `Feed` on the offload lane, and answers with the feed;
+the view names it on a node, and the renderer uploads it the first time it is drawn. The pixels are written once and
+never cross the bus. **Jobs are in no order at all**, which is why the viewer keeps one read out at a time and drops
+an answer it no longer wants.
+
+## The stack
+
+Everything below is installed locally rather than downloaded, so `mvn install` in each of those projects has to have
+happened at least once. If the build cannot resolve them, that is why.
+
+| what | why it is here |
+| --- | --- |
+| `vexelray-framework-api`, `vexelray-gui-core` | all `-core` builds against: the framework's annotations, and the values (a span, a colour, the settings store) and the bus that are safe from any thread |
+| `vexelray-framework-shell`, `-automation`, `-processor` | the application edge, the driving socket, and the processor that checks both modules and writes the wiring |
+| `vexelray-gui-widget` | the widgets: the `TitleBar`, and the `IconButton`s at the stage's sides |
+| `vexelray-gui-krono` | the clock: every transition and cue |
+| `vexelray-gui-automation` | driving the running app the way a person does — a debugging instrument |
+| `tactroller-atchung` | keyboard and pointer input onto an atchung bus (brings `atchung-core`) |
+| `tactroller-clipboard` | the OS clipboard, with no input-subsystem coupling |
+| `vexelray-os-*`, `tactroller-*` | picked by an OS-activated profile; exactly one activates |
 
 ## Automation
 
-Pix can be driven and read from outside, by a script, a macro or an agent, through the framework's two loopback
+Rasterware can be driven and read from outside, by a script, a macro or an agent, through the framework's two loopback
 sockets: **remote control** (the keys, clicks and reads a person has) and **diagnostics** (the flight recorder, the
-log, the Inspector). Both are in every build and both start off.
+log, the Inspector). Both are in every build, the release one too, and both start off.
 
 - **Switched on by hand**: the plug in the title bar opens the switches, one per socket, each with a port (blank for
   a free one).
@@ -180,49 +249,52 @@ diagnostics' (blue) right:
 | ring with a grey dot | open; something was connected and has gone |
 | grey dot | off, after something had connected to it this session |
 
-The plug's tooltip and the switches' window say the same in words, with the port and how many are connected. In full
-screen the title bar, and so the lamps, are hidden with the rest of it.
+The plug's tooltip and the switches' window say the same in words, with the port and how many are connected.
 
-## Looking at it without a person
+## Taking a screenshot
 
-Every build, the release one too, has the framework's automation sockets, off until asked for (see
-[Automation](#automation)). Every control has a landmark (`name`, `count`, `info`, `open`,
-`previous`, `next`, `turn` and its menu's `turn.left`, `turn.right`, `turn.mirror-across`, `turn.mirror-down` and
-`turn.upright`, `background`, `keep`, `backdrop.auto`, `backdrop.checker`, and for a picture that plays `play`, `frame-back`,
-`frame-on`, `seek`, `loop`, `mute`, `volume` and `position`, which reads like `0:01.8 / 0:04.8  48/120`, and for a
-video `glance`, the frame over the seek bar, which reads as the time under the pointer, like `0:05.0`), …:
+Screenshots are `ottermate`'s, and only its: it photographs the running window on the application's own device, so
+the picture is right about content as well as chrome. There is no `--capture` flag in this project on purpose.
 
 ```
-java -jar ../vexelray-gui/vexelray-gui-automation-cli/target/vexelray-gui-automation-cli-0.1.0-SNAPSHOT.jar \
-     --script scene.txt --launch mvn.cmd -q exec:exec -Dautomation=0 "-Dapp.args=C:/some/folder"
+ottermate shot out.png --launch mvn compile exec:exec -Dautomation=0
 ```
 
-`settle` waits for every animation, and that includes the bar's fade, so a script that wants the bar in its picture
-clicks `keep` first. A picture that plays keeps the clock busy for as long as it plays, so `settle` times out on one:
-`await position " 30/120"` waits for a frame instead, and `click play` pauses it for a picture that holds still. Pix
-holds a picture while its window is not in front, and a window opened over it (a second Pix, say) leaves the next
-picture on its first frame until Pix is in front again.
-
-## Native builds
-
-As Vexplore's: GraalVM 25 as `JAVA_HOME`, from a Visual Studio developer prompt.
+Say what the picture is *of* with options, and `ottermate` sets it first and stops if it cannot. Everything before
+`--launch` is ottermate's; everything after it is the application's command line (on Windows, `mvn.cmd`):
 
 ```
-mvn -Pnative-release package -DskipTests   # target/pix.exe        GUI subsystem
-mvn -Pnative package -DskipTests           # target/pix-debug.exe  console: prints the automation port line
+ottermate --zoom 1.5 --dpi 2 --size 1600x900 shot big.png --launch ...   # pixels
+ottermate --size 24emx16em shot smallest.png --launch ...                # the minimum, in em
 ```
 
-Both carry the automation sockets ([Automation](#automation)).
+The landmarks in `Landmarks.java` are the names a script uses: `await bar.name IMG_0412.jpg` waits for a picture
+to be wanted, and `await bar.place 3 of` for its folder to be listed; `click bar.strip.0` presses the filmstrip's left cell. `ottermate help` lists every verb.
 
-Both link `src/main/rc/pix.rc`, the executable's icon: `pix.svg` from the suite icon canvas, rendered to `pix.ico` by
-`vex-suite-common`'s `tools/Ico.java`. The window, file and light variants are beside it.
+## Logging
 
-**FFmpeg ships beside the executable, not in it.** It is six shared libraries (about 125 MB, `avcodec` most of it),
-not a static library to link in as imagelib is. Both native builds take them out of ffmpeg-wrapper's jar into
-`target/ffmpeg/`, where ffmpeg-wrapper looks beside a running executable, so `target/pix.exe` shows video posters as
-it stands. They are also zipped, with FFmpeg's licence and source pointer, into
-`target/pix-ffmpeg-windows-x86_64.zip` (about 55 MB, the same bytes for the same libraries), which `installer.json`
-lists as a second binary: an archive unpacked into the install's `ffmpeg` folder, and downloaded again only when it
-changes. Without that folder Pix still runs; a video says *the video decoder is unavailable* where its poster would
-be. The JVM run (`mvn exec:exec`) extracts the libraries from the jar to a temp folder instead, the first time a
-video is read.
+The framework configures logging for you, before anything else runs, and the defaults follow what kind of run it is:
+
+| Run | Console | File |
+| --- | --- | --- |
+| a test | warnings | none |
+| from your checkout (`mvn exec:exec`) | info | `pix-gui/target/logs/pix.log`, debug |
+| driven by `ottermate` or `-Dautomation` | debug | `…/pix.log`, **trace**, with a probe trace beside it |
+| a native image | warnings | `~/.pix/logs/pix.log`, info |
+
+Write to it with a logger, not `System.out` — the jobs do, as `pix.files`:
+
+```java
+private static final Log LOG = Log.of("pix.files");   // sibarum.probe.Log
+LOG.warn("could not save {}", path, exception);               // the exception goes last; its stack reaches the file
+```
+
+`--log=debug` (or `off`) changes the level for one launch, and `-Dlog.level.pix.files=trace` raises one
+logger. Levels, settings and the rules for what belongs at which level are in `atchung/docs/logging.md`.
+
+## The three documents
+
+`docs/framework-notes.md` and `docs/TODO.md` start nearly empty and are meant to be filled in as you go. See the note
+at the top of the first one — it is the more important of the two. `docs/retrospective.md` is filled in at the end of
+each milestone: the pass over the notes that looks for what they have in common, and the one the framework reads
+first.
