@@ -1,6 +1,7 @@
 package dev.sibarum.pix;
 
 import dev.vexelray.gui.core.Feed;
+import dev.vexelray.gui.core.ImageSdg;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
@@ -387,15 +388,20 @@ final class Ui {
 
     /**
      * Layer {@code i} shows {@code feed}, laid out {@code widthPercent} by {@code heightPercent} of the stage and centred
-     * in it; with none, it shows nothing and holds no feed.
+     * in it; with none, it shows nothing and holds no feed. With a {@code drawing}, the drawing is drawn instead, sharp at
+     * any zoom, and the feed (its poster) is not.
      */
-    void layer(int i, Feed feed, float widthPercent, float heightPercent) {
+    void layer(int i, Feed feed, ImageSdg drawing, float widthPercent, float heightPercent) {
         Node n = layers[i];
         if (feed == null) {
-            n.image((Feed) null).visible(false);
+            n.image((Feed) null).sdg(null).visible(false);
             return;
         }
-        n.image(feed).visible(true);
+        if (drawing != null) {
+            n.image((Feed) null).sdg(drawing).visible(true);
+        } else {
+            n.image(feed).sdg(null).visible(true);
+        }
         place(n, widthPercent, heightPercent);
     }
 

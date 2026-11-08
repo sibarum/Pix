@@ -1,6 +1,7 @@
 package dev.sibarum.pix.core;
 
 import dev.vexelray.gui.core.Feed;
+import dev.vexelray.gui.core.ImageSdg;
 import sibarum.atchung.Topic;
 
 import java.nio.file.Path;
@@ -183,12 +184,19 @@ public final class Messages {
     /**
      * A picture read: its feed and size, or none and why. {@code identity} is what it is and its own size ("PNG image ·
      * 1920 × 1080"), the feed's being at most what is drawn; {@code bytes} is the file's size on disk, or -1 unknown.
-     * {@code thumb} is its thumbnail, from the same decode.
+     * {@code thumb} is its thumbnail, from the same decode. {@code drawing} is the drawing itself when the file is an SDG
+     * drawing, which the view draws sharp at any zoom in place of the feed (then only its poster); {@code width} and
+     * {@code height} are then what it is fitted from, as an SVG decoded at its longest.
      */
     public static final Topic<Pictured> PICTURED_TOPIC = Topic.edge(Pictured.class);
 
     public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes,
-                           Thumb thumb) {
+                           Thumb thumb, Optional<ImageSdg> drawing) {
+
+        /** A picture that is not a drawing. */
+        public Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes, Thumb thumb) {
+            this(path, feed, width, height, identity, bytes, thumb, Optional.empty());
+        }
     }
 
     /**

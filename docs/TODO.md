@@ -30,6 +30,9 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 
 ## Later
 
+- [ ] **A drawing holds its poster too.** `ReadPicture` answers a `.sdg` with the drawing and, as its feed, the CPU poster
+  (up to 1024 px, with its mips), which is only drawn in the filmstrip's thumbnail. The feed could be the thumbnail's
+  alone, once `View` stops reading "no feed" as "not a picture".
 - [ ] Packaging, as 0.1 had it: `installer.json` (carried over, still at 0.1.2) with its `appId` checked against the
       build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
 - [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read

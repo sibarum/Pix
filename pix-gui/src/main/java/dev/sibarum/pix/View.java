@@ -346,11 +346,11 @@ final class View {
             toss = Toss.crossfade(now, from, was.inOpacity(now));
             front = 1 - front;
         } else {
-            ui.layer(1 - front, null, 0f, 0f);
+            ui.layer(1 - front, null, null, 0f, 0f);
             onLayer[1 - front] = null;
         }
         Fit fit = Fit.of(p.width(), p.height(), stageW, stageH);
-        ui.layer(front, feed, fit.widthPercent(), fit.heightPercent());
+        ui.layer(front, feed, p.drawing().orElse(null), fit.widthPercent(), fit.heightPercent());
         ui.front(front);
         ui.note(feed == null ? p.identity() : null);
         shades[NOTE] = shades[NOTE].toward(feed == null ? 1f : 0f, now);
@@ -375,7 +375,7 @@ final class View {
         shown = null;
         Toss toss = Toss.crossfade(now, drawnAt(now), state.toss().inOpacity(now));
         front = 1 - front;
-        ui.layer(front, null, 0f, 0f);
+        ui.layer(front, null, null, 0f, 0f);
         onLayer[front] = null;
         shades[NOTE] = shades[NOTE].toward(0f, now);
         state = new Drawing(ui.layer(front), ui.layer(1 - front), state.lens(), toss, state.faded(), state.fade(),

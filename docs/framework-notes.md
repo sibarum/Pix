@@ -233,3 +233,16 @@ old theme's ink until the pointer next crosses the lockup.
 What the framework could do: a paint-valued image tint on `Node` (`imageTint(Paint)`, multiplied in the shader), so a
 mark drawn white once is lit in whatever the theme says, every frame. Then `bar` would hold one white raster and pass
 the paint straight through, as the framework's own text wordmark does.
+
+## FN-21 · An SDG drawing could not cross the bus, because it holds arrays 🔬
+
+Rasterware opened `.sdg` drawings from the first day codec-image read them, but drew the poster: `ReadPicture`
+answered with a `Feed` of the CPU-rendered raster, which is soft at any zoom past its size. Showing the drawing itself
+meant answering with codec-image's `Picture.drawing()`, an `ImageSdg`, and the processor refused the reply (T2.4):
+`SdgDrawing.pageWidths` is an `int[]`, and the look's values and the pages' `Pixels` are arrays too. A `Feed` crosses
+only because `Shareable` names it as a handle.
+
+Fixed upstream on 2026-11-08 rather than worked round: `Shareable` names `ImageSdg` beside `Feed`, as the same kind of
+handle, built once by a job and only read by the GUI thread (`anSdgDrawingMayCrossInAPayloadThoughItHoldsArrays`). The
+cost is the same trust a feed already has, that its maker never changes it after. What would remove the trust: the
+copier T2.4 rules for, or a drawing whose pages are feeds.

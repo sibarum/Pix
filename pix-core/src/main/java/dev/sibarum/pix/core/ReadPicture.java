@@ -39,6 +39,15 @@ public final class ReadPicture {
         if (p == null) {
             return new Pictured(r.path(), Optional.empty(), 0, 0, d.identity(), bytes(r.path()), none(r.path()));
         }
+        if (p.drawing() != null) {
+            // A drawing is sized as an SVG decoded at SIDE would be: its own aspect, its longer side SIDE. Its feed is the
+            // poster, and what is drawn is the drawing.
+            double dw = p.drawing().drawing().width();
+            double dh = p.drawing().drawing().height();
+            double k = SIDE / Math.max(dw, dh);
+            return new Pictured(r.path(), Optional.of(feed(p)), (int) Math.round(dw * k), (int) Math.round(dh * k),
+                    d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.of(p.drawing()));
+        }
         return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
                 bytes(r.path()), thumb(r.path(), d.picture(1)));
     }
