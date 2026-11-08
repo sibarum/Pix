@@ -2,6 +2,7 @@ package dev.sibarum.pix;
 
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
+import dev.sibarum.pix.Keys.ConvertKey;
 import dev.sibarum.pix.Keys.TraceKey;
 import dev.sibarum.pix.Keys.ZoomKey;
 import dev.sibarum.pix.core.Messages.Caption;
@@ -19,9 +20,11 @@ import dev.sibarum.pix.core.Messages.Show;
 import dev.sibarum.pix.core.Messages.Span;
 import dev.sibarum.pix.core.Messages.Step;
 import dev.sibarum.pix.core.Messages.Thumb;
+import dev.sibarum.pix.core.Messages.Convert;
+import dev.sibarum.pix.core.Messages.Format;
 import dev.sibarum.pix.core.Messages.SaveTrace;
 import dev.sibarum.pix.core.Messages.TraceSettings;
-import dev.sibarum.pix.core.Messages.TraceWritten;
+import dev.sibarum.pix.core.Messages.Written;
 import dev.sibarum.pix.core.Messages.Traced;
 import dev.sibarum.pix.core.Messages.Tracing;
 import dev.vexelray.framework.api.Draw;
@@ -139,6 +142,11 @@ final class View {
     private final Sender<Tracing> tracingOut;
     private final Sender<SaveTrace> saveTrace;
 
+    /** The Convert panel: open or not, the format chosen in it, and the sender its Save asks with. */
+    private boolean converting;
+    private Format chosen = Format.PNG;
+    private final Sender<Convert> convertOut;
+
     private final Gui gui;
     private final Ui ui;
     private final Sender<Step> step;
@@ -211,7 +219,9 @@ final class View {
 
     View(Gui gui, Keymap keys, Ui ui, Sender<Step> step, Sender<Edge> edge, Sender<Go> go, Sender<Span> span,
          Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
-         Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace) {
+         Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace,
+         Sender<ConvertKey> convertKey, Sender<Convert> convertOut) {
+        this.convertOut = convertOut;
         this.gui = gui;
         this.ui = ui;
         this.tracingOut = tracingOut;
@@ -321,6 +331,9 @@ final class View {
                 c -> window.send(WindowCommand.toggleFullScreen(CloseRequested.MAIN)));
         keys.action("view.fit", "Fit the picture", Shortcut.of(Key.DIGIT_0)).sends(fitKey, new FitKey());
         keys.action("view.trace", "Trace to SDG", Shortcut.of(Key.T)).sends(traceKey, new TraceKey());
+        keys.action("view.convert", "Convert to another format", Shortcut.of(Key.C))
+                .sends(convertKey, new ConvertKey());
+        gui.hear(ui.convertPanel().badge(), NodeEvent.CLICK, c -> convertKey.send(new ConvertKey()));
         keys.action("view.zoom-in", "Larger controls",
                 Shortcut.of(Key.EQUAL, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_ADD, Modifier.CONTROL))
                 .sends(zoomKey, new ZoomKey(1));
@@ -407,6 +420,8 @@ final class View {
             retrace();
             compare();
         }
+        closeConvert();
+        ui.convertPanel().format(badge(p));
         say(Details.KIND, p.identity());
         say(Details.BYTES, Details.bytes(p.bytes()));
         showSaid();
@@ -429,6 +444,8 @@ final class View {
                 state.cells(), state.glide(), List.of(shades), state.compare());
         closeLetGo();
         closeTrace();
+        closeConvert();
+        ui.convertPanel().format("");
         say(Details.KIND, "");
         say(Details.BYTES, "");
         showSaid();
@@ -506,6 +523,10 @@ final class View {
     /** Esc leaves full screen; in the window, it closes Rasterware, by the route the close button takes. */
     @Subscribe
     public void escKey(EscKey k) {
+        if (converting) {
+            closeConvert();
+            return;
+        }
         if (tracing) {
             closeTrace();
             return;
@@ -546,6 +567,8 @@ final class View {
             kept = !kept;
             ui.keep(kept);
             wake();
+        } else if (p.button().equals(ui.convertPanel().saveAddress())) {
+            convertSave();
         } else if (p.button().equals(ui.traceAddress())) {
             traceKey(new TraceKey());
         } else if (p.button().equals(ui.tracePanel().closeAddress())
@@ -567,6 +590,7 @@ final class View {
         if (tracing) {
             closeTrace();
         } else if (traceable(shown)) {
+            closeConvert();
             tracing = true;
             ui.tracing(true);
             ui.tracePanel().split(split * 100f);
@@ -620,7 +644,7 @@ final class View {
 
     /** The save answered: written, the viewer shows the drawing, which closes the panel; not, the panel says why. */
     @Subscribe
-    public void traceWritten(TraceWritten m) {
+    public void written(Written m) {
         saving = false;
         if (tracing) {
             ui.tracePanel().save(drawingName(), false);
@@ -628,6 +652,118 @@ final class View {
                 ui.tracePanel().status(m.why());
             }
         }
+        if (converting) {
+            paintConvert();
+            ui.convertPanel().status(m.file().isEmpty() ? m.why() : "");
+        }
+    }
+
+    // ------------------------------------------------------------------ converting (docs/convert.md)
+
+    /** C, or the format badge: the Convert panel opened on the picture shown, or closed. */
+    @Subscribe
+    public void convertKey(ConvertKey k) {
+        if (converting) {
+            closeConvert();
+            return;
+        }
+        if (shown == null || shown.feed().isEmpty()) {
+            return;
+        }
+        closeTrace();
+        converting = true;
+        chosen = offered(Format.PNG) ? Format.PNG : Format.SDG;
+        ui.converting(true);
+        ui.convertPanel().status("");
+        paintConvert();
+    }
+
+    /** A format's tile pressed: that one chosen. Pressing the one chosen leaves it chosen. */
+    @Subscribe
+    public void toggled(Button.Toggled t) {
+        for (Format f : Format.values()) {
+            if (t.button().equals(ui.convertPanel().tileAddress(f)) && offered(f)) {
+                chosen = f;
+                paintConvert();
+            }
+        }
+    }
+
+    /**
+     * The panel's Save: the picture written beside itself in the format chosen. A picture made of pixels becomes a
+     * drawing by Trace, which has the settings a trace needs, so SDG for one closes this panel and opens that.
+     */
+    private void convertSave() {
+        if (!converting || saving || shown == null) {
+            return;
+        }
+        if (chosen == Format.SDG && !Format.svg(shown.path())) {
+            closeConvert();
+            traceKey(new TraceKey());
+            return;
+        }
+        saving = true;
+        ui.convertPanel().status("");
+        paintConvert();
+        convertOut.send(new Convert(shown.path(), chosen));
+    }
+
+    private void closeConvert() {
+        if (converting) {
+            converting = false;
+            ui.converting(false);
+        }
+    }
+
+    /** Whether the picture shown can be written as {@code f}: anything Rasterware reads as PNG, an SVG or raster as SDG. */
+    private boolean offered(Format f) {
+        return shown != null && shown.feed().isPresent() && !current(f);
+    }
+
+    /** Whether the picture shown is in {@code f} already. */
+    private boolean current(Format f) {
+        return f == Format.SDG ? shown.drawing().isPresent()
+                : shown.drawing().isEmpty() && Format.of(shown.path()).filter(g -> g == f).isPresent();
+    }
+
+    /** The tiles, the line on what the chosen format does to this picture, and Save. */
+    private void paintConvert() {
+        for (Format f : Format.values()) {
+            ui.convertPanel().tile(f, offered(f), f == chosen, current(f));
+        }
+        boolean svg = Format.svg(shown.path());
+        boolean drawing = shown.drawing().isPresent();
+        String says;
+        String save;
+        if (chosen == Format.SDG && !svg) {
+            says = "Traced into layers of colour, sharp at any size. Trace has the settings.";
+            save = "Trace…";
+        } else {
+            says = chosen == Format.SDG ? "Its paths and colours, exactly, sharp at any size."
+                    : drawing || svg ? "Drawn at its own size, as pixels."
+                    : chosen.says();
+            save = "Save " + stem(shown.path()) + "." + chosen.extension();
+        }
+        ui.convertPanel().says(says, save, saving);
+    }
+
+    /** What the badge says of {@code p}: SDG for a drawing, its format by its name, nothing for a file that is none. */
+    private static String badge(Pictured p) {
+        if (p.feed().isEmpty()) {
+            return "";
+        }
+        if (p.drawing().isPresent()) {
+            return Format.SDG.label();
+        }
+        String name = String.valueOf(p.path().getFileName());
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(dot + 1).toUpperCase(java.util.Locale.ROOT) : "";
+    }
+
+    private static String stem(Path path) {
+        String name = String.valueOf(path.getFileName());
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
     }
 
     /** Whether {@code p} can be traced: a picture shown from its pixels, not a drawing already, nor a file that is none. */

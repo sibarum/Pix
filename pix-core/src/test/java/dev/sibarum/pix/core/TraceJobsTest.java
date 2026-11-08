@@ -2,7 +2,7 @@ package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Trace;
 import dev.sibarum.pix.core.Messages.TraceSettings;
-import dev.sibarum.pix.core.Messages.TraceWritten;
+import dev.sibarum.pix.core.Messages.Written;
 import dev.sibarum.pix.core.Messages.Traced;
 import dev.sibarum.pix.core.Messages.WriteTrace;
 import dev.vexelray.fields.sdg.Png;
@@ -63,10 +63,10 @@ class TraceJobsTest {
     @Test
     void aSaveIsWrittenBesideThePictureAndNeverOverAnother() throws IOException {
         Path p = picture();
-        TraceWritten first = new SaveDrawing().run(new WriteTrace(p, new TraceSettings(2, true)));
+        Written first = new SaveDrawing().run(new WriteTrace(p, new TraceSettings(2, true)));
         assertEquals(dir.resolve("dusk.sdg"), first.file().orElseThrow(), first.why());
         assertEquals(2, SdgFile.read(first.file().get()).layers().size());
-        TraceWritten second = new SaveDrawing().run(new WriteTrace(p, new TraceSettings(2, true)));
+        Written second = new SaveDrawing().run(new WriteTrace(p, new TraceSettings(2, true)));
         assertEquals(dir.resolve("dusk (2).sdg"), second.file().orElseThrow());
     }
 }

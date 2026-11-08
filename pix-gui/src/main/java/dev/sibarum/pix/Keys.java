@@ -29,6 +29,11 @@ final class Keys {
         static final Topic<TraceKey> TOPIC = Topic.edge(TraceKey.class);
     }
 
+    /** C, or a click on the format badge: the Convert panel opened on the picture shown, or closed. */
+    record ConvertKey() {
+        static final Topic<ConvertKey> TOPIC = Topic.edge(ConvertKey.class);
+    }
+
     /**
      * Ctrl+= ({@code 1}), Ctrl+- ({@code -1}) and Ctrl+0 ({@code 0}): the controls a step larger, smaller, or as they
      * started. The window's zoom, which sizes the controls and not the words (layout.md, <i>Sizes</i>).

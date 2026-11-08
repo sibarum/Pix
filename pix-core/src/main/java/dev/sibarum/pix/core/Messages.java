@@ -257,19 +257,82 @@ public final class Messages {
     public record SaveTrace() {
     }
 
-    /** The viewer asks {@link WriteTrace} to trace a picture at full quality and write it beside the picture. */
+    /** The viewer asks {@link SaveDrawing} to trace a picture at full quality and write it beside the picture. */
     public static final Topic<WriteTrace> WRITE_TRACE_TOPIC = Topic.edge(WriteTrace.class);
 
     public record WriteTrace(Path path, TraceSettings settings) {
     }
 
-    /**
-     * The drawing written, or none and why. The viewer then lists the folder again and wants the new file; the view says
-     * why when there is none.
-     */
-    public static final Topic<TraceWritten> TRACE_WRITTEN_TOPIC = Topic.edge(TraceWritten.class);
+    // ------------------------------------------------------------------ converting a picture (docs/convert.md)
 
-    public record TraceWritten(Path picture, Optional<Path> file, String why) {
+    /**
+     * The formats a picture can be written in, as far as the stack can write them: PNG (pure Java, {@code Png.write})
+     * and SDG. What each is called, its extension, and what the Convert panel says it does to a picture.
+     */
+    public enum Format {
+        PNG("PNG", "png", "Every pixel kept, saved as PNG."),
+        SDG("SDG", "sdg", "Shapes and colours as a drawing, sharp at any size.");
+
+        private final String label;
+        private final String extension;
+        private final String says;
+
+        Format(String label, String extension, String says) {
+            this.label = label;
+            this.extension = extension;
+            this.says = says;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public String extension() {
+            return extension;
+        }
+
+        public String says() {
+            return says;
+        }
+
+        /** The format {@code path} is in, by its name: what the badge says. Empty for one Rasterware cannot write. */
+        public static Optional<Format> of(Path path) {
+            String name = String.valueOf(path.getFileName()).toLowerCase(java.util.Locale.ROOT);
+            if (name.endsWith(".png")) {
+                return Optional.of(PNG);
+            }
+            if (name.endsWith(".sdg") || name.endsWith(".sdgb")) {
+                return Optional.of(SDG);
+            }
+            return Optional.empty();
+        }
+
+        /** Whether {@code path} names an SVG, which becomes a drawing by its paths rather than by a trace. */
+        public static boolean svg(Path path) {
+            String name = String.valueOf(path.getFileName()).toLowerCase(java.util.Locale.ROOT);
+            return name.endsWith(".svg") || name.endsWith(".svgz");
+        }
+    }
+
+    /** The view asks for a picture to be written beside itself in another format: Save in the Convert panel. */
+    public static final Topic<Convert> CONVERT_TOPIC = Topic.edge(Convert.class);
+
+    public record Convert(Path path, Format to) {
+    }
+
+    /** The viewer asks {@link ConvertPicture} to write a picture beside itself in another format. */
+    public static final Topic<WriteCopy> WRITE_COPY_TOPIC = Topic.edge(WriteCopy.class);
+
+    public record WriteCopy(Path path, Format to) {
+    }
+
+    /**
+     * A picture written beside another, by a trace's save or a conversion, or none and why. The viewer then lists the
+     * folder again and wants the new file; the view says why when there is none.
+     */
+    public static final Topic<Written> WRITTEN_TOPIC = Topic.edge(Written.class);
+
+    public record Written(Path picture, Optional<Path> file, String why) {
     }
 
     /**

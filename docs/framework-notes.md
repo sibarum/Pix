@@ -289,3 +289,22 @@ The trace must move and zoom with the picture exactly, wherever the lens and a s
 the picture's scale and offset on the trace's node every frame, plus a fixed shift. Any compare, a before/after, an
 onion skin (the Frames board) will want the same. What the framework could do: a `Drawn.follow(node, leader)` that draws
 a node with another's transform, so a second view of a picture is one line and cannot fall a frame behind.
+
+## FN-26 · The stack decodes every format a picture comes in and writes two 🔬
+
+The Convert board offers PNG, JPEG, WebP, GIF, SVG and SDG, each with its knobs (quality, chroma, colours, dither).
+imagelib decodes all of them and encodes none; the recorder encodes AV1 video only; vexelray-fields writes PNG
+(`Png.write`, pure Java, no quality to choose) and SDG. A GUI may not touch AWT (`NoAwtGuardTest`), and a job could
+but would drag `java.desktop` into the native image, so ImageIO is no way round it. The panel offers PNG and SDG and
+leaves the four out (docs/convert.md), with their knobs.
+What the stack could do: an `encode(Frames, Format, Options)` beside imagelib's `decode`, over the same Rust crates
+(`image` writes JPEG, GIF and lossless WebP; `libwebp` lossy), returning bytes; and an SDG → SVG conversion in
+`Convert` for the vector one, a layer per path where its stencil came from one.
+
+## FN-27 · A focused button hidden hands the focus ring to the window's first control 🔬
+
+Convert's Save is pressed with the pointer, the panel closes (its column `visible(false)`), and the next frame
+draws the focus ring on Previous, at the stage's left, which nothing touched. Focus seems to go to the first focusable
+node when the focused one is hidden, and to show its ring as if the keyboard had moved it. Not worked round. What
+the framework could do: a focus that leaves a node hidden by a pointer press goes nowhere visible (or to the node that
+opened the panel, the badge here), and a ring only follows the keyboard.

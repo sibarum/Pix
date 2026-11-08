@@ -78,6 +78,19 @@ final class Landmarks {
     static final String TRACE_STATUS = "trace.status";
     static final String TRACE_SAVE = "trace.save";
     static final String TRACED = "stage.traced";
+
+    /**
+     * The format badge at the start of the bar, which opens the Convert panel (docs/convert.md); the panel, a tile per
+     * format ({@code convert.png}, {@code convert.sdg}), why a save failed, and Save.
+     */
+    static final String FORMAT = "bar.format";
+    static final String CONVERT_PANEL = "convert";
+    static final String CONVERT_STATUS = "convert.status";
+    static final String CONVERT_SAVE = "convert.save";
+
+    static String convertTo(dev.sibarum.pix.core.Messages.Format f) {
+        return CONVERT_PANEL + "." + f.extension();
+    }
     static final String TRACE_LINE = "stage.trace-line";
 
     private Landmarks() {

@@ -29,6 +29,32 @@ reasons and the full method.
     ### What to keep exactly as it is
     What carried the milestone, and why.
 
+## Convert · 2026-11-08
+
+The count: 2 findings (FN-26, FN-27), one architectural (FN-26: the stack reads every format and writes two).
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-26 | a picture viewer on the stack can save what it shows | imagelib decodes all, encodes none; only PNG and SDG can be written | a Convert panel of two formats where the board has six |
+| FN-27 | focus follows the person | hiding the focused Save put the ring on Previous | a ring on a control nobody touched |
+
+### What would stop each
+1. FN-26: `encode` beside imagelib's `decode`, and an SDG → SVG conversion in `Convert`.
+2. FN-27: focus from a hidden node returns to its opener, and a ring is shown only for keyboard focus.
+
+### My own mistakes
+- **A perl substitution with `|` as its delimiter and `\|\|` in the pattern** matched the empty string at the start of
+  `Ui.java` and wrote a line before `package`. Caught by reading the grep. Rule: a pattern with `||` in it gets another
+  delimiter, or goes through Edit.
+- **I gave the error line a place in the panel while it was empty**, which drew a gap above Save. Rule: a line that
+  is usually empty is hidden while it is.
+
+### What to keep exactly as it is
+- **One write at a time, shared.** Trace's save and a conversion are the same `Written` and one `State.saving`, so a
+  second never races the first, and the folder is listed and the new file shown by the route Open takes.
+- **The panel offers only what the stack can do**, and hands a raster's SDG to Trace rather than tracing with defaults.
+
 ## Trace · 2026-11-08
 
 The count: 4 findings (FN-22 to FN-25), one architectural (FN-23, where a view reads a box it also moves).

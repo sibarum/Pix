@@ -87,6 +87,8 @@ final class Ui {
     /** Trace, in the bar's tools, and the panel it opens. */
     private final IconButton trace;
     private final TracePanel tracePanel;
+    private final ConvertPanel convertPanel;
+    private boolean converting;
     private boolean kept;
     private boolean tracing;
     /** The bar's zoom: − and + either side of how large the picture is. */
@@ -140,6 +142,7 @@ final class Ui {
 
         splash = new Splash(gui);
         tracePanel = new TracePanel(gui);
+        convertPanel = new ConvertPanel(gui);
 
         previousSide = side(gui, previous, Length.ZERO);
         nextSide = side(gui, next, Length.percent(100f));
@@ -154,6 +157,7 @@ final class Ui {
         for (Node n : tracePanel.overStage()) {
             stage.append(n);
         }
+        stage.append(convertPanel.panel());
         stage.append(note);
         stage.append(splash.node());
         stage.append(previousSide.visible(false));
@@ -233,7 +237,8 @@ final class Ui {
         // joins it with the first picture wanted (splash).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
-                .children(words, strip, zoom.visible(false), trace.node().visible(false), keep.node());
+                .children(convertPanel.badge(), words, strip, zoom.visible(false), trace.node().visible(false),
+                        keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
@@ -404,6 +409,18 @@ final class Ui {
         flow();
     }
 
+    /** The Convert panel open over the stage, with the bar in the window's flow below it as Trace has it; or closed. */
+    void converting(boolean open) {
+        converting = open;
+        convertPanel.open(open);
+        flow();
+    }
+
+    /** The format badge and the Convert panel. */
+    ConvertPanel convertPanel() {
+        return convertPanel;
+    }
+
     /** The Trace panel and the split it makes of the stage. */
     TracePanel tracePanel() {
         return tracePanel;
@@ -416,7 +433,7 @@ final class Ui {
 
     /** The bar below the picture while Keep shown is on or the Trace panel is open; else floating over it. */
     private void flow() {
-        if (kept || tracing) {
+        if (kept || tracing || converting) {
             bar.unfloat();
         } else {
             bar.floatAt(Length.ZERO, Length.percent(100f));
