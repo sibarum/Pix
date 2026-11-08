@@ -186,16 +186,22 @@ public final class Messages {
      * 1920 × 1080"), the feed's being at most what is drawn; {@code bytes} is the file's size on disk, or -1 unknown.
      * {@code thumb} is its thumbnail, from the same decode. {@code drawing} is the drawing itself when the file is an SDG
      * drawing, which the view draws sharp at any zoom in place of the feed (then only its poster); {@code width} and
-     * {@code height} are then what it is fitted from, as an SVG decoded at its longest.
+     * {@code height} are then what it is fitted from, as an SVG decoded at its longest. {@code modified} is the file's
+     * last-modified time, ms since the epoch, or -1 unknown; {@code palette} up to five of its colours, most of the
+     * picture first, {@code 0xRRGGBBAA} (docs/details.md).
      */
     public static final Topic<Pictured> PICTURED_TOPIC = Topic.edge(Pictured.class);
 
     public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes,
-                           Thumb thumb, Optional<ImageSdg> drawing) {
+                           Thumb thumb, Optional<ImageSdg> drawing, long modified, List<Integer> palette) {
 
-        /** A picture that is not a drawing. */
+        public Pictured {
+            palette = List.copyOf(palette);
+        }
+
+        /** A picture that is not a drawing, with no time or palette known: what a test makes. */
         public Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes, Thumb thumb) {
-            this(path, feed, width, height, identity, bytes, thumb, Optional.empty());
+            this(path, feed, width, height, identity, bytes, thumb, Optional.empty(), -1, List.of());
         }
     }
 

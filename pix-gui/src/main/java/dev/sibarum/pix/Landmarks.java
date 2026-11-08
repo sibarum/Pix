@@ -104,6 +104,19 @@ final class Landmarks {
     static final String LAYERS_SAVE = "layers.save";
     static final String LAYERS_STAGE = "stage.layer";
 
+    /**
+     * Details, in the bar's tools, and the Details panel (docs/details.md): the picture's name, a value per row
+     * ({@code details.format}, {@code details.dimensions}, ...), and the palette's swatches.
+     */
+    static final String DETAILS = "bar.details";
+    static final String DETAILS_PANEL = "details";
+    static final String DETAILS_NAME = "details.name";
+    static final String DETAILS_PALETTE = "details.palette";
+
+    static String detail(String row) {
+        return DETAILS_PANEL + "." + row.toLowerCase(java.util.Locale.ROOT).replace(' ', '-');
+    }
+
     static String layer(int i) {
         return LAYERS_PANEL + "." + i;
     }

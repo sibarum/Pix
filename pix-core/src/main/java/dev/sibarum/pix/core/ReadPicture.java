@@ -46,10 +46,12 @@ public final class ReadPicture {
             double dh = p.drawing().drawing().height();
             double k = SIDE / Math.max(dw, dh);
             return new Pictured(r.path(), Optional.of(feed(p)), (int) Math.round(dw * k), (int) Math.round(dh * k),
-                    d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.of(p.drawing()));
+                    d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.of(p.drawing()),
+                    modified(r.path()), Palette.of(d.picture(1)));
         }
         return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
-                bytes(r.path()), thumb(r.path(), d.picture(1)));
+                bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.empty(), modified(r.path()),
+                Palette.of(d.picture(1)));
     }
 
     /** The thumbnail of {@code path} from {@code p}, decoded at {@link #THUMB}. */
@@ -66,6 +68,15 @@ public final class ReadPicture {
         int w = p.frameWidth();
         int h = p.frameHeight();
         return Feed.still(w, h, true, MipChain.of(firstFrame(p), w, h));
+    }
+
+    /** The file's last-modified time, ms since the epoch, or -1 when it cannot be asked. */
+    static long modified(Path path) {
+        try {
+            return Files.getLastModifiedTime(path).toMillis();
+        } catch (IOException | SecurityException e) {
+            return -1;
+        }
     }
 
     /** The file's size on disk, or -1 when it cannot be asked: a picture is still shown without it. */

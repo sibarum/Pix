@@ -3,6 +3,7 @@ package dev.sibarum.pix;
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
 import dev.sibarum.pix.Keys.ConvertKey;
+import dev.sibarum.pix.Keys.DetailsKey;
 import dev.sibarum.pix.Keys.LayersKey;
 import dev.sibarum.pix.Keys.TraceKey;
 import dev.sibarum.pix.Keys.ZoomKey;
@@ -180,6 +181,9 @@ final class View {
     private final ImageSdg[] images = new ImageSdg[LayersPanel.MOST_DRAWN];
     private final Sender<SaveRoles> saveRolesOut;
 
+    /** Whether the Details panel is open. */
+    private boolean informing;
+
     private final Gui gui;
     private final Ui ui;
     private final Sender<Step> step;
@@ -254,7 +258,7 @@ final class View {
          Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
          Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace,
          Sender<ConvertKey> convertKey, Sender<Convert> convertOut, Sender<LayersKey> layersKey,
-         Sender<SaveRoles> saveRolesOut) {
+         Sender<SaveRoles> saveRolesOut, Sender<DetailsKey> detailsKey) {
         this.saveRolesOut = saveRolesOut;
         this.convertOut = convertOut;
         this.gui = gui;
@@ -375,6 +379,7 @@ final class View {
                 .sends(convertKey, new ConvertKey());
         gui.hear(ui.convertPanel().badge(), NodeEvent.CLICK, c -> convertKey.send(new ConvertKey()));
         keys.action("view.layers", "Layers of a drawing", Shortcut.of(Key.L)).sends(layersKey, new LayersKey());
+        keys.action("view.details", "Details of the picture", Shortcut.of(Key.I)).sends(detailsKey, new DetailsKey());
         for (int r = 0; r < LayersPanel.MOST_LISTED; r++) {
             int row = r;
             gui.hear(ui.layersPanel().row(r), NodeEvent.CLICK, c -> pickRow(row));
@@ -470,6 +475,9 @@ final class View {
         closeConvert();
         ui.convertPanel().format(badge(p));
         ui.kind(traceable(p), p.drawing().isPresent());
+        if (informing) {
+            paintDetails();
+        }
         if (layering && p.drawing().isPresent()) {
             loadLayers();
         } else {
@@ -501,6 +509,7 @@ final class View {
         ui.convertPanel().format("");
         closeLayers();
         ui.kind(false, false);
+        closeDetails();
         say(Details.KIND, "");
         say(Details.BYTES, "");
         showSaid();
@@ -578,6 +587,10 @@ final class View {
     /** Esc leaves full screen; in the window, it closes Rasterware, by the route the close button takes. */
     @Subscribe
     public void escKey(EscKey k) {
+        if (informing) {
+            closeDetails();
+            return;
+        }
         if (layering) {
             closeLayers();
             return;
@@ -626,6 +639,10 @@ final class View {
             kept = !kept;
             ui.keep(kept);
             wake();
+        } else if (p.button().equals(ui.detailsAddress())) {
+            detailsKey(new DetailsKey());
+        } else if (p.button().equals(ui.detailsPanel().closeAddress())) {
+            closeDetails();
         } else if (p.button().equals(ui.layersAddress())) {
             layersKey(new LayersKey());
         } else if (p.button().equals(ui.layersPanel().closeAddress())) {
@@ -668,6 +685,7 @@ final class View {
         } else if (traceable(shown)) {
             closeConvert();
             closeLayers();
+            closeDetails();
             tracing = true;
             ui.tracing(true);
             ui.tracePanel().split(split * 100f);
@@ -743,6 +761,49 @@ final class View {
         }
     }
 
+    // ------------------------------------------------------------------ details (docs/details.md)
+
+    /** I, or Details in the bar: the Details panel opened on the picture shown, or closed. */
+    @Subscribe
+    public void detailsKey(DetailsKey k) {
+        if (informing) {
+            closeDetails();
+            return;
+        }
+        if (shown == null || shown.feed().isEmpty()) {
+            return;
+        }
+        closeTrace();
+        closeLayers();
+        closeConvert();
+        informing = true;
+        ui.informing(true);
+        paintDetails();
+    }
+
+    /** What the picture shown is, row by row, and its palette; a file that is not a picture closes the panel. */
+    private void paintDetails() {
+        if (shown == null || shown.feed().isEmpty()) {
+            closeDetails();
+            return;
+        }
+        ui.detailsPanel().show(String.valueOf(shown.path().getFileName()),
+                Facts.of(shown, java.time.ZoneId.systemDefault(), home()));
+        ui.detailsPanel().palette(shown.palette());
+    }
+
+    private static Path home() {
+        String h = System.getProperty("user.home");
+        return h == null ? null : Path.of(h).toAbsolutePath();
+    }
+
+    private void closeDetails() {
+        if (informing) {
+            informing = false;
+            ui.informing(false);
+        }
+    }
+
     // ------------------------------------------------------------------ a drawing's layers (docs/layers.md)
 
     /** L, or Layers in the bar: the Layers panel opened on the drawing shown, or closed. */
@@ -757,6 +818,7 @@ final class View {
         }
         closeTrace();
         closeConvert();
+        closeDetails();
         layering = true;
         picked = -1;
         ui.layering(true);
@@ -945,6 +1007,7 @@ final class View {
         }
         closeLayers();
         closeTrace();
+        closeDetails();
         converting = true;
         chosen = offered(Format.PNG) ? Format.PNG : Format.SDG;
         ui.converting(true);
@@ -1301,8 +1364,8 @@ final class View {
      * viewer told how far either side that reaches, so it reads those thumbnails and no others.
      */
     private void sizeStrip() {
-        // Trace and Keep shown, the zoom, and the four gaps between the bar's five parts.
-        float room = barW - zoomW - remPx * (2 * Ui.TOOL_REM + 4 * Ui.MARGIN_REM);
+        // Trace or Layers, Details and Keep shown, the zoom, and the five gaps between the bar's six parts.
+        float room = barW - zoomW - remPx * (3 * Ui.TOOL_REM + 5 * Ui.MARGIN_REM);
         int n = Strip.cells(room, remPx);
         ui.strip(n, barW > 0f ? Strip.width(n, remPx) / barW * 100f : 0f);
         cells = n;

@@ -29,6 +29,13 @@ reasons and the full method.
     ### What to keep exactly as it is
     What carried the milestone, and why.
 
+## Details · 2026-11-08
+
+No new findings. Two fields on `Pictured` and a panel: the read already had the file and its thumbnail, so the
+modified time and the palette cost a stat and a pass over 192 px. Keep: a panel's words worked out in a pure class
+(`Facts`) that a test reads without a window. My mistake: a heredoc lost the backslashes of `\d` and `'\'` in
+`Facts`; the compiler caught it. Rule: Java with backslashes goes in through Write, not a shell heredoc.
+
 ## Layers · 2026-11-08
 
 The count: 3 findings (FN-28 to FN-30), one architectural (FN-28: the canvas has no turn or perspective).

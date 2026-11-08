@@ -93,6 +93,10 @@ final class Ui {
     private final IconButton layersTool;
     private final LayersPanel layersPanel;
     private boolean layering;
+    /** Details, in the bar's tools whenever a picture is, and the panel it opens. */
+    private final IconButton detailsTool;
+    private final DetailsPanel detailsPanel;
+    private boolean informing;
     /** What the picture shown is: a raster, which Trace takes, or a drawing, which Layers takes; or neither. */
     private boolean raster;
     private boolean drawing;
@@ -151,6 +155,7 @@ final class Ui {
         tracePanel = new TracePanel(gui);
         convertPanel = new ConvertPanel(gui);
         layersPanel = new LayersPanel(gui);
+        detailsPanel = new DetailsPanel(gui);
 
         previousSide = side(gui, previous, Length.ZERO);
         nextSide = side(gui, next, Length.percent(100f));
@@ -245,6 +250,9 @@ final class Ui {
         layersTool = new IconButton(gui, PixIcon.LAYERS, "Layers").toggle(true).size(TOOL, TOOL_ICON)
                 .tip("Layers (L)");
         gui.landmark(Landmarks.LAYERS, layersTool.node());
+        detailsTool = new IconButton(gui, Icon.INFO, "Details").toggle(true).size(TOOL, TOOL_ICON)
+                .tip("Details (I)");
+        gui.landmark(Landmarks.DETAILS, detailsTool.node());
 
         // The bar is the root's last child, so floating it puts it over the bottom of the stage, which then has the
         // whole window under the title bar; unfloated, it takes room of its own below the stage (keep). The zoom
@@ -252,13 +260,13 @@ final class Ui {
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
                 .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
                 .children(convertPanel.badge(), words, strip, zoom.visible(false), trace.node().visible(false),
-                        layersTool.node().visible(false), keep.node());
+                        layersTool.node().visible(false), detailsTool.node().visible(false), keep.node());
         gui.landmark(Landmarks.BAR, bar);
         keep(false);
 
         // The stage and, while a picture is traced, the Trace panel at its right.
         Node middle = gui.row().width(Length.FILL).height(Length.grow(1f)).scroll(false, false)
-                .children(stage, tracePanel.panel(), layersPanel.panel());
+                .children(stage, tracePanel.panel(), layersPanel.panel(), detailsPanel.panel());
 
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
@@ -438,6 +446,22 @@ final class Ui {
         flow();
     }
 
+    /** The Details panel open beside the stage, the bar in the flow below it; or closed. */
+    void informing(boolean open) {
+        informing = open;
+        detailsTool.on(open);
+        detailsPanel.open(open);
+        flow();
+    }
+
+    DetailsPanel detailsPanel() {
+        return detailsPanel;
+    }
+
+    String detailsAddress() {
+        return detailsTool.address();
+    }
+
     LayersPanel layersPanel() {
         return layersPanel;
     }
@@ -456,6 +480,7 @@ final class Ui {
     private void tools() {
         trace.node().visible(!splashed && raster);
         layersTool.node().visible(!splashed && drawing);
+        detailsTool.node().visible(!splashed && (raster || drawing));
     }
 
     /** The format badge and the Convert panel. */
@@ -475,7 +500,7 @@ final class Ui {
 
     /** The bar below the picture while Keep shown is on or the Trace panel is open; else floating over it. */
     private void flow() {
-        if (kept || tracing || converting || layering) {
+        if (kept || tracing || converting || layering || informing) {
             bar.unfloat();
         } else {
             bar.floatAt(Length.ZERO, Length.percent(100f));
