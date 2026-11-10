@@ -393,3 +393,19 @@ with `Node.image(Feed)`, which clears the region, so a picture that plays is sho
 mirrored, where 0.1's stream was mirrored like a still. Rasterware has no mirror yet (TODO, *Look closely*), so it does
 not show here; vex-suite-common's viewer does. What the framework could do: `Node.image(Feed, ImageRegion)`, as for a
 texture.
+
+## FN-34 · The widget library's seam was there, and nothing said a widget outside vexelray-gui could use it 🔬
+
+Step 5 of vexelray-gui's frame contract needed vexelray-codec's `ImageView` and `VideoView` to answer each frame with an
+asked half. `Asked` said it was "registered by the host, never by an application", `Seams.ask` said "the host's", and
+frame-contract.md said widgets are parts without saying how one registers its half. So the question put to the author
+was whether to build "a door for widgets", which would have restated T7.6 and its checks. The author remembered that
+this had come up before with an easy answer: `Seams` is, by its own class Javadoc, the widget library's seam as well
+as the host's, and vex-suite-common's `TerminalScreen` (a widget library in another repo) already registers through it.
+`ask` was on it all along. What was done: `Asked`, `Seams.ask` and threading.md T7.6 were corrected, and vexelray-gui
+gained `docs/reference/seams.md`: which seam is whose, what an application uses instead, how the boundary is held, and
+how a widget writes and tests its asked half. Writing it found one more thing: `Seams`'s Javadoc said the processor
+refuses a `@View` that imports `spi`, and it does not yet (owed with phase 4's `@View` checks), so `Seams.of` is a
+public static an application could call. What it cost: a round of questions to the author, and a proposed change to
+the threading model that was not needed. What the framework could do: keep the map current as seams are added (a
+test that every public method of `Seams` appears in seams.md's table would hold it), and build the `spi` refusal.

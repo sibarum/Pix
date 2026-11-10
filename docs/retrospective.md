@@ -31,23 +31,36 @@ reasons and the full method.
 
 ## Pictures that play: animations and video, on the frame contract · 2026-11-10
 
-The count: 3 findings (FN-31 to FN-33), none architectural. The architecture was the work itself: vexelray-gui's
-frame-contract.md step 5, done in the stack in this milestone (the author's ask), with Rasterware as its witness.
+The count: 4 findings (FN-31 to FN-34), none architectural in the sense of a seam that is wrong; one (FN-34) is a
+seam that is right and could not be found. The architecture was the work itself: vexelray-gui's frame-contract.md
+step 5, done in the stack in this milestone at the author's ask (`b659f6cd`, `bcda2711`; vexelray-codec `34d9a80`,
+`9fc914d`; vexelray-framework `93b7594`), with Rasterware as its witness (`786c4ab`). No reverts; one change made
+twice: `Player`'s seek, rewritten to start every pass on a whole number of passes once a seek bar needed to read its
+place from the feed's time alone.
 
 ### The shapes
-| | The promise | What happened | How it looked |
+| Shape | The promise | What happened | How it looked |
 | --- | --- | --- | --- |
-| FN-31 | `mvn exec:exec` runs what was built | `-gui` ran against a days-old `-core` from the local repository, and quit 150 ms in with no reason | ottermate: "the application closed the connection"; looked like a playback fault |
-| FN-32 | a feed's hand-over wakes the window | not if its node was only ever drawn at nothing | a picture's first frame never shown, so the widgets look again every 16 ms until it is |
-| FN-33 | a feed is shown like a texture | `Node.image(Feed)` has no region | a mirrored pose does not mirror a picture that plays |
+| **A. The seam was there, and its words said otherwise** (FN-34) | a widget library runs code in the frame through `Seams` | `Seams`'s class said so; `Asked` and `Seams.ask` said "the host's", frame-contract.md said widgets are parts without saying how, and no page mapped the seams. `Seams` also claimed a processor check that is not built | a proposal to restate T7.6 with "a door for widgets", caught only because the author remembered `TerminalScreen` already used the door. The costliest kind: nothing failed, a plausible design was nearly built beside the real one |
+| **B. A stale build passes for a fresh one** (FN-31, and two "compiles" of mine) | a build that reports success built what is there | `exec:exec` ran a days-old `-core`; `mvn compile` on the demo and vex-suite-common was up to date and compiled nothing, both being broken on 0.2 | a window that quits 150 ms in with no reason; and "it compiles" said of code that does not |
+| **C. A feed is not yet a texture's equal** (FN-32, FN-33) | a node shows a feed as it shows a texture | a feed learns whom to wake only once drawn, and takes no region | a first frame never shown without a 16 ms look again; a mirrored pose that does not mirror a picture that plays |
 
 ### What would stop each
-1. FN-31: the stack check refuses to start when the mismatch is between the application's own modules, and says which
-   is stale.
-2. FN-32: a feed learns whom to wake when a node first names it, not when it is first drawn.
-3. FN-33: `Node.image(Feed, ImageRegion)`.
+1. **A** (FN-34): a test in vexelray-gui that every public method of `Seams` appears in `docs/reference/seams.md`'s
+   table with its owner, so the map cannot fall behind the class; and the processor's refusal of a `@View` importing
+   `spi` built, so the boundary the page describes is a compile error rather than review. The page itself is done.
+2. **B** (FN-31): the stack check refuses to start, with the stale module named, when the mismatch is between an
+   application's own modules; and the rule for agents that a build is only evidence from clean (below).
+3. **C** (FN-32, FN-33): `Node.image(Feed)` registers the wake when it names the feed, and takes an `ImageRegion`, so
+   a feed is shown everywhere a texture is, mirror included.
 
 ### My own mistakes
+- **I asked for a new door before looking for the old one.** Asked how a codec widget should get an asked half, I read
+  `Asked` and `Seams.ask`, found "the host's", and put "a door for widgets" to the author as an option that would
+  restate T7.6. A grep for `Seams.of(` outside vexelray-gui, which takes seconds, finds `TerminalScreen` and the codec's
+  own `ImageView` already registering there, and `Seams`'s class Javadoc says the widget library's in its first line.
+  I read the method and not the class. Rule: before proposing a new way into a layer, list who already reaches it and
+  how; a door used by two other libraries is not missing.
 - **I trusted "it compiles" from a build that was up to date.** The video-player demo and vex-suite-common both
   "compiled" for me before I changed anything, and both were broken on 0.2 (`@MainThread` refused; `Gui.claim` and
   the rest gone). A compile that did nothing is not a compile. Rule: to know whether something builds, build it from
@@ -71,6 +84,16 @@ frame-contract.md step 5, done in the stack in this milestone (the author's ask)
   picture that plays are shown the same way until the player's first hand-over.
 - **The demo as the meter.** Counting the distinct frames an asked half chose gave exact frame rates (24, 30 and 60 fps
   clips held within a frame a second over twelve runs), which a screenshot cannot.
+- **`Seams` as one type the application is not handed.** It is the right seam: a widget in any repo registers there, an
+  application cannot reach it from anything it is given, and the widgets' asked halves needed nothing new. What was
+  missing was the map, not the door; keep the type, and keep new widget hooks on it rather than on `Gui`.
+- **Proposing before changing what CLAUDE.md names.** Messages, a lane, the stack: each was put to the author first,
+  and the author's answers (stack edits, the first slice, skipping step 0, the seams) shaped the work. The one question
+  that should not have been asked (the door) was a failure to look, not a reason to ask less.
+
+### Into the framework
+Proposals 1 to 3 are entries in vexelray-framework's `docs/TODO.md` under *Found by Rasterware's pictures that play*; 1's
+conclusion about the seam is in its `architecture.md`, *What Rasterware found: the seams*.
 
 ### Checked live
 An animated GIF played red, green and blue at 0.50 to 0.54 s apart, looping. A 30 fps AV1 video filled the window and
