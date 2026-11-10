@@ -370,7 +370,9 @@ class path as compiled, or lacks what a `@Hears` names, say which and that the m
 
 Fixed upstream 2026-11-10: a module the application was built against from its own commit, loaded from another, is an
 error naming it and saying to run with `compile`, and the process exits 3 (vexelray-framework's `StackCheck.own`). Why
-the window then quit with nothing logged was not found. What was found:
+the window then quit with nothing logged: the error reached the log only after the automation socket had closed, and
+`ottermate`, seeing the connection drop, stopped the process first. The framework now logs what stops a run, and flushes,
+before it closes anything. What was found:
 
 `mvn -q exec:exec` from the parent, with no `compile` goal, resolved `pix-core` from the local repository (an install
 from `df22435`, days old) rather than from the reactor, against the `pix-gui` built from today's sources. The
