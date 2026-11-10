@@ -556,6 +556,25 @@ class ViewerTest {
     }
 
     @Test
+    void aDrawingMadeByHandIsShownAmongItsFolders() {
+        startedOn(A);
+        answerAll();
+        Path made = Path.of("/elsewhere").toAbsolutePath().resolve("Untitled.sdg");
+        tell(Messages.SDG_WRITTEN_TOPIC, new Messages.SdgWritten(Optional.of(made), ""));
+        assertEquals(List.of(new ListFolder(made.getParent())), took(ListFolder.class));
+        assertEquals(List.of(new Read(made)), took(Read.class));
+    }
+
+    @Test
+    void aDrawingMadeByHandNotSavedChangesNothing() {
+        startedOn(A);
+        answerAll();
+        tell(Messages.SDG_WRITTEN_TOPIC, new Messages.SdgWritten(Optional.empty(), ""));
+        assertEquals(List.of(), took(ListFolder.class));
+        assertEquals(List.of(), took(Read.class));
+    }
+
+    @Test
     void aDrawingNotWrittenChangesNothing() {
         startedOn(A);
         answerAll();

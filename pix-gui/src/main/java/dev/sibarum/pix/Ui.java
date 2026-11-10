@@ -616,6 +616,14 @@ final class Ui {
         return note;
     }
 
+    /**
+     * The title bar's New menu (docs/sdg-editor.md): what Rasterware can make from nothing. Declared by the view that
+     * holds the messages its items send; its name is the one a script opens it by ({@link Landmarks#NEW_MENU}).
+     */
+    void newMenu(dev.vexelray.gui.core.input.Menu menu) {
+        titleBar.menu(Landmarks.NEW_MENU, "New", menu);
+    }
+
     /** Full screen, the title bar gone so the picture has the whole display; or the window again, with it. */
     void fullScreen(boolean on) {
         titleBar.node().visible(!on);

@@ -3,6 +3,8 @@ package dev.sibarum.pix;
 import dev.vexelray.framework.api.Configuration;
 import dev.vexelray.framework.api.Provides;
 import dev.vexelray.framework.shell.Appearance;
+import dev.vexelray.framework.shell.NamedWindow;
+import dev.vexelray.framework.shell.Windows;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.widget.TitleBar;
@@ -56,6 +58,24 @@ final class Recipes {
     @Provides
     Ui ui(Gui gui, TitleBar titleBar) {
         return new Ui(gui, titleBar);
+    }
+
+    /**
+     * The New SDG window (docs/sdg-editor.md): declared by name, a satellite of the main window, its tree built now
+     * beside the main one and claimed by the framework once there is a device. {@link NewSdgView} shows it, opened by
+     * the New menu or Ctrl+N as a {@code WindowCommand}.
+     */
+    @Provides
+    NewSdgWindow newSdgWindow(Windows windows) {
+        return new NewSdgWindow(windows.named(NamedWindow.of(NewSdgWindow.KEY, NewSdgWindow.TITLE, NewSdgWindow.W,
+                NewSdgWindow.H).satellite()));
+    }
+
+    /** The SDG editor's window, declared as the New SDG window is; {@link SketchView} shows the field in it. */
+    @Provides
+    SketchWindow sketchWindow(Windows windows) {
+        return new SketchWindow(windows.named(NamedWindow.of(SketchWindow.KEY, SketchWindow.TITLE, SketchWindow.W,
+                SketchWindow.H).satellite()));
     }
 
 }

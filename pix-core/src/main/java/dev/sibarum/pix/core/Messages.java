@@ -379,6 +379,148 @@ public final class Messages {
     public record Written(Path picture, Optional<Path> file, String why) {
     }
 
+    // ------------------------------------------------------------------ a drawing made by hand (docs/sdg-editor.md)
+
+    /** What a size is said in: pixels, or a length at a DPI. {@code perInch} is how many make an inch; 0 for pixels. */
+    public enum Unit {
+        PX("Pixels", 0), MM("mm", 25.4), IN("in", 1), PT("pt", 72);
+
+        private final String label;
+        private final double perInch;
+
+        Unit(String label, double perInch) {
+            this.label = label;
+            this.perInch = perInch;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public double perInch() {
+            return perInch;
+        }
+    }
+
+    /**
+     * How big a new drawing is: {@code width × height} in {@code unit}, and, for a length, {@code dpi} texels an inch.
+     * In pixels the canvas's units are pixels and the field has a texel a unit; in a length they are that length, and the
+     * field has {@code dpi / perInch} texels a unit (the stencil's {@code scale}, sdg.md §1). Not a message: what
+     * {@link CreateSdg} and {@link Sketched} carry.
+     */
+    public record Sizing(double width, double height, Unit unit, double dpi) {
+
+        /** The longest side a field may have, and the most texels it may hold: 64 MB of floats. */
+        public static final int MOST_SIDE = 8192, MOST_TEXELS = 4096 * 4096;
+
+        /** What the New SDG window opens on. */
+        public static final Sizing FIRST = new Sizing(1024, 1024, Unit.PX, 300);
+
+        /** Texels a unit. */
+        public double scale() {
+            return unit == Unit.PX ? 1 : dpi / unit.perInch();
+        }
+
+        public int texelsWide() {
+            return (int) Math.round(width * scale());
+        }
+
+        public int texelsHigh() {
+            return (int) Math.round(height * scale());
+        }
+
+        /** Why a field of this size cannot be made, or empty when it can. */
+        public String why() {
+            long w = texelsWide();
+            long h = texelsHigh();
+            if (w < 1 || h < 1) {
+                return "Too small: under one texel";
+            }
+            if (w > MOST_SIDE || h > MOST_SIDE) {
+                return "Too large: at most " + MOST_SIDE + " texels a side";
+            }
+            if (w * h > MOST_TEXELS) {
+                return "Too large: at most " + (MOST_TEXELS / 1_000_000) + " million texels";
+            }
+            return "";
+        }
+
+        /**
+         * The same size said in {@code to}: the same length when both are lengths, the same texels when either is
+         * pixels (through the DPI). Pixels are whole; a length is rounded to hundredths.
+         */
+        public Sizing in(Unit to) {
+            double inchesW = unit == Unit.PX ? width / dpi : width / unit.perInch();
+            double inchesH = unit == Unit.PX ? height / dpi : height / unit.perInch();
+            double k = to == Unit.PX ? dpi : to.perInch();
+            double step = to == Unit.PX ? 1 : 100;
+            return new Sizing(Math.round(inchesW * k * step) / step, Math.round(inchesH * k * step) / step, to, dpi);
+        }
+    }
+
+    /** How a field is edited, and so what it is saved as (docs/sdg-editor.md). */
+    public enum EditMode {
+        HEIGHTMAP("Heightmap", "Terrain in 3D; where it crosses the plane is the edge, a steeper slope a sharper one."),
+        STENCIL("Stencil", "Traced over a picture, kept a true distance, so its edges are exact."),
+        MASK("Mask", "Transparency, painted soft or hard, saved as an alpha mask.");
+
+        private final String label;
+        private final String says;
+
+        EditMode(String label, String says) {
+            this.label = label;
+            this.says = says;
+        }
+
+        public String label() {
+            return label;
+        }
+
+        public String says() {
+            return says;
+        }
+    }
+
+    /**
+     * The New SDG window asks for a field to be made: this size, filled with the far inside or the far outside, to be
+     * edited in this mode. It replaces the one being edited.
+     */
+    public static final Topic<CreateSdg> CREATE_SDG_TOPIC = Topic.edge(CreateSdg.class);
+
+    public record CreateSdg(Sizing sizing, boolean inside, EditMode mode) {
+    }
+
+    /**
+     * The {@link Sketcher} tells the editor what the field looks like now: a grey preview of it, inside light, in a
+     * feed of its own at most {@code Sketcher.PREVIEW} px on its longer side, which the editor closes when the next
+     * arrives; and the field's size in texels, its sizing and its mode.
+     */
+    public static final Topic<Sketched> SKETCHED_TOPIC = Topic.edge(Sketched.class);
+
+    public record Sketched(Feed feed, int width, int height, Sizing sizing, EditMode mode) {
+    }
+
+    /** The editor asks for the field to be saved: the {@link Sketcher} asks where, with the OS's save dialog. */
+    public static final Topic<SaveSdg> SAVE_SDG_TOPIC = Topic.edge(SaveSdg.class);
+
+    public record SaveSdg() {
+    }
+
+    /** The {@link Sketcher} asks {@link WriteDrawing} to write the field's drawing at {@code file}, or beside it. */
+    public static final Topic<WriteSdg> WRITE_SDG_TOPIC = Topic.edge(WriteSdg.class);
+
+    public record WriteSdg(Path file, ImageSdg drawing) {
+    }
+
+    /**
+     * A drawing made by hand written, or none and why; none and no why when the person cancelled the dialog. Heard by
+     * the {@link Sketcher}, which may save again, by the editor, which says so, and by the viewer, which shows it.
+     */
+    public static final Topic<SdgWritten> SDG_WRITTEN_TOPIC = Topic.edge(SdgWritten.class);
+
+    public record SdgWritten(Optional<Path> file, String why) {
+    }
+
     /**
      * A picture's thumbnail: a feed of its own at most {@code ReadPicture.THUMB} px on its longer side, and that size;
      * no feed for a file that is not a picture. Not a message: what {@link Pictured}, {@link Thumbnailed} and

@@ -105,6 +105,14 @@ written, and that document says what was built and why.
 | **Layers** | L, for a drawing | lists a drawing's layers; one is picked out, the stack peeled apart, a solid layer given a theme role, shown on a light page, and Save roles writes the drawing in place | [layers.md](docs/layers.md) |
 | **Details** | I | the picture's format, dimensions, aspect, file size, modified time and folder, and its palette as five swatches | [details.md](docs/details.md) |
 
+### Making a drawing
+
+**New** in the title bar, or **Ctrl+N**, opens the New SDG window: the drawing's size in pixels, or in mm, in or pt at a
+DPI, with the texels that makes; whether its field starts inside or outside; and its mode, Heightmap, Stencil or Mask.
+Create opens the editor, a window of its own showing the field, and its Save asks where with the OS's dialog and shows
+the drawing once written. The brushes and the three modes' views come a slice at a time
+([sdg-editor.md](docs/sdg-editor.md)).
+
 Nothing is ever written over another file: a name taken becomes `<name> (2).sdg`, and every file is written beside its
 place and moved in, so a half-written one is never there to be opened. What goes wrong is said in the panel.
 
@@ -136,6 +144,7 @@ It builds against no widget, so its tests need no window.
 | `TracePicture.java`, `SaveDrawing.java`, `Traces.java` | Trace: a quick trace for the panel to compare, the full-quality one Save writes, and what they share. |
 | `ConvertPicture.java` | Convert: the picture written beside itself as PNG or SDG. |
 | `RoleDrawing.java` | Layers: theme roles written into a drawing, in place. |
+| `Sketcher.java`, `Sketch.java`, `WriteDrawing.java` | a drawing made by hand: the component that owns the field, on the `sketch` lane; the field as a preview and as the drawing it is saved as; and the job that writes it. |
 | `Beside.java`, `Palette.java` | where a file made from a picture goes, never over another; a picture's five colours. |
 | `CornerTrace.java`, `CornerFit.java` | a prototype trace with sharp corners (FN-22). Nothing in the app uses it yet. |
 
@@ -147,6 +156,8 @@ It builds against no widget, so its tests need no window.
 | `View.java` | **the view**, a `@View`: the picture the viewer chose, fitted to the stage, and the keys declared as the messages they send. It holds the pictures the viewer keeps, as feeds, shows the one it is told to, and closes one when the viewer lets it go. It decides nothing about the folder. How the picture is looked at is its own: each gesture replaces its `Lens`, and its `@Draw` half draws that on every frame. |
 | `Ui.java` | the window: the stage, Previous and Next at its sides, the bar over its bottom or below it. Controls in rem and words in dp, so the zoom sizes the one and never the other. Holds no state. |
 | `TracePanel.java`, `ConvertPanel.java`, `LayersPanel.java`, `DetailsPanel.java` | the tools' panels, and what Trace and Layers draw on the stage. Like `Ui`, they only show. |
+| `NewSdgWindow.java`, `NewSdgView.java` | the New SDG window and its view, which also declares the title bar's New menu and Ctrl+N. |
+| `SketchWindow.java`, `SketchView.java` | the SDG editor's window and its view: the field fitted to the stage, and Save. |
 | `Splash.java`, `Wordmark.java` | what shows while no picture is wanted; the RASTERWARE wordmark, in the title bar and on the splash. |
 | `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, eased in closed form so a frame is drawn from the value and its moment alone; and the bar's zoom stops. |
 | `Fade.java`, `Toss.java`, `Glide.java`, `Shade.java` | the other motions, each a value in closed form: the controls fading at rest; a step's throw; the filmstrip's glide; one node shown or hidden over 150 ms. |
@@ -329,4 +340,4 @@ Three are kept up as the work goes, and [CLAUDE.md](CLAUDE.md) says when each is
 
 The rest are designs, each proposed before its messages were written and ending with what was built:
 [layout.md](docs/layout.md) (the window and the hands), [trace.md](docs/trace.md), [convert.md](docs/convert.md),
-[layers.md](docs/layers.md) and [details.md](docs/details.md).
+[layers.md](docs/layers.md), [details.md](docs/details.md) and [sdg-editor.md](docs/sdg-editor.md).

@@ -29,6 +29,17 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **The trace shown over the picture drawn by hand** (FN-25): the compare repeats the picture's transform in
       `View.draw`; a `Drawn.follow` would replace it.
 
+## New SDG, the rest (docs/sdg-editor.md)
+
+- [ ] **Mask** (slice 2): a round brush painting alpha, size, strength and falloff; a background image to trace over.
+- [ ] **Stencil** (slice 3): the brush painting inside and outside, the field re-distanced after each stroke
+      (`MaskSdf`), then snapping to the background image's edges.
+- [ ] **Heightmap** (slice 4): the 3D viewport after the designer's `Viewport`, the plane at zero and its crossing
+      outlined, raise, lower, smooth and flatten, and the height span saved as the stencil's `range`. First find out
+      whether `SdfComposer` marches a field sampled from a texture.
+- [ ] **Switching mode** in the editor, warning before a switch that loses something; and undo.
+- [ ] **The New SDG window, the rest**: Esc and Enter for Cancel and Create; the save dialog starting in the folder open.
+
 ## Waiting on the stack
 
 - [ ] **Pictures that play, the rest.** Animated pictures and videos play, looping, a video with its sound; Space

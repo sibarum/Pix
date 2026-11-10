@@ -130,6 +130,31 @@ final class Landmarks {
     static final String SEEK = "seek";
     static final String SEEK_HEAD = "seek.head";
 
+    /**
+     * The title bar's New menu, by the name it is declared under (a script opens it as {@code TitleBar.menuLandmark}
+     * of this); and the New SDG window's controls, each {@code new-sdg/<landmark>} to a script: the unit, the width,
+     * the height and the DPI, what that makes in texels, where the field starts, the mode, and the buttons.
+     */
+    static final String NEW_MENU = "new";
+    static final String NEW_UNIT = "new.unit";
+    static final String NEW_WIDTH = "new.width";
+    static final String NEW_HEIGHT = "new.height";
+    static final String NEW_DPI = "new.dpi";
+    static final String NEW_TEXELS = "new.texels";
+    static final String NEW_STARTS = "new.starts";
+    static final String NEW_MODE = "new.mode";
+    static final String NEW_CREATE = "new.create";
+    static final String NEW_CANCEL = "new.cancel";
+
+    /**
+     * The editor's window, each {@code sdg/<landmark>} to a script: what is being edited (mode and size), the field, its
+     * Save, and what the last save said.
+     */
+    static final String SKETCH_TITLE = "sketch.title";
+    static final String SKETCH_FIELD = "sketch.field";
+    static final String SKETCH_SAVE = "sketch.save";
+    static final String SKETCH_STATUS = "sketch.status";
+
     private Landmarks() {
     }
 }

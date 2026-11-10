@@ -422,3 +422,21 @@ refuses a `@View` that imports `spi`, and it does not yet (owed with phase 4's `
 public static an application could call. What it cost: a round of questions to the author, and a proposed change to
 the threading model that was not needed. What the framework could do: keep the map current as seams are added (a
 test that every public method of `Seams` appears in seams.md's table would hold it), and build the `spi` refusal.
+
+## FN-35 · `await window/landmark` is refused, though the guide says a target may name its window 🔬
+
+The New SDG check had to wait for a control in the dialog that the New menu opens. ottermate's guide (*An application
+with more than one window*) says a target may name its window as `window/landmark` for every verb that takes one,
+`await` among them. `await new-sdg/new.create` answered `err ... 'new-sdg/new.create' is in window 'new-sdg', and this
+driver is window 'main'`: the reply finds the landmark in the other window and then refuses it. What was done: the
+script chooses the window first (`window new-sdg`, after a `settle` so the window is open), then awaits the bare
+landmark. What it cost: one run. What the stack could do: let `await` go to the named window as `click` does, or say in
+the guide that `await` acts on the chosen window only.
+
+## FN-36 · A segment's options have no landmarks, so a script clicks them by position 💡
+
+The New SDG window's Size in, Starts and Mode are `Segment`s. A script can reach the segment by its landmark, but its
+options are children with no landmark, and a click on the segment lands between two of them. The check clicks options
+at coordinates read from `tree`, which holds only while the window keeps its declared size and its zoom. What the stack
+could do: name each option after its segment and value (`new.mode.mask`), as `ListView` rows are reachable, or a verb
+that chooses an option by its label (`choose new.mode Mask`).

@@ -32,6 +32,7 @@ import dev.sibarum.pix.core.Messages.Convert;
 import dev.sibarum.pix.core.Messages.WriteCopy;
 import dev.sibarum.pix.core.Messages.SaveRoles;
 import dev.sibarum.pix.core.Messages.WriteRoles;
+import dev.sibarum.pix.core.Messages.SdgWritten;
 import dev.vexelray.codec.image.Pictures;
 import dev.vexelray.framework.api.Component;
 import dev.vexelray.framework.api.Hears;
@@ -89,7 +90,7 @@ import java.util.Optional;
 @Component
 @Hears({WindowOpened.class, Recalled.class, Listed.class, Step.class, Edge.class, Go.class, Span.class, Open.class,
         Picked.class, Pictured.class, Thumbnailed.class, Tracing.class, Traced.class, SaveTrace.class,
-        Written.class, Convert.class, SaveRoles.class})
+        Written.class, Convert.class, SaveRoles.class, SdgWritten.class})
 @Publishes({Recall.class, ListFolder.class, Read.class, ReadThumb.class, PickFile.class, Hold.class, Show.class,
         Clear.class, Release.class, HoldThumb.class, ReleaseThumb.class, Caption.class, Filmstrip.class, Trace.class,
         WriteTrace.class, WriteCopy.class, WriteRoles.class})
@@ -268,7 +269,8 @@ public final class Viewer {
                 .on(Messages.SAVE_TRACE_TOPIC, b.step("save trace", Viewer::saveTrace))
                 .on(Messages.CONVERT_TOPIC, b.step("convert", Viewer::convert))
                 .on(Messages.SAVE_ROLES_TOPIC, b.step("save roles", Viewer::saveRoles))
-                .on(Messages.WRITTEN_TOPIC, b.step("trace written", Viewer::written));
+                .on(Messages.WRITTEN_TOPIC, b.step("trace written", Viewer::written))
+                .on(Messages.SDG_WRITTEN_TOPIC, b.step("drawing written", Viewer::drawingWritten));
         ledger = b.build(inbox, "viewer", CAPACITY);
     }
 
@@ -466,6 +468,17 @@ public final class Viewer {
     }
 
     /** Save a drawing's roles into it, in place. One file written at a time, as {@link #convert} says. */
+    /**
+     * A drawing made by hand was saved (docs/sdg-editor.md): shown among its folder's pictures, as a picture opened is.
+     * None saved, nothing changes.
+     */
+    static State drawingWritten(State s, SdgWritten m, Out out) {
+        if (m.file().isEmpty() || m.file().get().getParent() == null) {
+            return s;
+        }
+        return recalled(s, new Recalled(m.file().get().getParent(), m.file()), out);
+    }
+
     static State saveRoles(State s, SaveRoles m, Out out) {
         if (s.saving().isPresent()) {
             return s;
