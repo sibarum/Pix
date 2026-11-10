@@ -24,6 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** A drawing made by hand (docs/sdg-editor.md): its size, its field, and what it is saved as. */
 class SketchTest {
 
+    private static final Sketch.Look GREY = new Sketch.Look(false, false), OVER = new Sketch.Look(true, false);
+
     @TempDir
     Path dir;
 
@@ -73,7 +75,7 @@ class SketchTest {
                 field[y * 400 + x] = 1f;   // the four by four the first preview pixel stands for
             }
         }
-        Sketch.Preview p = Sketch.preview(field, 400, 200, 100, false);
+        Sketch.Preview p = Sketch.preview(field, 400, 200, 100, GREY);
         assertEquals(100, p.width());
         assertEquals(50, p.height());
         assertEquals((byte) 255, p.rgba()[0], "the inside light");
@@ -85,7 +87,7 @@ class SketchTest {
     void overAPictureTheOutsideIsShadedAndTheInsideClear() {
         float[] field = Sketch.filled(4, 1, false);
         field[3] = 1f;
-        Sketch.Preview p = Sketch.preview(field, 4, 1, 4, true);
+        Sketch.Preview p = Sketch.preview(field, 4, 1, 4, OVER);
         assertEquals(Sketch.SHADE, p.rgba()[3] & 0xff, "the outside shaded");
         assertEquals(0, p.rgba()[15], "the inside clear");
     }
@@ -147,10 +149,10 @@ class SketchTest {
     @Test
     void repaintingWhatADabTouchedMatchesAWholePreview() {
         float[] field = Sketch.filled(300, 200, false);
-        Sketch.Preview part = Sketch.preview(field, 300, 200, 128, false);
+        Sketch.Preview part = Sketch.preview(field, 300, 200, 128, GREY);
         Sketch.Rect touched = Sketch.dab(field, Sketch.Stroke.of(300, 200), 300, 200, new Messages.Brush(30, 0.7f, 0.3f, false), 120f, 90f);
-        Sketch.paint(field, 300, 200, part, touched, false);
-        assertArrayEquals(Sketch.preview(field, 300, 200, 128, false).rgba(), part.rgba());
+        Sketch.paint(field, 300, 200, part, touched, GREY);
+        assertArrayEquals(Sketch.preview(field, 300, 200, 128, GREY).rgba(), part.rgba());
     }
 
     @Test

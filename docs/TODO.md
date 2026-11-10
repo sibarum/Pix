@@ -34,8 +34,9 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **The brush, the rest**: keys for it (X to swap Paint and Erase, [ and ] for its size), and a way to take the
       picture traced over away. Where the brush will land is shown by nothing: an outline under the pointer would be
       the one thing that moves on hover, which CLAUDE.md forbids, so it wants a decision first.
-- [ ] **Stencil** (slice 3): the brush painting inside and outside, the field re-distanced after each stroke
-      (`MaskSdf`), then snapping to the background image's edges.
+- [ ] **Snapping, the rest**: it is a colour-aware brush. A picture whose regions are textured rather than flat
+      wants edges found by gradient, or the snap tolerance measured from the region's spread rather than fixed.
+      Not seen live yet, since a picture only gets under the field through the OS's dialog.
 - [ ] **Heightmap** (slice 4): the 3D viewport after the designer's `Viewport`, the plane at zero and its crossing
       outlined, raise, lower, smooth and flatten, and the height span saved as the stencil's `range`. First find out
       whether `SdfComposer` marches a field sampled from a texture.

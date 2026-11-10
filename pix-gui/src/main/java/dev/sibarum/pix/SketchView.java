@@ -3,6 +3,7 @@ package dev.sibarum.pix;
 import dev.sibarum.pix.core.Messages.Backdrop;
 import dev.sibarum.pix.core.Messages.Brush;
 import dev.sibarum.pix.core.Messages.Dab;
+import dev.sibarum.pix.core.Messages.Lift;
 import dev.sibarum.pix.core.Messages.PickBackdrop;
 import dev.sibarum.pix.core.Messages.SaveSdg;
 import dev.sibarum.pix.core.Messages.SdgWritten;
@@ -35,6 +36,7 @@ final class SketchView {
     private final Sender<SaveSdg> save;
     private final Sender<Dab> dabs;
     private final Sender<PickBackdrop> pickBackdrop;
+    private final Sender<Lift> lift;
 
     /** The field shown and its preview's feed; the picture under it and its size; the stage's content, layout px. */
     private Sketched shown;
@@ -47,11 +49,13 @@ final class SketchView {
     private boolean saving;
     private Brush brush = Brush.FIRST;
 
-    SketchView(SketchWindow page, Sender<SaveSdg> save, Sender<Dab> dabs, Sender<PickBackdrop> pickBackdrop) {
+    SketchView(SketchWindow page, Sender<SaveSdg> save, Sender<Dab> dabs, Sender<Lift> lift,
+               Sender<PickBackdrop> pickBackdrop) {
         this.page = page;
         this.save = save;
         this.dabs = dabs;
         this.pickBackdrop = pickBackdrop;
+        this.lift = lift;
         page.gui().hear(page.stage(), NodeEvent.RESIZE, layout -> {
             stageW = layout.content().w();
             stageH = layout.content().h();
@@ -73,7 +77,7 @@ final class SketchView {
             before.close();
         }
         page.title(s.mode().label() + Ui.DOT + size(s.sizing()));
-        page.tools(s.mode().paints(), s.mode().traces());
+        page.tools(s.mode().paints(), s.mode().snaps(), s.mode().traces());
         paint("");
     }
 
@@ -120,16 +124,18 @@ final class SketchView {
         }
     }
 
-    /** The brush's size, strength or hardness moved. */
+    /** The brush's size, strength, hardness or snap moved. */
     @Subscribe
     public void slid(Slider.Changed c) {
         float v = (float) c.value();
-        if (c.slider().equals(page.sizeAddress())) {
-            brush = new Brush(radius(v), brush.strength(), brush.hardness(), brush.erase());
+        if (c.slider().equals(page.snapAddress())) {
+            brush = new Brush(brush.radius(), brush.strength(), brush.hardness(), brush.erase(), v);
+        } else if (c.slider().equals(page.sizeAddress())) {
+            brush = new Brush(radius(v), brush.strength(), brush.hardness(), brush.erase(), brush.snap());
         } else if (c.slider().equals(page.strengthAddress())) {
-            brush = new Brush(brush.radius(), v, brush.hardness(), brush.erase());
+            brush = new Brush(brush.radius(), v, brush.hardness(), brush.erase(), brush.snap());
         } else if (c.slider().equals(page.hardnessAddress())) {
-            brush = new Brush(brush.radius(), brush.strength(), v, brush.erase());
+            brush = new Brush(brush.radius(), brush.strength(), v, brush.erase(), brush.snap());
         } else {
             return;
         }
@@ -140,15 +146,24 @@ final class SketchView {
     @Subscribe
     public void chose(Segment.Changed c) {
         if (c.segment().equals(page.eraseAddress()) && c.value() instanceof Boolean erase) {
-            brush = new Brush(brush.radius(), brush.strength(), brush.hardness(), erase);
+            brush = new Brush(brush.radius(), brush.strength(), brush.hardness(), erase, brush.snap());
             showBrush();
         }
     }
 
-    /** A press on the field starts a stroke there; a move draws it on. Said in texels, off the field or not. */
+    /**
+     * A press on the field starts a stroke there; a move draws it on, said in texels, off the field or not; the release
+     * lifts the brush.
+     */
     private void drag(DragEvent d) {
-        if (shown == null || !shown.mode().paints() || d.phase() == DragEvent.Phase.END || !(d.nodeW() > 0f)
-                || !(d.nodeH() > 0f)) {
+        if (shown == null || !shown.mode().paints()) {
+            return;
+        }
+        if (d.phase() == DragEvent.Phase.END) {
+            lift.send(new Lift());
+            return;
+        }
+        if (!(d.nodeW() > 0f) || !(d.nodeH() > 0f)) {
             return;
         }
         float x = (d.x() - d.nodeX()) / d.nodeW() * shown.width();
@@ -175,7 +190,8 @@ final class SketchView {
 
     private void showBrush() {
         page.brush(brush, Integer.toString(Math.round(brush.radius() * 2)),
-                Math.round(brush.strength() * 100) + "%", Math.round(brush.hardness() * 100) + "%");
+                Math.round(brush.strength() * 100) + "%", Math.round(brush.hardness() * 100) + "%",
+                brush.snap() <= 0f ? "off" : Math.round(brush.snap() * 100) + "%");
     }
 
     private void paint(String said) {

@@ -160,6 +160,7 @@ final class Landmarks {
     static final String SKETCH_SIZE = "sketch.size";
     static final String SKETCH_STRENGTH = "sketch.strength";
     static final String SKETCH_HARDNESS = "sketch.hardness";
+    static final String SKETCH_SNAP = "sketch.snap";
     static final String SKETCH_TRACE = "sketch.trace";
 
     private Landmarks() {

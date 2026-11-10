@@ -173,3 +173,35 @@ Seen with `ottermate`: on a 1024 px Mask field started outside, a stroke drawn w
 sharp edge; Erase cuts through both. **Not seen live: Trace over…**, which opens the OS's dialog, for the reason Save is
 not. `SketchTest` and `SketcherTest` cover the falloff, a line with no gaps, the stroke's cap, the partial repaint
 matching a whole one, the shade over a picture, the feed written per dab, the slots running out, and the dialog asked.
+
+## As built: slice 3, Stencil (2026-11-10)
+
+A stencil kept a true distance, and a brush that snaps to the picture under it. As proposed, with these choices:
+
+- **Re-distanced when the brush lifts.** A new `Lift()` (editor → `Sketcher`, on the drag's release) settles the stroke:
+  the field over what it touched, and `Sketch.REACH` (6) texels round that, is made `½ + d / 8` again, `d` the signed
+  distance in texels to the nearest point where the field crosses ½, clamped to the range. Where it crosses is read
+  between each texel and its right and lower neighbours by where the line between their values meets ½, so an edge
+  keeps its place within a texel; a summed-area table of texels with a crossing skips the search wherever none is near.
+  A stroke whose lift was never heard is settled before the next stroke and before a save. Mask is left as painted.
+- **What a soft stroke leaves is where it crossed ½**: with a soft brush the edge is where the brush's reach times its
+  strength makes ½, so at 100 % half way out along its falloff, and at 50 % only where it was whole. A stroke at under
+  50 % from the far outside moves no edge.
+- **The preview draws a stencil as a reader would**: its distance in preview pixels plus a half, clamped (sdg.md §2). So
+  during a soft stroke the edge shows as soft as it would be drawn if saved then, and it sharpens when the brush lifts.
+- **Snap is a colour-aware brush**, not an edge detector. With a picture under a stencil and Snap above 0, each dab
+  reads the colour under its middle, and each texel's share of the dab is also how alike its colour is to that one
+  (`Sketch.alike`: whole to half the tolerance, a smooth step to nothing at it; Snap 100 % is a tolerance of 0.05 of
+  the RGB cube's diagonal, near 0 % it is 0.6). So a stroke spreads over the region it starts in and stops at that region's
+  edge, and the re-distancing that follows puts the stencil's edge on the picture's. A stroke that crosses into another
+  region paints that one as its middle goes over it. Snap opens at 50 %, and shows only in Stencil.
+- **The picture's pixels reach the `Sketcher` through its feed** (FN-37): read once from the still feed the job
+  wrote, copied, and sampled where the editor shows it, fitted inside the field's box (`Sketch.Under`).
+- **The brush row is narrower** so all four sliders and Trace over… fit the editor's remembered 1040 px width.
+
+Seen with `ottermate`: on a 1024 px Stencil field started outside, a soft brush 1024 across at 100 % paints a broad soft
+band while held, and on release the band becomes a sharp edge on the line where it crossed half. **Not seen live:
+snapping**, which needs a picture under the field, and so the OS's dialog. `StencilTest` covers a hard disc
+re-distanced to within ¾ of a texel of its true distance all round, a soft ramp settling where it crossed ½,
+re-distancing a distance changing nothing much, the preview's sharp edge, a letterboxed picture read where it is, a
+snapping brush stopping at a picture's edge (and not without Snap), and a lift settling a stencil and not a mask.

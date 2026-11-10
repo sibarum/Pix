@@ -114,8 +114,12 @@ the drawing once written.
 
 In Mask and Stencil a drag on the field paints it with a round brush: Paint or Erase, its size, its strength (how far
 one stroke goes, however its dabs overlap) and its hardness (how much of it is solid before it falls off). **Trace
-over…** puts a picture under the field, which is then a shade over the outside. Stencil's re-distancing and snapping,
-and Heightmap's 3D view, come a slice at a time ([sdg-editor.md](docs/sdg-editor.md)).
+over…** puts a picture under the field, which is then a shade over the outside.
+
+A mask is alpha, left as painted. A stencil is an outline: it is drawn with its edge sharp, as a reader draws it, and
+when the brush lifts the stroke is made a true distance again, its edge where it crossed half. Over a picture its
+brush also **snaps**: it paints only colours like the one under its middle, so a stroke stops at the picture's edges.
+Heightmap's 3D view comes in a later slice ([sdg-editor.md](docs/sdg-editor.md)).
 
 Nothing is ever written over another file: a name taken becomes `<name> (2).sdg`, and every file is written beside its
 place and moved in, so a half-written one is never there to be opened. What goes wrong is said in the panel.
@@ -148,7 +152,7 @@ It builds against no widget, so its tests need no window.
 | `TracePicture.java`, `SaveDrawing.java`, `Traces.java` | Trace: a quick trace for the panel to compare, the full-quality one Save writes, and what they share. |
 | `ConvertPicture.java` | Convert: the picture written beside itself as PNG or SDG. |
 | `RoleDrawing.java` | Layers: theme roles written into a drawing, in place. |
-| `Sketcher.java`, `Sketch.java`, `WriteDrawing.java`, `ReadBackdropPicture.java` | a drawing made by hand: the component that owns the field, on the `sketch` lane, which paints it dab by dab into a live feed; the brush, the preview and the drawing it is saved as; the job that writes it; and the job that reads a picture to trace over. |
+| `Sketcher.java`, `Sketch.java`, `WriteDrawing.java`, `ReadBackdropPicture.java` | a drawing made by hand: the component that owns the field, on the `sketch` lane, which paints it dab by dab into a live feed; the brush and its snapping, re-distancing a stencil, the preview and the drawing it is saved as; the job that writes it; and the job that reads a picture to trace over. |
 | `Beside.java`, `Palette.java` | where a file made from a picture goes, never over another; a picture's five colours. |
 | `CornerTrace.java`, `CornerFit.java` | a prototype trace with sharp corners (FN-22). Nothing in the app uses it yet. |
 

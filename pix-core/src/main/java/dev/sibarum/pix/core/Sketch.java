@@ -43,15 +43,14 @@ final class Sketch {
 
     /**
      * The field as a picture at most {@code side} px on its longer side, sampled at the nearest texel: RGBA8, as
-     * {@link Preview}. In grey, inside light; or, {@code over} a picture traced, as a shade over the outside that lets
-     * the inside show the picture through ({@link #paint}).
+     * {@link Preview}, drawn as {@code look} says ({@link #paint}).
      */
-    static Preview preview(float[] field, int width, int height, int side, boolean over) {
+    static Preview preview(float[] field, int width, int height, int side, Look look) {
         double k = Math.min(1.0, side / (double) Math.max(width, height));
         int pw = Math.max(1, (int) Math.round(width * k));
         int ph = Math.max(1, (int) Math.round(height * k));
         Preview p = new Preview(pw, ph, new byte[pw * ph * 4]);
-        paint(field, width, height, p, new Rect(0, 0, width, height), over);
+        paint(field, width, height, p, new Rect(0, 0, width, height), look);
         return p;
     }
 
@@ -59,28 +58,42 @@ final class Sketch {
     record Preview(int width, int height, byte[] rgba) {
     }
 
+    /**
+     * How the preview draws the field: {@code over} a picture traced, as a shade over the outside that lets the inside
+     * show the picture through, or else in grey, inside light; and with its {@code edge} sharp, the field taken as a
+     * distance and drawn as a reader draws it at the preview's size (a stencil), or else as its values (a mask's alpha).
+     */
+    record Look(boolean over, boolean edge) {
+    }
+
     /** The darkest a shade over the outside goes, of 255: enough to see the picture under it, dimmed. */
     static final int SHADE = 190;
 
     /**
      * The preview's pixels over {@code dirty}, a rectangle of texels, made again from the field: the part a dab changed.
-     * Grey, inside light and opaque; or {@code over} a picture, the outside shaded in near black and the inside clear.
+     * Grey and opaque, or a shade, as {@code look} says; a sharp edge is the field's distance in preview pixels, plus a
+     * half, clamped, as sdg.md §2 turns distance into coverage.
      */
-    static void paint(float[] field, int width, int height, Preview p, Rect dirty, boolean over) {
+    static void paint(float[] field, int width, int height, Preview p, Rect dirty, Look look) {
         int pw = p.width();
         int ph = p.height();
         int px0 = Math.max(0, (int) Math.floor(dirty.x0() * (double) pw / width) - 1);
         int py0 = Math.max(0, (int) Math.floor(dirty.y0() * (double) ph / height) - 1);
         int px1 = Math.min(pw, (int) Math.ceil(dirty.x1() * (double) pw / width) + 1);
         int py1 = Math.min(ph, (int) Math.ceil(dirty.y1() * (double) ph / height) + 1);
+        float pixelsATexel = pw / (float) width;
         byte[] rgba = p.rgba();
         for (int y = py0; y < py1; y++) {
             int ty = Math.min(height - 1, (int) ((y + 0.5) * height / ph));
             for (int x = px0; x < px1; x++) {
                 int tx = Math.min(width - 1, (int) ((x + 0.5) * width / pw));
-                int v = quantize(field[ty * width + tx]);
+                float e = field[ty * width + tx];
+                if (look.edge()) {
+                    e = Math.clamp((e - 0.5f) * (float) RANGE * pixelsATexel + 0.5f, 0f, 1f);
+                }
+                int v = quantize(e);
                 int o = (y * pw + x) * 4;
-                if (over) {
+                if (look.over()) {
                     rgba[o] = 10;
                     rgba[o + 1] = 12;
                     rgba[o + 2] = 16;
@@ -137,12 +150,72 @@ final class Sketch {
     }
 
     /**
+     * The picture traced over, as the field sees it: its pixels (RGBA8, row by row) fitted inside the field's box at its
+     * own aspect and centred, as the editor shows it, so a texel names the pixel under it. What a snapping brush reads.
+     */
+    record Under(byte[] rgba, int width, int height, int fieldW, int fieldH) {
+
+        /** The packed {@code 0xRRGGBB} under the texel point {@code (tx, ty)}, or -1 where the picture does not reach. */
+        int at(float tx, float ty) {
+            double box = fieldW / (double) fieldH;
+            double own = width / (double) height;
+            double wf = own >= box ? 1 : own / box;
+            double hf = own >= box ? box / own : 1;
+            double u = (tx / fieldW - (1 - wf) / 2) / wf;
+            double v = (ty / fieldH - (1 - hf) / 2) / hf;
+            if (u < 0 || v < 0 || u >= 1 || v >= 1) {
+                return -1;
+            }
+            int o = ((int) (v * height) * width + (int) (u * width)) * 4;
+            return (rgba[o] & 0xff) << 16 | (rgba[o + 1] & 0xff) << 8 | rgba[o + 2] & 0xff;
+        }
+    }
+
+    /**
+     * How different two colours may be before a brush of {@code snap} stops at the second: the far end of the
+     * difference, 0 to 1 across the RGB cube's diagonal. A loose snap lets most colours through; the tightest, almost
+     * none but the colour under the brush's middle.
+     */
+    static float tolerance(float snap) {
+        return 0.6f - 0.55f * snap;
+    }
+
+    /**
+     * How much of a dab a texel of colour {@code c} takes when the brush's middle is over {@code c0}: whole while they are
+     * alike, easing to nothing as they differ past {@code tolerance}. So a stroke stops where the picture changes, at its
+     * edges, and the edge it leaves is the picture's.
+     */
+    static float alike(int c, int c0, float tolerance) {
+        float dr = ((c >> 16 & 0xff) - (c0 >> 16 & 0xff)) / 255f;
+        float dg = ((c >> 8 & 0xff) - (c0 >> 8 & 0xff)) / 255f;
+        float db = ((c & 0xff) - (c0 & 0xff)) / 255f;
+        float d = (float) Math.sqrt((dr * dr + dg * dg + db * db) / 3f);
+        float lo = tolerance * 0.5f;
+        if (d <= lo) {
+            return 1f;
+        }
+        if (d >= tolerance) {
+            return 0f;
+        }
+        float s = 1f - (d - lo) / (tolerance - lo);
+        return s * s * (3f - 2f * s);
+    }
+
+    /** {@link #dab(float[], Stroke, int, int, Messages.Brush, float, float, Under)} with nothing to snap to. */
+    static Rect dab(float[] field, Stroke stroke, int width, int height, Messages.Brush brush, float cx, float cy) {
+        return dab(field, stroke, width, height, brush, cx, cy, null);
+    }
+
+    /**
      * One dab of {@code brush} at {@code (cx, cy)}, texels from the field's top left (a texel's centre is at its index
      * and a half), as part of {@code stroke}: each texel within the radius is reached by the falloff there, whole
      * inside the hardness and easing to nothing at the rim, and moves from its base toward the brush's value, 1 or 0,
-     * by the strength times the most that has reached it ({@link Stroke}). Returns the texels it touched.
+     * by the strength times the most that has reached it ({@link Stroke}). With a picture {@code under} it and a brush
+     * that snaps, a texel's reach is also how {@link #alike} its colour is to the colour under the dab's middle. Returns
+     * the texels it touched.
      */
-    static Rect dab(float[] field, Stroke stroke, int width, int height, Messages.Brush brush, float cx, float cy) {
+    static Rect dab(float[] field, Stroke stroke, int width, int height, Messages.Brush brush, float cx, float cy,
+                    Under under) {
         float r = brush.radius();
         int x0 = Math.max(0, (int) Math.floor(cx - r));
         int y0 = Math.max(0, (int) Math.floor(cy - r));
@@ -156,6 +229,8 @@ final class Sketch {
         float hard = brush.hardness();
         float[] base = stroke.base();
         float[] reach = stroke.reach();
+        int c0 = under == null || brush.snap() <= 0f ? -1 : under.at(cx, cy);
+        float tolerance = tolerance(brush.snap());
         for (int y = y0; y < y1; y++) {
             float dy = y + 0.5f - cy;
             for (int x = x0; x < x1; x++) {
@@ -165,6 +240,12 @@ final class Sketch {
                     continue;
                 }
                 float w = falloff(t, hard);
+                if (c0 >= 0) {
+                    int c = under.at(x + 0.5f, y + 0.5f);
+                    if (c >= 0) {
+                        w *= alike(c, c0, tolerance);
+                    }
+                }
                 int i = y * width + x;
                 if (w <= reach[i]) {
                     continue;
@@ -188,12 +269,18 @@ final class Sketch {
         return s * s * (3f - 2f * s);
     }
 
+    /** {@link #line(float[], Stroke, int, int, Messages.Brush, float, float, float, float, Under)} with nothing under. */
+    static Rect line(float[] field, Stroke stroke, int width, int height, Messages.Brush brush, float fx, float fy,
+                     float tx, float ty) {
+        return line(field, stroke, width, height, brush, fx, fy, tx, ty, null);
+    }
+
     /**
      * Dabs from {@code (fx, fy)} to {@code (tx, ty)}, a quarter of the radius apart and the last at the end, not the
      * first, which the dab before it made. Returns the texels they touched.
      */
     static Rect line(float[] field, Stroke stroke, int width, int height, Messages.Brush brush, float fx, float fy,
-                     float tx, float ty) {
+                     float tx, float ty, Under under) {
         float spacing = Math.max(1f, brush.radius() / 4f);
         double length = Math.hypot(tx - fx, ty - fy);
         int steps = Math.max(1, (int) Math.ceil(length / spacing));
@@ -201,9 +288,107 @@ final class Sketch {
         for (int s = 1; s <= steps; s++) {
             float k = s / (float) steps;
             touched = touched.union(dab(field, stroke, width, height, brush, fx + (tx - fx) * k,
-                    fy + (ty - fy) * k));
+                    fy + (ty - fy) * k, under));
         }
         return touched;
+    }
+
+    /** How far past what a stroke touched re-distancing reaches, and how far it looks for an edge: past the range. */
+    static final int REACH = (int) Math.ceil(RANGE / 2) + 2;
+
+    /**
+     * The field over {@code region}, and {@link #REACH} texels round it, made a true distance again from its edge, as a
+     * stencil's texel encodes one (sdg.md §2): {@code ½ + d / RANGE}, {@code d} the signed distance in texels to the
+     * nearest point where the field crosses ½, clamped to the range. Where it crosses is read between each texel and its
+     * right and lower neighbours, by where the line between their values meets ½, so the edge keeps its place within a
+     * texel. A texel with no crossing within {@code REACH} is the far inside or the far outside. Returns the texels
+     * changed.
+     *
+     * <p>What a stroke leaves is not a distance: a soft brush leaves a ramp as wide as its falloff, a hard one a cliff.
+     * After this the field falls off by {@code 1 / RANGE} a texel either side of its edge, everywhere, which is what
+     * draws that edge sharp at any size.
+     */
+    static Rect redistance(float[] field, int width, int height, Rect region) {
+        if (region.empty()) {
+            return Rect.NONE;
+        }
+        int m = REACH;
+        Rect out = new Rect(Math.max(0, region.x0() - m), Math.max(0, region.y0() - m),
+                Math.min(width, region.x1() + m), Math.min(height, region.y1() + m));
+        // What is read: the field round what changes, by another reach, before any of it is written.
+        Rect in = new Rect(Math.max(0, out.x0() - m), Math.max(0, out.y0() - m),
+                Math.min(width, out.x1() + m), Math.min(height, out.y1() + m));
+        int iw = in.x1() - in.x0();
+        int ih = in.y1() - in.y0();
+        float[] src = new float[iw * ih];
+        for (int y = 0; y < ih; y++) {
+            System.arraycopy(field, (in.y0() + y) * width + in.x0(), src, y * iw, iw);
+        }
+        // Each texel's crossing to its right and below, as the part of the way to that neighbour; NaN for none.
+        float[] right = new float[iw * ih];
+        float[] down = new float[iw * ih];
+        int[] count = new int[(iw + 1) * (ih + 1)];   // summed-area table of texels with a crossing
+        for (int y = 0; y < ih; y++) {
+            for (int x = 0; x < iw; x++) {
+                int i = y * iw + x;
+                float a = src[i];
+                right[i] = x + 1 < iw ? crossing(a, src[i + 1]) : Float.NaN;
+                down[i] = y + 1 < ih ? crossing(a, src[i + iw]) : Float.NaN;
+                int has = Float.isNaN(right[i]) && Float.isNaN(down[i]) ? 0 : 1;
+                count[(y + 1) * (iw + 1) + x + 1] = has + count[y * (iw + 1) + x + 1]
+                        + count[(y + 1) * (iw + 1) + x] - count[y * (iw + 1) + x];
+            }
+        }
+        float half = (float) RANGE / 2f;
+        for (int y = out.y0(); y < out.y1(); y++) {
+            int ly = y - in.y0();
+            for (int x = out.x0(); x < out.x1(); x++) {
+                int lx = x - in.x0();
+                boolean inside = src[ly * iw + lx] >= 0.5f;
+                int wx0 = Math.max(0, lx - m - 1);
+                int wy0 = Math.max(0, ly - m - 1);
+                int wx1 = Math.min(iw, lx + m + 1);
+                int wy1 = Math.min(ih, ly + m + 1);
+                int crossings = count[wy1 * (iw + 1) + wx1] - count[wy0 * (iw + 1) + wx1]
+                        - count[wy1 * (iw + 1) + wx0] + count[wy0 * (iw + 1) + wx0];
+                float nearest = half;
+                if (crossings > 0) {
+                    float best = Float.MAX_VALUE;
+                    for (int qy = wy0; qy < wy1; qy++) {
+                        for (int qx = wx0; qx < wx1; qx++) {
+                            int q = qy * iw + qx;
+                            float r = right[q];
+                            if (!Float.isNaN(r)) {
+                                float ddx = qx + r - lx;
+                                float ddy = qy - ly;
+                                best = Math.min(best, ddx * ddx + ddy * ddy);
+                            }
+                            float d = down[q];
+                            if (!Float.isNaN(d)) {
+                                float ddx = qx - lx;
+                                float ddy = qy + d - ly;
+                                best = Math.min(best, ddx * ddx + ddy * ddy);
+                            }
+                        }
+                    }
+                    nearest = Math.min(half, (float) Math.sqrt(best));
+                }
+                float signed = inside ? nearest : -nearest;
+                field[y * width + x] = Math.clamp(0.5f + signed / (float) RANGE, 0f, 1f);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Where the field crosses ½ between a texel of value {@code a} and its neighbour of value {@code b}, as the part of
+     * the way from one centre to the other, [0, 1]; NaN where both are on one side.
+     */
+    static float crossing(float a, float b) {
+        if ((a >= 0.5f) == (b >= 0.5f)) {
+            return Float.NaN;
+        }
+        return Math.clamp((0.5f - a) / (b - a), 0f, 1f);
     }
 
     /**

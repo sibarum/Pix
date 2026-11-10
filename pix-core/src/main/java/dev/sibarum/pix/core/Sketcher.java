@@ -3,6 +3,7 @@ package dev.sibarum.pix.core;
 import dev.sibarum.pix.core.Messages.Backdrop;
 import dev.sibarum.pix.core.Messages.CreateSdg;
 import dev.sibarum.pix.core.Messages.Dab;
+import dev.sibarum.pix.core.Messages.Lift;
 import dev.sibarum.pix.core.Messages.EditMode;
 import dev.sibarum.pix.core.Messages.PickBackdrop;
 import dev.sibarum.pix.core.Messages.ReadBackdrop;
@@ -99,6 +100,12 @@ public final class Sketcher {
     /** Whether a picture is under the field, which the preview is then a shade over; and whether one is being read. */
     private boolean over;
     private boolean pickingBackdrop;
+    /** The picture's pixels, RGBA8 at the size it was read, for a brush that snaps; null before one is read. */
+    private byte[] picture;
+    private int pictureW;
+    private int pictureH;
+    /** Whether a stroke has been drawn and not yet settled ({@link #settle}). */
+    private boolean unsettled;
 
     public Sketcher(Sender<Sketched> sketched, Sender<PickFile> pick, Sender<WriteSdg> write,
                     Sender<SdgWritten> written, Sender<ReadBackdrop> readBackdrop, Timer timer) {
@@ -126,7 +133,8 @@ public final class Sketcher {
         field = Sketch.filled(width, height, c.inside());
         stroke = Sketch.Stroke.of(width, height);
         reached = Sketch.Rect.NONE;
-        preview = Sketch.preview(field, width, height, PREVIEW, shaded());
+        unsettled = false;
+        preview = Sketch.preview(field, width, height, PREVIEW, look());
         feed = Feed.of(preview.width(), preview.height(), SLOTS, false);
         stamp = 0;
         dirty = true;
@@ -141,20 +149,29 @@ public final class Sketcher {
             return;
         }
         if (d.first()) {
+            settle();
             stroke.begin(width, reached);
             reached = Sketch.Rect.NONE;
         }
         Sketch.Rect touched = d.first()
-                ? Sketch.dab(field, stroke, width, height, d.brush(), d.x(), d.y())
-                : Sketch.line(field, stroke, width, height, d.brush(), lastX, lastY, d.x(), d.y());
+                ? Sketch.dab(field, stroke, width, height, d.brush(), d.x(), d.y(), snapping())
+                : Sketch.line(field, stroke, width, height, d.brush(), lastX, lastY, d.x(), d.y(),
+                        snapping());
         lastX = d.x();
         lastY = d.y();
         reached = reached.union(touched);
+        unsettled = true;
         if (!touched.empty()) {
-            Sketch.paint(field, width, height, preview, touched, shaded());
+            Sketch.paint(field, width, height, preview, touched, look());
             dirty = true;
             present();
         }
+    }
+
+    /** The brush lifted: the stroke settled ({@link #settle}). */
+    @Subscribe
+    public void lift(Lift l) {
+        settle();
     }
 
     /** The timer's answer: the preview shown again, if it is still waiting for a slot. */
@@ -203,18 +220,33 @@ public final class Sketcher {
             return;
         }
         Path named = named(file.get());
+        settle();
         write.send(new WriteSdg(named, ImageSdg.of(Sketch.drawing(field, width, height, sizing, mode))));
     }
 
-    /** A picture to trace over, read: the field shown as a shade over it from now. One that would not read changes nothing. */
+    /**
+     * A picture to trace over, read: the field shown as a shade over it from now, and its pixels kept for a brush that
+     * snaps. One that would not read changes nothing.
+     *
+     * <p>The pixels are read out of the feed the job wrote, once, and copied: a still's one slot is handed over before
+     * the reply is sent and never written again. Reading a feed is the renderer's, by its contract (FN-37).
+     */
     @Subscribe
     public void backdrop(Backdrop b) {
-        if (b.feed().isEmpty() || over) {
+        if (b.feed().isEmpty()) {
             return;
         }
+        Feed f = b.feed().get();
+        int slot = f.newest();
+        if (slot >= 0 && b.width() > 0 && b.height() > 0) {
+            picture = f.chain(slot)[0].clone();
+            pictureW = b.width();
+            pictureH = b.height();
+        }
+        boolean was = over;
         over = true;
-        if (field != null) {
-            preview = Sketch.preview(field, width, height, PREVIEW, shaded());
+        if (!was && field != null) {
+            preview = Sketch.preview(field, width, height, PREVIEW, look());
             dirty = true;
             present();
         }
@@ -233,9 +265,39 @@ public final class Sketcher {
                 : file.resolveSibling(name + "." + SdgFile.XML);
     }
 
-    /** Whether the preview is a shade over a picture: there is one, and this mode traces. */
-    private boolean shaded() {
-        return over && mode.traces();
+    /**
+     * How the preview draws the field: as a shade over a picture when there is one and this mode traces; with its edge
+     * sharp when this mode keeps a true distance.
+     */
+    private Sketch.Look look() {
+        return new Sketch.Look(over && mode.traces(), mode.distances());
+    }
+
+    /** The picture under the field, for a brush to snap to, when this mode snaps and there is one; else null. */
+    private Sketch.Under snapping() {
+        return picture == null || !mode.snaps() ? null
+                : new Sketch.Under(picture, pictureW, pictureH, width, height);
+    }
+
+    /**
+     * The stroke just drawn, made part of the field: a stencil re-distanced about what it touched, so the field is a
+     * true distance again ({@link Sketch#redistance}), and its preview made again there. Done when the brush lifts, and
+     * before the next stroke or a save in case a lift was never heard.
+     */
+    private void settle() {
+        if (!unsettled) {
+            return;
+        }
+        unsettled = false;
+        if (!mode.distances()) {
+            return;
+        }
+        Sketch.Rect changed = Sketch.redistance(field, width, height, reached);
+        if (!changed.empty()) {
+            Sketch.paint(field, width, height, preview, changed, look());
+            dirty = true;
+            present();
+        }
     }
 
     /**

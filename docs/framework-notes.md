@@ -440,3 +440,16 @@ options are children with no landmark, and a click on the segment lands between 
 at coordinates read from `tree`, which holds only while the window keeps its declared size and its zoom. What the stack
 could do: name each option after its segment and value (`new.mode.mask`), as `ListView` rows are reachable, or a verb
 that chooses an option by its label (`choose new.mode Mask`).
+
+## FN-37 · A part that is not the renderer cannot be handed pixels to read 🔬
+
+Slice 3's snapping brush reads the colour of the picture traced over at each texel it paints, on the `sketch` lane. The
+picture is decoded by a job (disk is a job's), and a reply can carry pixels only as a `Feed` or an `ImageSdg`, the two
+handles `Shareable` admits; a `byte[]` is refused, rightly. `Feed` is documented as shared between a producer and the
+GUI thread (T7.3), and `chain(slot)` as the renderer's. What was done: `ReadBackdropPicture` answers with a still feed,
+and the `Sketcher` reads `chain(newest())[0]` once and copies it. That is sound for a still, whose one slot is handed
+over (an atomic write) before the reply is sent and never written again, but it reaches past the feed's contract.
+What it costs: a copy of up to 26 MB, and a dependency on a method marked as someone else's. What the framework could
+do: an immutable pixel handle a job may answer with and any part may read (`Pixels`, admitted by `Shareable` as
+`ImageSdg` is, with its maker's promise not to change it), or a `Feed.read()` for a still that says it is safe from any
+thread.

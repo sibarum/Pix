@@ -492,27 +492,57 @@ public final class Messages {
         public boolean traces() {
             return this != HEIGHTMAP;
         }
+
+        /**
+         * Whether the field is kept a true distance: re-distanced from its edge when a stroke lifts, and drawn in the
+         * editor with its edge sharp, as a reader draws it. A mask is alpha and is left as painted.
+         */
+        public boolean distances() {
+            return this == STENCIL;
+        }
+
+        /** Whether a brush snaps to the edges of the picture traced over: a stencil is an outline, a mask is not. */
+        public boolean snaps() {
+            return this == STENCIL;
+        }
     }
 
     /**
-     * How a brush paints: {@code radius} in texels; {@code strength}, how far one dab moves a texel toward the brush's
+     * How a brush paints: {@code radius} in texels; {@code strength}, how far one stroke moves a texel toward the brush's
      * value, 0 to 1; {@code hardness}, the part of the radius painted at full strength before it falls off to nothing at
-     * the rim, 0 (all falloff) to 1 (a hard edge); and whether it paints the inside ({@code erase} false) or the outside.
-     * Not a message: what {@link Dab} carries.
+     * the rim, 0 (all falloff) to 1 (a hard edge); whether it paints the inside ({@code erase} false) or the outside; and
+     * {@code snap}, 0 (off) to 1 (tightest), how closely it keeps to the colour under its middle in the picture traced
+     * over, so that it stops at that picture's edges (only where the mode {@link EditMode#snaps}). Not a message: what
+     * {@link Dab} carries.
      */
-    public record Brush(float radius, float strength, float hardness, boolean erase) {
+    public record Brush(float radius, float strength, float hardness, boolean erase, float snap) {
 
         /** The smallest and largest radius the editor offers, in texels. */
         public static final float LEAST = 1, MOST = 512;
 
         /** What the editor opens on. */
-        public static final Brush FIRST = new Brush(24, 0.5f, 0.5f, false);
+        public static final Brush FIRST = new Brush(24, 0.5f, 0.5f, false, 0.5f);
 
         public Brush {
             radius = Math.clamp(radius, LEAST, MOST);
             strength = Math.clamp(strength, 0f, 1f);
             hardness = Math.clamp(hardness, 0f, 1f);
+            snap = Math.clamp(snap, 0f, 1f);
         }
+
+        /** A brush that does not snap. */
+        public Brush(float radius, float strength, float hardness, boolean erase) {
+            this(radius, strength, hardness, erase, 0f);
+        }
+    }
+
+    /**
+     * The editor tells the {@link Sketcher} the brush was lifted: the stroke is over. A stencil is then re-distanced
+     * about what the stroke touched ({@link EditMode#distances}).
+     */
+    public static final Topic<Lift> LIFT_TOPIC = Topic.edge(Lift.class);
+
+    public record Lift() {
     }
 
     /**

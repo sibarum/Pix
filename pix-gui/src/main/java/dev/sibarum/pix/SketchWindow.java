@@ -27,12 +27,12 @@ final class SketchWindow {
     /** The window's name, in a {@code WindowCommand}, a view's {@code window} and to a script ({@code sdg/...}). */
     static final String KEY = "sdg";
     static final String TITLE = "SDG";
-    static final int W = 1040;
+    static final int W = 1120;
     static final int H = 760;
 
     /** A brush slider's width, and its value's. */
-    static final Length SLIDER_W = Length.rem(7f);
-    static final Length VALUE_W = Length.rem(2.75f);
+    static final Length SLIDER_W = Length.rem(5.5f);
+    static final Length VALUE_W = Length.rem(2.5f);
 
     private final Gui gui;
     private final Node title;
@@ -43,9 +43,12 @@ final class SketchWindow {
     private final Slider size;
     private final Slider strength;
     private final Slider hardness;
+    private final Slider snap;
     private final Node sizeValue;
     private final Node strengthValue;
     private final Node hardnessValue;
+    private final Node snapValue;
+    private final Node snapLabel;
     private final Button trace;
     private final Node stage;
     /** The field's box, fitted to the stage; the picture traced over, fitted in it; the field, over the whole box. */
@@ -72,16 +75,20 @@ final class SketchWindow {
         size = slider(Landmarks.SKETCH_SIZE, SketchView.sizeSlider(Brush.FIRST.radius()));
         strength = slider(Landmarks.SKETCH_STRENGTH, Brush.FIRST.strength());
         hardness = slider(Landmarks.SKETCH_HARDNESS, Brush.FIRST.hardness());
+        snap = slider(Landmarks.SKETCH_SNAP, Brush.FIRST.snap());
         sizeValue = value();
         strengthValue = value();
         hardnessValue = value();
+        snapValue = value();
+        snapLabel = label("Snap");
         trace = new Button(gui, "Trace over…").kind(Button.Kind.SECONDARY).name(Landmarks.SKETCH_TRACE);
         gui.landmark(Landmarks.SKETCH_TRACE, trace.node());
         Node spring = gui.box().width(Length.grow(1f));
-        tools = gui.row().width(Length.FILL).padding(Length.rem(0.375f), Ui.MARGIN).gap(Length.rem(0.625f))
+        tools = gui.row().width(Length.FILL).padding(Length.rem(0.375f), Ui.MARGIN).gap(Length.rem(0.5f))
                 .alignItems(AlignItems.CENTER).scroll(false, false).background(gui.theme().color(Role.PANEL))
                 .children(erase.node(), label("Size"), size.node(), sizeValue, label("Strength"), strength.node(),
-                        strengthValue, label("Hardness"), hardness.node(), hardnessValue, spring, trace.node())
+                        strengthValue, label("Hardness"), hardness.node(), hardnessValue, snapLabel, snap.node(),
+                        snapValue, spring, trace.node())
                 .visible(false);
 
         backdrop = gui.box().visible(false);
@@ -140,21 +147,30 @@ final class SketchWindow {
                 .visible(true);
     }
 
-    /** The brush's row shown, for a mode that paints; its Trace over…, for one that traces. */
-    void tools(boolean paints, boolean traces) {
+    /** The brush's row shown, for a mode that paints; its Snap, for one that snaps; its Trace over…, for one that traces. */
+    void tools(boolean paints, boolean snaps, boolean traces) {
         tools.visible(paints);
+        snapLabel.visible(snaps);
+        snap.node().visible(snaps);
+        snapValue.visible(snaps);
         trace.node().visible(traces);
     }
 
     /** The brush as it is shown: its sliders put back and what each says. */
-    void brush(Brush b, String sizeSays, String strengthSays, String hardnessSays) {
+    void brush(Brush b, String sizeSays, String strengthSays, String hardnessSays, String snapSays) {
         erase.show(b.erase());
         size.show(SketchView.sizeSlider(b.radius()));
         strength.show(b.strength());
         hardness.show(b.hardness());
+        snap.show(b.snap());
         sizeValue.text(sizeSays);
         strengthValue.text(strengthSays);
         hardnessValue.text(hardnessSays);
+        snapValue.text(snapSays);
+    }
+
+    String snapAddress() {
+        return snap.address();
     }
 
     /** What is being edited: the mode, and the size as the person gave it. */
