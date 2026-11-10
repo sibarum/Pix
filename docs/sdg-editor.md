@@ -140,3 +140,36 @@ Mask chosen, Create opens the editor titled *Mask · 640 × 360 px* with the fie
 dialog leaves Rasterware running. **Not seen live: Save**, since ottermate cannot press a native dialog and one opened
 by a background run would come up on the desk. `SketcherTest`, `SketchTest` and `ViewerTest` cover asking, cancelling,
 writing beside a taken name, what each mode renders as, and the viewer showing the file.
+
+## As built: slice 2, Mask (2026-11-10)
+
+A round brush painting the field, and a picture under it to trace over. As proposed, with these departures:
+
+- **The brush paints Mask and Stencil**, not Mask alone: both are the same flat field, and a stencil's brush is the
+  same brush until slice 3 re-distances after each stroke and snaps to edges. Heightmap shows no brush; its brushes are
+  slice 4's, in 3D (`EditMode.paints`, `traces`).
+- **Messages as built**: `Dab(Brush, x, y, first)` editor → `Sketcher`, one per pointer move, in texels (a
+  `@Subscribe(capacity = 1024)` mailbox, since an edge mailbox that overflows is a fault); `Repaint()`, the `Sketcher`
+  to itself through the framework's `Timer`; `PickBackdrop()` editor → `Sketcher`, which asks `PickFile.open`;
+  `ReadBackdrop(Path)` → the `ReadBackdropPicture` job; `Backdrop(Path, Optional<Feed>, width, height, why)` →
+  `Sketcher` and editor. `Brush(radius, strength, hardness, erase)` is a value. The proposal's `Stroke(Brush,
+  List<Dab>)` became one dab a message, which needs no batching in the view.
+- **Strength caps a stroke.** The first build moved a texel by the strength at every dab, so overlapping dabs piled
+  up and a 50 % stroke came out white (seen live). Now a stroke keeps, per texel, its value when the stroke reached it
+  and the most of the brush that has reached it since (`Sketch.Stroke`), so a 50 % stroke makes 50 % alpha however
+  its dabs overlap, and a second stroke goes half the rest of the way. That costs two more arrays the field's size,
+  so the largest field (16.7 million texels) holds about 200 MB while edited.
+- **The preview is one feed of three slots for the life of a field**, written again after each dab: only the pixels
+  the dab touched are made again, and the whole preview is copied into a free slot. With none free, the `Sketcher`
+  asks the `Timer` for a `Repaint` 8 ms later rather than waiting, so a stroke's last dab is always shown.
+- **The picture traced over** is fitted inside the field's box at its own aspect, under it; the field is then a shade
+  over the outside (near black, 75 % at the far outside) and clear over the inside, rather than grey. It is read by
+  its own job on its own topic: `ReadPicture`'s `Pictured` would be taken by the viewer for a picture of its folder.
+- **The brush's size** is a slider even in ratio from 2 to 1024 texels across, said as the diameter; strength and
+  hardness are percentages. Hardness is the part of the radius at full strength, and a smooth step falls off past it.
+
+Seen with `ottermate`: on a 1024 px Mask field started outside, a stroke drawn with four moves is one unbroken soft line
+(a press with no move paints a dab); a 50 % stroke is mid grey; at 576 across, 100 % and hard, a stroke is white with a
+sharp edge; Erase cuts through both. **Not seen live: Trace over…**, which opens the OS's dialog, for the reason Save is
+not. `SketchTest` and `SketcherTest` cover the falloff, a line with no gaps, the stroke's cap, the partial repaint
+matching a whole one, the shade over a picture, the feed written per dab, the slots running out, and the dialog asked.

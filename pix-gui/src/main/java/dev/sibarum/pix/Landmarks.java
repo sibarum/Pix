@@ -155,6 +155,13 @@ final class Landmarks {
     static final String SKETCH_SAVE = "sketch.save";
     static final String SKETCH_STATUS = "sketch.status";
 
+    /** The editor's brush: paint or erase, its size, strength and hardness; and Trace over…, for a picture under it. */
+    static final String SKETCH_ERASE = "sketch.erase";
+    static final String SKETCH_SIZE = "sketch.size";
+    static final String SKETCH_STRENGTH = "sketch.strength";
+    static final String SKETCH_HARDNESS = "sketch.hardness";
+    static final String SKETCH_TRACE = "sketch.trace";
+
     private Landmarks() {
     }
 }

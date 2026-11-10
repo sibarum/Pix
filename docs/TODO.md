@@ -31,7 +31,9 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 
 ## New SDG, the rest (docs/sdg-editor.md)
 
-- [ ] **Mask** (slice 2): a round brush painting alpha, size, strength and falloff; a background image to trace over.
+- [ ] **The brush, the rest**: keys for it (X to swap Paint and Erase, [ and ] for its size), and a way to take the
+      picture traced over away. Where the brush will land is shown by nothing: an outline under the pointer would be
+      the one thing that moves on hover, which CLAUDE.md forbids, so it wants a decision first.
 - [ ] **Stencil** (slice 3): the brush painting inside and outside, the field re-distanced after each stroke
       (`MaskSdf`), then snapping to the background image's edges.
 - [ ] **Heightmap** (slice 4): the 3D viewport after the designer's `Viewport`, the plane at zero and its crossing

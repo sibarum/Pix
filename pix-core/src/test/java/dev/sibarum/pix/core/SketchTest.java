@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -72,12 +73,84 @@ class SketchTest {
                 field[y * 400 + x] = 1f;   // the four by four the first preview pixel stands for
             }
         }
-        Sketch.Preview p = Sketch.preview(field, 400, 200, 100);
+        Sketch.Preview p = Sketch.preview(field, 400, 200, 100, false);
         assertEquals(100, p.width());
         assertEquals(50, p.height());
         assertEquals((byte) 255, p.rgba()[0], "the inside light");
         assertEquals(0, p.rgba()[4 * 60], "the outside dark");
         assertEquals((byte) 255, p.rgba()[3], "opaque");
+    }
+
+    @Test
+    void overAPictureTheOutsideIsShadedAndTheInsideClear() {
+        float[] field = Sketch.filled(4, 1, false);
+        field[3] = 1f;
+        Sketch.Preview p = Sketch.preview(field, 4, 1, 4, true);
+        assertEquals(Sketch.SHADE, p.rgba()[3] & 0xff, "the outside shaded");
+        assertEquals(0, p.rgba()[15], "the inside clear");
+    }
+
+    @Test
+    void aHardDabPaintsItsDiscWholeAndNothingPast() {
+        float[] field = Sketch.filled(21, 21, false);
+        Sketch.Rect touched = Sketch.dab(field, Sketch.Stroke.of(21, 21), 21, 21, new Messages.Brush(5, 1f, 1f, false), 10.5f, 10.5f);
+        assertEquals(1f, field[10 * 21 + 10], "the middle");
+        assertEquals(1f, field[10 * 21 + 14], "four texels out");
+        assertEquals(0f, field[10 * 21 + 16], "past the rim");
+        assertEquals(new Sketch.Rect(5, 5, 16, 16), touched);
+    }
+
+    @Test
+    void aSoftDabFallsOffAndItsStrengthIsAShare() {
+        float[] field = Sketch.filled(21, 21, false);
+        Sketch.dab(field, Sketch.Stroke.of(21, 21), 21, 21, new Messages.Brush(8, 0.5f, 0f, false), 10.5f, 10.5f);
+        float middle = field[10 * 21 + 10];
+        float out = field[10 * 21 + 15];
+        assertTrue(middle > 0.45f && middle <= 0.5f, "half way at the middle: " + middle);
+        assertTrue(out > 0f && out < middle, "less toward the rim: " + out);
+    }
+
+    @Test
+    void aStrokesDabsDoNotPileUpButASecondStrokeAddsOn() {
+        float[] field = Sketch.filled(64, 8, false);
+        Sketch.Stroke stroke = Sketch.Stroke.of(64, 8);
+        Messages.Brush half = new Messages.Brush(3, 0.5f, 1f, false);
+        Sketch.Rect first = Sketch.dab(field, stroke, 64, 8, half, 10.5f, 4.5f);
+        first = first.union(Sketch.line(field, stroke, 64, 8, half, 10.5f, 4.5f, 12.5f, 4.5f));
+        first = first.union(Sketch.line(field, stroke, 64, 8, half, 12.5f, 4.5f, 10.5f, 4.5f));
+        assertEquals(0.5f, field[4 * 64 + 11], 1e-6, "one stroke at 50 % makes 50 %, back and forth");
+        stroke.begin(64, first);
+        Sketch.dab(field, stroke, 64, 8, half, 10.5f, 4.5f);
+        assertEquals(0.75f, field[4 * 64 + 10], 1e-6, "a second goes half the rest of the way");
+    }
+
+    @Test
+    void eraseMovesTowardTheOutside() {
+        float[] field = Sketch.filled(9, 9, true);
+        Sketch.dab(field, Sketch.Stroke.of(9, 9), 9, 9, new Messages.Brush(3, 1f, 1f, true), 4.5f, 4.5f);
+        assertEquals(0f, field[4 * 9 + 4]);
+        assertEquals(1f, field[0]);
+    }
+
+    @Test
+    void aLineLeavesNoGapsAndADabOffTheFieldTouchesNothing() {
+        float[] field = Sketch.filled(64, 8, false);
+        Messages.Brush b = new Messages.Brush(2, 1f, 1f, false);
+        Sketch.dab(field, Sketch.Stroke.of(64, 8), 64, 8, b, 2.5f, 4.5f);
+        Sketch.line(field, Sketch.Stroke.of(64, 8), 64, 8, b, 2.5f, 4.5f, 60.5f, 4.5f);
+        for (int x = 2; x <= 60; x++) {
+            assertEquals(1f, field[4 * 64 + x], "texel " + x);
+        }
+        assertTrue(Sketch.dab(field, Sketch.Stroke.of(64, 8), 64, 8, b, -40f, -40f).empty());
+    }
+
+    @Test
+    void repaintingWhatADabTouchedMatchesAWholePreview() {
+        float[] field = Sketch.filled(300, 200, false);
+        Sketch.Preview part = Sketch.preview(field, 300, 200, 128, false);
+        Sketch.Rect touched = Sketch.dab(field, Sketch.Stroke.of(300, 200), 300, 200, new Messages.Brush(30, 0.7f, 0.3f, false), 120f, 90f);
+        Sketch.paint(field, 300, 200, part, touched, false);
+        assertArrayEquals(Sketch.preview(field, 300, 200, 128, false).rgba(), part.rgba());
     }
 
     @Test

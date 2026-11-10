@@ -479,6 +479,81 @@ public final class Messages {
         public String says() {
             return says;
         }
+
+        /**
+         * Whether a brush paints this mode's field in the flat view. A heightmap's brushes raise and lower terrain in 3D,
+         * which slice 4 brings.
+         */
+        public boolean paints() {
+            return this != HEIGHTMAP;
+        }
+
+        /** Whether a picture may be put under this mode's field to trace over. */
+        public boolean traces() {
+            return this != HEIGHTMAP;
+        }
+    }
+
+    /**
+     * How a brush paints: {@code radius} in texels; {@code strength}, how far one dab moves a texel toward the brush's
+     * value, 0 to 1; {@code hardness}, the part of the radius painted at full strength before it falls off to nothing at
+     * the rim, 0 (all falloff) to 1 (a hard edge); and whether it paints the inside ({@code erase} false) or the outside.
+     * Not a message: what {@link Dab} carries.
+     */
+    public record Brush(float radius, float strength, float hardness, boolean erase) {
+
+        /** The smallest and largest radius the editor offers, in texels. */
+        public static final float LEAST = 1, MOST = 512;
+
+        /** What the editor opens on. */
+        public static final Brush FIRST = new Brush(24, 0.5f, 0.5f, false);
+
+        public Brush {
+            radius = Math.clamp(radius, LEAST, MOST);
+            strength = Math.clamp(strength, 0f, 1f);
+            hardness = Math.clamp(hardness, 0f, 1f);
+        }
+    }
+
+    /**
+     * The editor tells the {@link Sketcher} where the brush is: {@code x}, {@code y} in texels from the field's top left,
+     * which may be off it. {@code first} starts a stroke there; otherwise the brush is drawn from where the last dab was,
+     * so a fast drag paints a line and not a row of dots. In order, one per pointer move, so the mailbox is deep.
+     */
+    public static final Topic<Dab> DAB_TOPIC = Topic.edge(Dab.class);
+
+    public record Dab(Brush brush, float x, float y, boolean first) {
+    }
+
+    /**
+     * The {@link Sketcher} asks itself, through the framework's timer, to show the field again: every slot of its
+     * preview's feed was in use when it last changed (the feed's backpressure), so it tries again a moment later.
+     */
+    public static final Topic<Repaint> REPAINT_TOPIC = Topic.edge(Repaint.class);
+
+    public record Repaint() {
+    }
+
+    /** The editor asks for a picture to put under the field: the {@link Sketcher} asks the OS's open dialog. */
+    public static final Topic<PickBackdrop> PICK_BACKDROP_TOPIC = Topic.edge(PickBackdrop.class);
+
+    public record PickBackdrop() {
+    }
+
+    /** The {@link Sketcher} asks {@link ReadBackdropPicture} to read the picture chosen into a feed. */
+    public static final Topic<ReadBackdrop> READ_BACKDROP_TOPIC = Topic.edge(ReadBackdrop.class);
+
+    public record ReadBackdrop(Path path) {
+    }
+
+    /**
+     * A picture read to trace over: its feed and its size, or none and why. Heard by the editor, which shows it under the
+     * field and closes the one before, and by the {@link Sketcher}, which shows the field over it as a shade rather than
+     * in grey.
+     */
+    public static final Topic<Backdrop> BACKDROP_TOPIC = Topic.edge(Backdrop.class);
+
+    public record Backdrop(Path path, Optional<Feed> feed, int width, int height, String why) {
     }
 
     /**
@@ -491,9 +566,9 @@ public final class Messages {
     }
 
     /**
-     * The {@link Sketcher} tells the editor what the field looks like now: a grey preview of it, inside light, in a
-     * feed of its own at most {@code Sketcher.PREVIEW} px on its longer side, which the editor closes when the next
-     * arrives; and the field's size in texels, its sizing and its mode.
+     * The {@link Sketcher} tells the editor a field was made: a preview of it in a feed of its own at most
+     * {@code Sketcher.PREVIEW} px on its longer side, which the {@code Sketcher} writes again as the field is painted and
+     * the editor closes when the next field's arrives; and the field's size in texels, its sizing and its mode.
      */
     public static final Topic<Sketched> SKETCHED_TOPIC = Topic.edge(Sketched.class);
 

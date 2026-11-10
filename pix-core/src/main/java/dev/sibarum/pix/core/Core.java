@@ -13,6 +13,6 @@ import dev.vexelray.framework.api.Configuration;
  */
 @Configuration(components = {Viewer.class, Sketcher.class}, jobs = {Begin.class, ListPictures.class,
         ReadPicture.class, ReadThumbnail.class, TracePicture.class, SaveDrawing.class, ConvertPicture.class,
-        RoleDrawing.class, WriteDrawing.class})
+        RoleDrawing.class, WriteDrawing.class, ReadBackdropPicture.class})
 public final class Core {
 }
