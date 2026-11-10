@@ -260,6 +260,37 @@ cut on the fine grid and comes out as round as the pixels made it. So the panel 
 What the stack could do: a corner fit in `Trace` (a region's boundary fitted to lines and arcs where it turns sharply, as
 an MSDF keeps its corners), as an option, with its own case in the conversions bench.
 
+**Prototyped (2026-11-10)** in `-core` from parts the stack already has: `CornerFit` (geometry) and `CornerTrace` (each
+traced layer's own SDF contoured, fitted, then stored as an MSDF), measured by `CornerTraceBench`
+(`mvn -pl pix-core test -Dtest=CornerTraceBench -Dbench=<dir> -Dbench.pictures=<a;b>`). Nothing in the app uses it.
+
+- **No edge detector is needed, and no transform.** The tracer's regions are the edges, and each layer's stencil already
+  places its edge between the pixels: contour it at 127.5 (marching squares), a sample at the texel's *centre*
+  (measured: half a texel off otherwise). Fourier smoothing would round the very corners this is for.
+- **The pipeline:** contour → corners (a turn over ±3 units that stays put at ±6, so a small circle is not one) → the
+  two sides extended to meet → each run between corners smoothed (¼ ½ ¼, four passes: the cut grid leaves a ~0.5 px
+  stair) and fitted with cubics by least squares (Schneider), 0.2 px tolerance → a `Shape` → `shapeToMsdf` →
+  `fieldToSdg(MSDF, …)`, the layers' fields packed on one page.
+- **Results**, 6 colours, Save's quality: drawn shapes 16.5 KB traced → 14.1 KB fitted at 0.5 texel a unit, every
+  corner of a star and triangle sharp at 4×; the VexelRay logo 252 → 184 KB, its wordmark crisper than traced; fitting
+  costs 0.1–1.4 s on top of the trace. **A 512 px screenshot's text does not survive 0.5 texel a unit** (1 px strokes);
+  at 1 texel a unit it reads as the trace does but is 877 KB against 369 KB and takes 43 s.
+- **What the stack lacks for it, each a gap of its own:**
+  1. *`SvgToSdg` writes plain SDF stencils*, though the format has `msdf`: a path drawing's corners stay sharp only down
+     to its texels, so a 240-unit drawing took 1024 texels (68 KB) to look sharp. Building MSDF layers by hand meant
+     re-packing pages, which `Assembly` (package-private) already does.
+  2. *`shapeToMsdf` is brute force over every edge for every texel*: 43 s for the screenshot's 43 k pieces. A spatial
+     index (or msdfgen's per-edge bounds) would make it linear-ish.
+  3. *`maskToShape` gives few straight lines* (20 for a disc and a triangle), and `sdgToMask`'s per-layer masks did not
+     read as one layer each, so neither could be the contour step.
+  4. *`svgToSdg` threw `NegativeArraySizeException` in `Cover`* on an SVG with a far-off control point (a fit bug of
+     mine, since fixed): a bad path should be a refused path, not an overflow.
+- **Still wrong in the prototype:** layers are fitted apart, so at an acute corner the layer below can show a fringe
+  past the one above; acute ends of thin strokes still spike a little; rings under 24 units are left exactly as cut, and
+  mid-size glyphs are softened by the smoothing. The density should follow the picture's smallest features, not be fixed.
+  In `Trace` itself, with the regions' shared boundaries in hand, both edges of a boundary could be one fitted curve,
+  which would end the fringes.
+
 ## FN-23 · A node's box is reported where it is drawn, so a view that measures what it moves chases itself 🔬
 
 The trace is compared with its picture by drawing it, at the picture's zoom and offset, in a box right of the line
