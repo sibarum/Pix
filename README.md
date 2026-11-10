@@ -132,7 +132,9 @@ groups the button with other Java programs, and pinning it pins Java. The native
 
 The folder is in name order, ignoring case, with numbers compared as numbers (`IMG_9` before `IMG_10`). Every format
 imagelib decodes is shown, fitted to the window at its own aspect and never larger than its own pixels; an animated
-file shows its first frame for now. A file that is not a picture, or will not decode, says why in its place. Holding
+file (GIF, WebP, APNG) plays, looping, at its own pace, and so does a video (anything FFmpeg decodes), with its sound,
+filling the window. Space pauses either, and the thin track along the top of the bar is clicked to seek. A file that
+is not a picture, or will not decode, says why in its place. Holding
 an arrow key decodes the picture it stops on and at most one on the way.
 
 While you look, Rasterware reads ahead: the next picture, then the previous, then the one after next, so a step finds its
@@ -204,7 +206,10 @@ message at a time, and its state changes only by its declared steps, which the p
 the disk, waits or reaches outside itself does not compile. Every read of the disk is a job on the offload lane, so a
 slow disk is a slow reply and never a frozen window. **A picture reaches the screen as a feed**: `ReadPicture`
 decodes it, builds its mip chain and writes it into a one-slot `Feed` on the offload lane, and answers with the feed;
-the view names it on a node, and the renderer uploads it the first time it is drawn. The pixels are written once and
+the view names it on a node, and the renderer uploads it the first time it is drawn. A picture that plays (an animation
+or a video) has a feed of three
+slots: the codec's `Player` writes its frames there on a thread of its own and keeps the feed's time, and the view's
+`@Draw` shows the frame due. The pixels are written once and
 never cross the bus. **Jobs are in no order at all**, which is why the viewer keeps one read out at a time and drops
 an answer it no longer wants.
 

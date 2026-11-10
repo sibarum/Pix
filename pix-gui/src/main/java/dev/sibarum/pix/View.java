@@ -2,6 +2,7 @@ package dev.sibarum.pix;
 
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
+import dev.sibarum.pix.Keys.PlayKey;
 import dev.sibarum.pix.Keys.ConvertKey;
 import dev.sibarum.pix.Keys.DetailsKey;
 import dev.sibarum.pix.Keys.LayersKey;
@@ -16,6 +17,7 @@ import dev.sibarum.pix.core.Messages.Hold;
 import dev.sibarum.pix.core.Messages.HoldThumb;
 import dev.sibarum.pix.core.Messages.Open;
 import dev.sibarum.pix.core.Messages.Pictured;
+import dev.sibarum.pix.core.Messages.Plays;
 import dev.sibarum.pix.core.Messages.Release;
 import dev.sibarum.pix.core.Messages.ReleaseThumb;
 import dev.sibarum.pix.core.Messages.Show;
@@ -30,6 +32,10 @@ import dev.sibarum.pix.core.Messages.TraceSettings;
 import dev.sibarum.pix.core.Messages.Written;
 import dev.sibarum.pix.core.Messages.Traced;
 import dev.sibarum.pix.core.Messages.Tracing;
+import dev.vexelray.codec.image.Motion;
+import dev.vexelray.codec.image.Stamp;
+import dev.vexelray.codec.image.gui.Player;
+import dev.vexelray.codec.video.Footage;
 import dev.vexelray.framework.api.Draw;
 import dev.vexelray.framework.api.Subscribe;
 import dev.vexelray.framework.core.CloseRequested;
@@ -125,10 +131,19 @@ final class View {
      * What the asked half draws: the layer in front and how its picture is looked at, the other layer and how a step
      * threw the one picture in and the other out, the controls and how far they are shown, and the filmstrip's cells
      * and how far along a step glides them, and the shades of what comes and goes; and the trace compared with the
-     * picture, drawn as it is.
+     * picture, drawn as it is. {@code playing} is the picture shown when it plays (an animated GIF, WebP or APNG, or a
+     * video), whose frame due the asked half shows, and its place on the seek track; null when it is still.
      */
     record Drawing(Node picture, Node leaving, Lens lens, Toss toss, List<Node> faded, Fade fade, List<Node> cells,
-                   Glide glide, List<Shade> shades, Compare compare, Peel peel) {
+                   Glide glide, List<Shade> shades, Compare compare, Peel peel, Playing playing) {
+    }
+
+    /**
+     * A picture that plays, as the asked half draws it: its feed, whose frame due it shows; one pass in ms; and the
+     * playhead, moved {@code range} px across the seek track over a pass. Its player keeps the feed's time, so this holds
+     * no clock.
+     */
+    record Playing(Feed feed, long passMillis, Node head, float range) {
     }
 
     /**
@@ -221,6 +236,12 @@ final class View {
 
     /** The picture shown; null before the first. */
     private Pictured shown;
+    /** Playing the picture shown into its feed, when it is one that plays; null otherwise. */
+    private Player player;
+    /** The seek track's left edge and width in client px, and the playhead's width: measured. */
+    private float seekX;
+    private float seekW;
+    private float headW;
 
     /** Which of the two layers is in front, and the picture each draws, null for none. */
     private int front;
@@ -258,7 +279,7 @@ final class View {
          Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
          Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace,
          Sender<ConvertKey> convertKey, Sender<Convert> convertOut, Sender<LayersKey> layersKey,
-         Sender<SaveRoles> saveRolesOut, Sender<DetailsKey> detailsKey) {
+         Sender<SaveRoles> saveRolesOut, Sender<DetailsKey> detailsKey, Sender<PlayKey> playKey) {
         this.saveRolesOut = saveRolesOut;
         this.convertOut = convertOut;
         this.gui = gui;
@@ -300,7 +321,7 @@ final class View {
         this.state = new Drawing(ui.layer(0), ui.layer(1), Lens.fitted(0f, 0f, 0f, 0f), Toss.NONE,
                 ui.faded(), Fade.shown(System.nanoTime()), ui.cells(), Glide.NONE, List.of(shades),
                 new Compare(ui.tracePanel().traced(), 0f, 0f, ui.tracePanel().line(), 0f),
-                new Peel(ui.layersPanel().drawnNodes(), 0, 0f, 1f, -1));
+                new Peel(ui.layersPanel().drawnNodes(), 0, 0f, 1f, -1), null);
         // The window's root hears the pointer anywhere in it, and that it left; each control, that it rests there.
         gui.hear(gui.root(), NodeEvent.POINTER, p -> {
             if (p.over()) {
@@ -374,6 +395,21 @@ final class View {
         gui.hear(ui.stage(), NodeEvent.DOUBLE_CLICK,
                 c -> window.send(WindowCommand.toggleFullScreen(CloseRequested.MAIN)));
         keys.action("view.fit", "Fit the picture", Shortcut.of(Key.DIGIT_0)).sends(fitKey, new FitKey());
+        keys.action("view.play", "Pause, or play on", Shortcut.of(Key.SPACE)).sends(playKey, new PlayKey());
+        gui.hear(ui.seek(), NodeEvent.RESIZE, layout -> {
+            if (measured(layout)) {
+                seekX = layout.rect().x();
+                seekW = layout.rect().w();
+                retimeSeek();
+            }
+        });
+        gui.hear(ui.head(), NodeEvent.RESIZE, layout -> {
+            if (measured(layout)) {
+                headW = layout.rect().w();
+                retimeSeek();
+            }
+        });
+        gui.hear(ui.seek(), NodeEvent.CLICK, c -> seekAt(c.x()));
         keys.action("view.trace", "Trace to SDG", Shortcut.of(Key.T)).sends(traceKey, new TraceKey());
         keys.action("view.convert", "Convert to another format", Shortcut.of(Key.C))
                 .sends(convertKey, new ConvertKey());
@@ -457,15 +493,17 @@ final class View {
             ui.layer(1 - front, null, null, 0f, 0f);
             onLayer[1 - front] = null;
         }
-        Fit fit = Fit.of(p.width(), p.height(), stageW, stageH);
+        Fit fit = fitted(p, stageW, stageH);
         ui.layer(front, feed, p.drawing().orElse(null), fit.widthPercent(), fit.heightPercent());
         ui.front(front);
         ui.note(feed == null ? p.identity() : null);
         shades[NOTE] = shades[NOTE].toward(feed == null ? 1f : 0f, now);
         onLayer[front] = feed == null ? null : p;
         shown = p;
+        play(p);
         state = new Drawing(ui.layer(front), ui.layer(1 - front), Lens.fitted(fitW(fit), fitH(fit), stageW, stageH),
-                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades), state.compare(), state.peel());
+                toss, state.faded(), state.fade(), state.cells(), state.glide(), List.of(shades), state.compare(), state.peel(),
+                playing());
         closeLetGo();
         sayZoom();
         if (tracing) {
@@ -496,13 +534,14 @@ final class View {
     public void clear(Clear m) {
         long now = System.nanoTime();
         shown = null;
+        play(null);
         Toss toss = Toss.crossfade(now, drawnAt(now), state.toss().inOpacity(now));
         front = 1 - front;
         ui.layer(front, null, null, 0f, 0f);
         onLayer[front] = null;
         shades[NOTE] = shades[NOTE].toward(0f, now);
         state = new Drawing(ui.layer(front), ui.layer(1 - front), state.lens(), toss, state.faded(), state.fade(),
-                state.cells(), state.glide(), List.of(shades), state.compare(), state.peel());
+                state.cells(), state.glide(), List.of(shades), state.compare(), state.peel(), null);
         closeLetGo();
         closeTrace();
         closeConvert();
@@ -553,7 +592,7 @@ final class View {
         float slot = (Strip.CELL_W + Strip.GAP) * remPx;
         Glide glide = state.glide().shifted(shift, slot, slot * (cells / 2), System.nanoTime());
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), glide, state.shades(), state.compare(), state.peel());
+                state.cells(), glide, state.shades(), state.compare(), state.peel(), state.playing());
     }
 
     /** A thumbnail to keep; one held already for that picture is put back, and closed once nothing draws it. */
@@ -731,7 +770,7 @@ final class View {
             return;
         }
         traced = m;
-        Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
+        Fit fit = fitted(shown, stageW, stageH);
         ui.tracePanel().drawing(m.drawing().get(), fit.widthPercent(), fit.heightPercent());
         ui.tracePanel().result(m.palette(), Details.bytes(m.bytes()), String.valueOf(m.layers()));
         ui.tracePanel().tags(shown.identity(), "SDG · " + m.layers() + (m.layers() == 1 ? " layer" : " layers"));
@@ -852,7 +891,7 @@ final class View {
     /** A node a layer, each its own drawing with the roles as set, laid out as the picture is; none past the most. */
     private void drawLayers() {
         int n = drawnCount();
-        Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
+        Fit fit = fitted(shown, stageW, stageH);
         for (int i = 0; i < LayersPanel.MOST_DRAWN; i++) {
             images[i] = i < n ? layerImage(i) : null;
             ui.layersPanel().drawn(i, images[i], fit.widthPercent(), fit.heightPercent());
@@ -957,7 +996,7 @@ final class View {
         ui.layersPanel().frames(layering && fanned, picked);
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
                 state.cells(), state.glide(), state.shades(), state.compare(),
-                new Peel(state.peel().nodes(), count, step, shrink, picked < count ? picked : -1));
+                new Peel(state.peel().nodes(), count, step, shrink, picked < count ? picked : -1), state.playing());
     }
 
     private void closeLayers() {
@@ -977,7 +1016,7 @@ final class View {
                 && c.value() instanceof String role && !role.equals(roles.get(picked))) {
             roles.set(picked, role);
             if (picked < drawnCount()) {
-                Fit fit = Fit.of(shown.width(), shown.height(), stageW, stageH);
+                Fit fit = fitted(shown, stageW, stageH);
                 images[picked] = layerImage(picked);
                 ui.layersPanel().drawn(picked, images[picked], fit.widthPercent(), fit.heightPercent());
             }
@@ -1177,7 +1216,7 @@ final class View {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
                 state.cells(), state.glide(), state.shades(),
                 new Compare(c.traced(), (stageW - l.fitW()) / 2f - split * stageW, (stageH - l.fitH()) / 2f,
-                        c.line(), -lineW / 2f), state.peel());
+                        c.line(), -lineW / 2f), state.peel(), state.playing());
     }
 
     /**
@@ -1216,7 +1255,8 @@ final class View {
             out.opacity(s.leaving(), 0f);
             drawCompare(s.compare(), l.to().zoom(), l.to().x(), l.to().y(), out);
             drawPeel(s.peel(), l.to().zoom(), l.to().x(), l.to().y(), s.picture(), out);
-            return fadeDue;
+            // A picture that plays is the picture, not the window moving: it plays with motion reduced too.
+            return Math.min(fadeDue, drawPlaying(s.playing(), frame, out));
         }
         out.scale(s.picture(), l.zoom(t));
         out.offset(s.picture(), l.x(t) + k.in(t), l.y(t));
@@ -1226,7 +1266,26 @@ final class View {
         out.scale(s.leaving(), k.from().zoom());
         out.offset(s.leaving(), k.out(t), k.from().y());
         out.opacity(s.leaving(), k.outOpacity(t));
-        return l.moving(t) || k.moving(t) || g.moving(t) || shading ? frame.presentNanos() : fadeDue;
+        long playDue = drawPlaying(s.playing(), frame, out);
+        return l.moving(t) || k.moving(t) || g.moving(t) || shading ? frame.presentNanos() : Math.min(fadeDue, playDue);
+    }
+
+    /**
+     * The frame of the picture playing that is due at the frame's moment, by the feed's own time, which its player keeps;
+     * the playhead where that time is in a pass; and when the next frame is, when both move again. Nothing for a still
+     * picture.
+     */
+    private static long drawPlaying(Playing p, Frame frame, Drawn out) {
+        if (p == null) {
+            return Frame.NEVER;
+        }
+        Feed feed = p.feed();
+        int slot = feed.due(frame);
+        if (slot >= 0) {
+            out.show(feed, slot);
+        }
+        out.offset(p.head(), Player.positionOf(feed, frame, p.passMillis()) * p.range(), 0f);
+        return feed.next(frame);
     }
 
     /** The trace at the picture's zoom and offset, moved left as {@link Compare} says, and the line on the split. */
@@ -1264,7 +1323,7 @@ final class View {
 
     private void fade(Fade fade) {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), fade,
-                state.cells(), state.glide(), state.shades(), state.compare(), state.peel());
+                state.cells(), state.glide(), state.shades(), state.compare(), state.peel(), state.playing());
     }
 
     private void say(int detail, String text) {
@@ -1301,7 +1360,7 @@ final class View {
     /** The shades as they now are, for the asked half. */
     private void shade() {
         state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide(), List.of(shades), state.compare(), state.peel());
+                state.cells(), state.glide(), List.of(shades), state.compare(), state.peel(), state.playing());
     }
 
     /** Where the picture in front is drawn at {@code now}: its zoom, and its offset from the stage's centre. */
@@ -1312,7 +1371,7 @@ final class View {
 
     private void look(Lens lens) {
         state = new Drawing(state.picture(), state.leaving(), lens, state.toss(), state.faded(), state.fade(),
-                state.cells(), state.glide(), state.shades(), state.compare(), state.peel());
+                state.cells(), state.glide(), state.shades(), state.compare(), state.peel(), state.playing());
         sayZoom();
     }
 
@@ -1326,6 +1385,72 @@ final class View {
     private float own() {
         float fitW = state.lens().fitW();
         return shown == null || !(fitW > 0f) ? 0f : shown.width() / fitW;
+    }
+
+    /**
+     * Play {@code p} if it is a picture that plays, and stop whatever played before: one picture plays at a time, the one
+     * shown. The player makes its frames on its own thread into the feed the job made from the first frame (a video's
+     * with its sound, through the codec's {@code Footage}), so this returns at once; the frame due is the asked half's
+     * to show ({@link #draw}). The seek track is up while one plays. Null stops the one playing.
+     */
+    private void play(Pictured p) {
+        Feed feed = p == null ? null : p.feed().orElse(null);
+        if (player != null && player.feed() == feed) {
+            return;
+        }
+        if (player != null) {
+            player.close();
+            player = null;
+        }
+        if (feed != null && p.plays().isPresent() && feed.slots() >= Player.SLOTS) {
+            Plays m = p.plays().get();
+            Stamp stamp = new Stamp(p.path(), m.size(), m.modified());
+            Motion motion = m.video()
+                    ? new Motion(stamp, m.frames(), m.durationMillis(), m.loops(), Footage.SOURCE, true)
+                    : new Motion(stamp, m.frames(), m.durationMillis(), m.loops());
+            player = Player.play(feed, motion);
+        }
+        ui.seek().visible(player != null);
+    }
+
+    /** What the asked half draws of the picture playing, or null: its feed, its length and the playhead's room. */
+    private Playing playing() {
+        if (player == null) {
+            return null;
+        }
+        return new Playing(player.feed(), Math.max(1, player.motion().durationMillis()), ui.head(),
+                Math.max(0f, seekW - headW));
+    }
+
+    /** The seek track or its playhead has a new size: the playhead's room with it. */
+    private void retimeSeek() {
+        if (state.playing() == null) {
+            return;
+        }
+        state = new Drawing(state.picture(), state.leaving(), state.lens(), state.toss(), state.faded(), state.fade(),
+                state.cells(), state.glide(), state.shades(), state.compare(), state.peel(), playing());
+    }
+
+    /** A click on the seek track at client x {@code x}: the picture playing goes there. */
+    private void seekAt(float x) {
+        if (player == null || !(seekW > 0f)) {
+            return;
+        }
+        float through = Math.clamp((x - seekX) / seekW, 0f, 1f);
+        player.seek(Math.round(through * player.duration()));
+    }
+
+    /** Space: the picture playing paused, or played on. */
+    @Subscribe
+    public void playKey(PlayKey k) {
+        if (player != null) {
+            player.toggle();
+        }
+    }
+
+    /** Where {@code p} sits on the stage: whole, at its aspect; never larger than its pixels, unless it is a video. */
+    private static Fit fitted(Pictured p, float stageW, float stageH) {
+        return Fit.of(p.width(), p.height(), stageW, stageH, p.plays().map(Plays::video).orElse(false));
     }
 
     /**
@@ -1428,7 +1553,7 @@ final class View {
         for (int i = 0; i < onLayer.length; i++) {
             Pictured p = onLayer[i];
             if (p != null) {
-                Fit fit = Fit.of(p.width(), p.height(), stageW, stageH);
+                Fit fit = fitted(p, stageW, stageH);
                 ui.fit(i, fit.widthPercent(), fit.heightPercent());
                 if (i == front) {
                     look(state.lens().measured(fitW(fit), fitH(fit), stageW, stageH));

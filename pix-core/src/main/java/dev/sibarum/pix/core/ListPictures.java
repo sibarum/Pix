@@ -3,6 +3,7 @@ package dev.sibarum.pix.core;
 import dev.sibarum.pix.core.Messages.ListFolder;
 import dev.sibarum.pix.core.Messages.Listed;
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.video.Videos;
 import dev.vexelray.framework.api.Job;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ public final class ListPictures {
         List<Path> out = new ArrayList<>();
         try (DirectoryStream<Path> in = Files.newDirectoryStream(folder)) {
             for (Path p : in) {
-                if (Pictures.named(p) && Files.isRegularFile(p) && !hidden(p)) {
+                if ((Pictures.named(p) || Videos.named(p)) && Files.isRegularFile(p) && !hidden(p)) {
                     out.add(p);
                 }
             }

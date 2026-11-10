@@ -49,6 +49,12 @@
             <artifactId>vexelray-codec-image</artifactId>
             <version>${vexelray-codec.version}</version>
         </dependency>
+        <!-- Videos: a poster and a video's facts on a job, and its frames and sound played through the codec's Player (FFmpeg). -->
+        <dependency>
+            <groupId>dev.vexelray.codec</groupId>
+            <artifactId>vexelray-codec-video</artifactId>
+            <version>${vexelray-codec.version}</version>
+        </dependency>
         <!-- Convert.rasterToSdg: a picture traced into an SDG drawing (docs/trace.md), on a job. -->
         <dependency>
             <groupId>dev.vexelray.fields</groupId>

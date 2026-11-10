@@ -83,6 +83,10 @@ final class Ui {
     private final Node previousSide;
     private final Node nextSide;
     private final Node bar;
+    /** The seek track and its playhead, and how tall the track is. */
+    private final Node seek;
+    private final Node head;
+    static final Length SEEK_H = Length.rem(0.4f);
     private final IconButton keep;
     /** Trace, in the bar's tools, and the panel it opens. */
     private final IconButton trace;
@@ -268,6 +272,17 @@ final class Ui {
         Node middle = gui.row().width(Length.FILL).height(Length.grow(1f)).scroll(false, false)
                 .children(stage, tracePanel.panel(), layersPanel.panel(), detailsPanel.panel());
 
+        // A picture that plays: a thin track along the bar's top edge, clicked to seek, and the playhead on it, moved by
+        // the view's asked half as the picture plays (View.draw). Floated in the bar, so it goes where the bar goes,
+        // over the stage or below it, and fades with it. Shown only while one plays.
+        head = gui.box().width(SEEK_H).height(Length.percent(100f)).corner(Length.rem(0.15f))
+                .background(gui.theme().color(Role.ACCENT)).floatAt(Length.ZERO, Length.ZERO).hitInert(true);
+        seek = gui.row().width(Length.percent(100f)).height(SEEK_H).background(gui.theme().color(Role.DIM))
+                .floatAt(Length.ZERO, Length.ZERO).scroll(false, false).visible(false).children(head);
+        bar.append(seek);
+        gui.landmark(Landmarks.SEEK, seek);
+        gui.landmark(Landmarks.SEEK_HEAD, head);
+
         gui.root().direction(Direction.COLUMN)
                 .background(gui.theme().color(Role.PAGE))
                 .children(titleBar.node(), middle, bar);
@@ -324,6 +339,16 @@ final class Ui {
     /** The bar, whose content width is what the words, the strip and the tools share. */
     Node bar() {
         return bar;
+    }
+
+    /** The seek track, shown while a picture plays: clicked to go there. */
+    Node seek() {
+        return seek;
+    }
+
+    /** The playhead on the seek track, which the view's asked half moves. */
+    Node head() {
+        return head;
     }
 
     /** Keep shown's button, which is {@link #TOOL} wide: how the view knows a rem in px. */

@@ -188,12 +188,14 @@ public final class Messages {
      * drawing, which the view draws sharp at any zoom in place of the feed (then only its poster); {@code width} and
      * {@code height} are then what it is fitted from, as an SVG decoded at its longest. {@code modified} is the file's
      * last-modified time, ms since the epoch, or -1 unknown; {@code palette} up to five of its colours, most of the
-     * picture first, {@code 0xRRGGBBAA} (docs/details.md).
+     * picture first, {@code 0xRRGGBBAA} (docs/details.md). {@code plays} is there when the file plays (an animated GIF,
+     * WebP or APNG): its feed then has room for the frames after the first, which it shows until it is played.
      */
     public static final Topic<Pictured> PICTURED_TOPIC = Topic.edge(Pictured.class);
 
     public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes,
-                           Thumb thumb, Optional<ImageSdg> drawing, long modified, List<Integer> palette) {
+                           Thumb thumb, Optional<ImageSdg> drawing, long modified, List<Integer> palette,
+                           Optional<Plays> plays) {
 
         public Pictured {
             palette = List.copyOf(palette);
@@ -201,8 +203,17 @@ public final class Messages {
 
         /** A picture that is not a drawing, with no time or palette known: what a test makes. */
         public Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes, Thumb thumb) {
-            this(path, feed, width, height, identity, bytes, thumb, Optional.empty(), -1, List.of());
+            this(path, feed, width, height, identity, bytes, thumb, Optional.empty(), -1, List.of(), Optional.empty());
         }
+    }
+
+    /**
+     * That a picture plays, and what its file says about the playing: the codec's {@code Motion} as values, which the
+     * view plays it by. {@code size} and {@code modified} are the file's as it was read, so the frames played are of the
+     * file the first was. {@code video} is a video, played with its sound and fitted to fill the stage; otherwise an
+     * animated GIF, WebP or APNG, never enlarged. Not a message: what {@link Pictured} carries.
+     */
+    public record Plays(long size, long modified, int frames, long durationMillis, int loops, boolean video) {
     }
 
     // ------------------------------------------------------------------ tracing a picture into a drawing (docs/trace.md)

@@ -1,11 +1,15 @@
 package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Pictured;
+import dev.sibarum.pix.core.Messages.Plays;
 import dev.sibarum.pix.core.Messages.Read;
 import dev.sibarum.pix.core.Messages.Thumb;
 import dev.vexelray.codec.image.Decoded;
+import dev.vexelray.codec.image.Motion;
 import dev.vexelray.codec.image.Picture;
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.image.gui.Player;
+import dev.vexelray.codec.video.Videos;
 import dev.vexelray.framework.api.Job;
 import dev.vexelray.gui.core.Feed;
 import dev.vexelray.vulkan.present.MipChain;
@@ -34,6 +38,9 @@ public final class ReadPicture {
     static final int THUMB = 192;
 
     public Pictured run(Read r) {
+        if (Videos.named(r.path())) {
+            return video(r.path());
+        }
         Decoded d = Pictures.of(r.path(), SIDE, THUMB);
         Picture p = d.picture();
         if (p == null) {
@@ -47,11 +54,44 @@ public final class ReadPicture {
             double k = SIDE / Math.max(dw, dh);
             return new Pictured(r.path(), Optional.of(feed(p)), (int) Math.round(dw * k), (int) Math.round(dh * k),
                     d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.of(p.drawing()),
-                    modified(r.path()), Palette.of(d.picture(1)));
+                    modified(r.path()), Palette.of(d.picture(1)), Optional.empty());
+        }
+        Motion m = p.motion();
+        if (m != null && m.source() == Motion.ANIMATION && m.frames() > 1) {
+            // An animation: its first frame in a feed with room for the rest, which the view's player makes there.
+            return new Pictured(r.path(), Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), firstFrame(p))),
+                    p.frameWidth(), p.frameHeight(), d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)),
+                    Optional.empty(), modified(r.path()), Palette.of(d.picture(1)),
+                    Optional.of(new Plays(m.stamp().size(), m.stamp().modified(), m.frames(), m.durationMillis(),
+                            m.loops(), false)));
         }
         return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
                 bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.empty(), modified(r.path()),
-                Palette.of(d.picture(1)));
+                Palette.of(d.picture(1)), Optional.empty());
+    }
+
+    /**
+     * A video: its first frame at most {@link #SIDE}, in a feed with room for the rest, which the view's player makes
+     * there with the video's sound; and its poster, a tenth of the way in, as its thumbnail. Two opens of the file, since
+     * the first frame that plays and the frame that stands for the video are not the same. A video that does not say how
+     * long it is or how fast it plays is shown by its first frame, still.
+     */
+    static Pictured video(Path path) {
+        Decoded d = Videos.poster(path, SIDE, true);
+        Picture p = d.picture();
+        if (p == null) {
+            return new Pictured(path, Optional.empty(), 0, 0, d.identity(), bytes(path), none(path));
+        }
+        Picture small = Videos.poster(path, THUMB).picture();
+        Motion m = p.motion();
+        if (m == null) {
+            return new Pictured(path, Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(), bytes(path),
+                    thumb(path, small), Optional.empty(), modified(path), Palette.of(small), Optional.empty());
+        }
+        return new Pictured(path, Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), firstFrame(p))),
+                p.frameWidth(), p.frameHeight(), d.identity(), bytes(path), thumb(path, small), Optional.empty(),
+                modified(path), Palette.of(small), Optional.of(new Plays(m.stamp().size(), m.stamp().modified(),
+                m.frames(), m.durationMillis(), 0, true)));
     }
 
     /** The thumbnail of {@code path} from {@code p}, decoded at {@link #THUMB}. */

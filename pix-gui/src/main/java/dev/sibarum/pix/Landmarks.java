@@ -126,6 +126,10 @@ final class Landmarks {
     }
     static final String TRACE_LINE = "stage.trace-line";
 
+    /** The seek track under the stage while a picture plays, and its playhead. */
+    static final String SEEK = "seek";
+    static final String SEEK_HEAD = "seek.head";
+
     private Landmarks() {
     }
 }

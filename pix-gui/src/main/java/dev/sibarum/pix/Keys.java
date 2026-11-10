@@ -19,6 +19,14 @@ final class Keys {
         static final Topic<FitKey> TOPIC = Topic.edge(FitKey.class);
     }
 
+    /**
+     * Space: a picture that plays paused, or played on. How it is watched is the view's, as how it is looked at is, so
+     * this never reaches {@code -core}.
+     */
+    record PlayKey() {
+        static final Topic<PlayKey> TOPIC = Topic.edge(PlayKey.class);
+    }
+
     /** Esc: out of full screen, or, in the window, closing Rasterware. Which, only the view knows. */
     record EscKey() {
         static final Topic<EscKey> TOPIC = Topic.edge(EscKey.class);

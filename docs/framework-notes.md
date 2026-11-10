@@ -362,3 +362,34 @@ effects on SDG already take a look per layer.
 `NullPointerException: ... "element" is null` from the compiler, naming no file, no class and no message. Built from
 the parent with `-am` it compiled. What the framework's processor could do: when a class `Core` lists is not on the
 class path as compiled, or lacks what a `@Hears` names, say which and that the module before it needs building.
+
+## FN-31 · `exec:exec` without `compile` runs `-gui` against a stale `-core`, and the window quits in silence 🔬
+
+`mvn -q exec:exec` from the parent, with no `compile` goal, resolved `pix-core` from the local repository (an install
+from `df22435`, days old) rather than from the reactor, against the `pix-gui` built from today's sources. The
+application logged the stack-mismatch warning (FN-5's: `pix-core is df22435…, but pix-gui was built against
+88e695b…`), reached `phase RUN`, and closed 150 ms later with nothing logged as why; `ottermate` only said that the
+application closed the connection part-way through the reply to its first `await`. It happened twice before the cause
+was looked for, and once looked like a playback fault. With `compile exec:exec` it runs. What was done: every launch
+here goes through `compile exec:exec`, as CLAUDE.md's lines already show. What the framework could do: when the
+mismatch is between modules of the application itself rather than of the stack, refuse to start and say which module
+is stale and that `compile` (or an install) fixes it, rather than warn and then exit without a reason.
+
+## FN-32 · A feed's node drawn at nothing may never hear the hand-over that would show it 🔬
+
+An empty feed draws a white placeholder (`AtlasTexture.placeholder`, 1x1 white), so a picture that plays has its feed's
+node drawn at nothing by its asked half until a frame is due. But a feed learns whom to wake when its renderer first
+draws it (`Feed.wake`), and a node drawn at nothing may never be drawn, so the first hand-over wakes nobody and the
+asked half, answering `Frame.NEVER` (no time, no later slot), is never asked again. The codec's `ImageView` and
+`VideoView` look again every 16 ms while a first frame is coming instead. What it costs: a frame a widget asks for
+with nothing to show, for the moment a file is opening. What the framework could do: register the wake when a node
+first names a feed (`Node.image(Feed)`), or draw an empty feed as nothing rather than as the placeholder, and either
+removes the look.
+
+## FN-33 · `Node.image(Feed)` takes no region, so a picture that plays cannot be mirrored 🔬
+
+`ImageView`'s pose mirrors a picture by reading its texture the other way (`ImageRegion` reversed). A feed is shown
+with `Node.image(Feed)`, which clears the region, so a picture that plays is shown unmirrored when its pose is
+mirrored, where 0.1's stream was mirrored like a still. Rasterware has no mirror yet (TODO, *Look closely*), so it does
+not show here; vex-suite-common's viewer does. What the framework could do: `Node.image(Feed, ImageRegion)`, as for a
+texture.

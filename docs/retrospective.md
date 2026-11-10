@@ -29,6 +29,56 @@ reasons and the full method.
     ### What to keep exactly as it is
     What carried the milestone, and why.
 
+## Pictures that play: animations and video, on the frame contract · 2026-11-10
+
+The count: 3 findings (FN-31 to FN-33), none architectural. The architecture was the work itself: vexelray-gui's
+frame-contract.md step 5, done in the stack in this milestone (the author's ask), with Rasterware as its witness.
+
+### The shapes
+| | The promise | What happened | How it looked |
+| --- | --- | --- | --- |
+| FN-31 | `mvn exec:exec` runs what was built | `-gui` ran against a days-old `-core` from the local repository, and quit 150 ms in with no reason | ottermate: "the application closed the connection"; looked like a playback fault |
+| FN-32 | a feed's hand-over wakes the window | not if its node was only ever drawn at nothing | a picture's first frame never shown, so the widgets look again every 16 ms until it is |
+| FN-33 | a feed is shown like a texture | `Node.image(Feed)` has no region | a mirrored pose does not mirror a picture that plays |
+
+### What would stop each
+1. FN-31: the stack check refuses to start when the mismatch is between the application's own modules, and says which
+   is stale.
+2. FN-32: a feed learns whom to wake when a node first names it, not when it is first drawn.
+3. FN-33: `Node.image(Feed, ImageRegion)`.
+
+### My own mistakes
+- **I trusted "it compiles" from a build that was up to date.** The video-player demo and vex-suite-common both
+  "compiled" for me before I changed anything, and both were broken on 0.2 (`@MainThread` refused; `Gui.claim` and
+  the rest gone). A compile that did nothing is not a compile. Rule: to know whether something builds, build it from
+  clean.
+- **I launched without `compile` twice before asking why it failed** (FN-31), and the first time wrote the failure off.
+  Rule: a run that ends at its first `await` is a finding, not noise; read `pix.log` first, as CLAUDE.md says.
+- **I put the seek track where the bar floats over it.** The bar is the root's last child and floats over the stage, so
+  a track laid out after the stage was under it, and the click meant for it hit the bar. Then I drew it in a colour the
+  bar is nearly made of. Both were seen only in the shots. Rule: look at the screenshot before saying a control is there,
+  and click it through ottermate.
+- **`sed` over a file I had not read back** replaced two lines it should not have (an asked half's local, and a guard in
+  `clear`), caught only by compiling. Rule: after a pattern edit, grep for every line it touched.
+
+### What to keep exactly as it is
+- **The producer keeps the time, on the feed.** `Feed.time` made the asked half a search over three stamps with no clock
+  of its own, a pause a time that stops, and a video that follows its sound a producer that says the time again. No
+  part's state holds a mutable clock, so nothing had to be argued past the processor.
+- **Stamps that only increase, passes on whole multiples.** Seeking back is a floor (`Feed.stale`), and a seek bar's
+  place is the feed's time modulo a pass (`Player.positionOf`), so the clock topic the plan had for it was never needed.
+- **The job's feed already showing the first frame.** No node swaps when a picture starts playing, and a still and a
+  picture that plays are shown the same way until the player's first hand-over.
+- **The demo as the meter.** Counting the distinct frames an asked half chose gave exact frame rates (24, 30 and 60 fps
+  clips held within a frame a second over twelve runs), which a screenshot cannot.
+
+### Checked live
+An animated GIF played red, green and blue at 0.50 to 0.54 s apart, looping. A 30 fps AV1 video filled the window and
+played; Space held its frame across two shots and played on; a click in the middle of the track while paused showed
+frame 149 (4.98 s of 9.97) within one shot and held it; the GIF after it played at its own size with the playhead a
+fifth along. Not heard: a video's sound through the speakers (every run here used `vexelray.sound=nowhere`); its
+following the sound is held by `SoundPlayerTest`.
+
 ## Details · 2026-11-08
 
 No new findings. Two fields on `Pictured` and a panel: the read already had the file and its thumbnail, so the
