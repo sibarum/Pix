@@ -356,14 +356,21 @@ drawing it is (`Node.sdg`); nothing draws the field under a stencil (its distanc
 What the stack could do: a look for an SDG layer that paints its distance, `Look.distanceBands(spacing)`, as the
 effects on SDG already take a look per layer.
 
-## FN-30 · `-gui` compiled alone against an older `-core` crashes the processor 🔬
+## FN-30 · `-gui` compiled alone against an older `-core` crashes the processor 🔬 (fixed upstream)
+
+Fixed upstream 2026-11-10: each signature the wiring reads that names a type that does not resolve is said once, with
+"build that module first", and nothing else is checked or written (vexelray-framework's `Unresolved`). What was found:
 
 `mvn -pl pix-gui compile`, after `-core` gained a message but before it was installed, failed with
 `NullPointerException: ... "element" is null` from the compiler, naming no file, no class and no message. Built from
 the parent with `-am` it compiled. What the framework's processor could do: when a class `Core` lists is not on the
 class path as compiled, or lacks what a `@Hears` names, say which and that the module before it needs building.
 
-## FN-31 · `exec:exec` without `compile` runs `-gui` against a stale `-core`, and the window quits in silence 🔬
+## FN-31 · `exec:exec` without `compile` runs `-gui` against a stale `-core`, and the window quits in silence 🔬 (fixed upstream)
+
+Fixed upstream 2026-11-10: a module the application was built against from its own commit, loaded from another, is an
+error naming it and saying to run with `compile`, and the process exits 3 (vexelray-framework's `StackCheck.own`). Why
+the window then quit with nothing logged was not found. What was found:
 
 `mvn -q exec:exec` from the parent, with no `compile` goal, resolved `pix-core` from the local repository (an install
 from `df22435`, days old) rather than from the reactor, against the `pix-gui` built from today's sources. The
@@ -394,7 +401,11 @@ mirrored, where 0.1's stream was mirrored like a still. Rasterware has no mirror
 not show here; vex-suite-common's viewer does. What the framework could do: `Node.image(Feed, ImageRegion)`, as for a
 texture.
 
-## FN-34 · The widget library's seam was there, and nothing said a widget outside vexelray-gui could use it 🔬
+## FN-34 · The widget library's seam was there, and nothing said a widget outside vexelray-gui could use it 🔬 (fixed upstream)
+
+Fixed upstream 2026-11-10: the processor refuses a `@View` that names `spi`, imported or spelt out (vexelray-framework's
+`SpiBoundary`), and vexelray-gui's `SeamsMapTest` holds `seams.md`'s table to every public method of `Seams` (it found
+`resizing` missing). What was found:
 
 Step 5 of vexelray-gui's frame contract needed vexelray-codec's `ImageView` and `VideoView` to answer each frame with an
 asked half. `Asked` said it was "registered by the host, never by an application", `Seams.ask` said "the host's", and
