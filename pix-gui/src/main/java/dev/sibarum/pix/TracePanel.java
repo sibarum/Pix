@@ -62,6 +62,7 @@ final class TracePanel {
 
     private final Gui gui;
     private final Node panel;
+    private final Node onStage;
     private final Node compare;
     private final Node traced;
     private final Node line;
@@ -102,6 +103,12 @@ final class TracePanel {
         after = tag(gui, "");
         before.floatAt(Length.ZERO, Length.ZERO);
         after.floatAt(Length.percent(100f), Length.ZERO);
+        // The split moves the box and the line by layout while the view moves the trace by its draw offset at once:
+        // the window's slide would put a second clock on the first, and the right side would wave as the line is
+        // dragged. So neither the box, nor the line, nor the trace in the box glides; they are where the split is.
+        compare.childMotion(false);
+        onStage = gui.box().width(Length.percent(100f)).height(Length.percent(100f)).floatAt(Length.ZERO, Length.ZERO)
+                .hitInert(true).scroll(false, false).childMotion(false).children(compare, before, after, line);
 
         // ---- the panel
         Node title = gui.text("Trace to SDG").wordWrap(false).textSize(TITLE_TEXT).bold()
@@ -207,7 +214,7 @@ final class TracePanel {
 
     /** What goes on the stage, over the picture and under Previous and Next: the trace, the line, the two tags. */
     List<Node> overStage() {
-        return List.of(compare, before, after, line);
+        return List.of(onStage);
     }
 
     /** The trace's node, which the view draws at the picture's zoom and offset, moved left as the class says. */
