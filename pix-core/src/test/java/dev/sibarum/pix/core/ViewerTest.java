@@ -174,7 +174,7 @@ class ViewerTest {
         tell(Messages.RECALLED_TOPIC, new Recalled(FOLDER, Optional.of(C)));
         assertEquals(List.of(new Read(C)), took(Read.class));
         assertEquals(List.of(new ListFolder(FOLDER)), took(ListFolder.class));
-        assertEquals(new Caption("c.png", Viewer.READING_FOLDER), took(Caption.class).getLast());
+        assertEquals(new Caption("c.png", "pictures/c.png", Viewer.READING_FOLDER), took(Caption.class).getLast());
 
         tell(Messages.PICTURED_TOPIC, read(C));
         assertEquals(List.of(C), held());
@@ -182,7 +182,7 @@ class ViewerTest {
         assertEquals(List.of(), took(Read.class), "no neighbours to read ahead until the folder is listed");
 
         tell(Messages.LISTED_TOPIC, new Listed(FOLDER, List.of(A, B, C, D)));
-        assertEquals(new Caption("c.png", "3 of 4"), took(Caption.class).getLast());
+        assertEquals(new Caption("c.png", "pictures/c.png", "3 of 4"), took(Caption.class).getLast());
         assertEquals(List.of(new Read(D)), took(Read.class), "c is not read again; its neighbour is read ahead");
     }
 
@@ -192,14 +192,14 @@ class ViewerTest {
         assertEquals(List.of(), took(Read.class));
         tell(Messages.LISTED_TOPIC, new Listed(FOLDER, List.of(A, B)));
         assertEquals(List.of(new Read(A)), took(Read.class));
-        assertEquals(new Caption("a.png", "1 of 2"), took(Caption.class).getLast());
+        assertEquals(new Caption("a.png", "pictures/a.png", "1 of 2"), took(Caption.class).getLast());
     }
 
     @Test
     void anEmptyFolderSaysSo() {
         tell(Messages.RECALLED_TOPIC, new Recalled(FOLDER, Optional.empty()));
         tell(Messages.LISTED_TOPIC, new Listed(FOLDER, List.of()));
-        assertEquals(new Caption("", "no pictures here"), took(Caption.class).getLast());
+        assertEquals(new Caption("", "", "no pictures here"), took(Caption.class).getLast());
         tell(Messages.STEP_TOPIC, new Step(1));
         assertEquals(List.of(), took(Read.class));
     }
@@ -235,7 +235,7 @@ class ViewerTest {
         assertEquals(List.of(D), shown());
         tell(Messages.STEP_TOPIC, new Step(5));
         assertEquals(List.of(), took(Read.class));
-        assertEquals(new Caption("d.png", "4 of 4"), took(Caption.class).getLast());
+        assertEquals(new Caption("d.png", "pictures/d.png", "4 of 4"), took(Caption.class).getLast());
     }
 
     /**
@@ -250,7 +250,7 @@ class ViewerTest {
         tell(Messages.STEP_TOPIC, new Step(1));
         tell(Messages.STEP_TOPIC, new Step(1));
         assertEquals(List.of(), took(Read.class), "one read at a time");
-        assertEquals(new Caption("d.png", "4 of 4"), took(Caption.class).getLast(), "the caption keeps up");
+        assertEquals(new Caption("d.png", "pictures/d.png", "4 of 4"), took(Caption.class).getLast(), "the caption keeps up");
 
         tell(Messages.PICTURED_TOPIC, read(B));
         assertEquals(List.of(), shown(), "b was passed, so it is only held");
@@ -379,7 +379,7 @@ class ViewerTest {
         answerAll();
         shown();
         tell(Messages.GO_TOPIC, new Go(p.get(5)));
-        assertEquals(new Caption("p5.png", "6 of 8"), took(Caption.class).getLast());
+        assertEquals(new Caption("p5.png", "pictures/p5.png", "6 of 8"), took(Caption.class).getLast());
         assertEquals(List.of(p.get(5)), shown(), "read ahead, so at once");
         tell(Messages.GO_TOPIC, new Go(FOLDER.resolve("gone.png")));
         assertEquals(List.of(), took(Caption.class));
@@ -419,11 +419,11 @@ class ViewerTest {
         assertEquals(List.of(), took(ListFolder.class), "an answer to a dialog not asked for is ignored");
         tell(Picked.TOPIC, new Picked(1, x.toString()));
         assertEquals(List.of(new ListFolder(other)), took(ListFolder.class));
-        assertEquals(new Caption("x.png", Viewer.READING_FOLDER), took(Caption.class).getLast());
+        assertEquals(new Caption("x.png", "elsewhere/x.png", Viewer.READING_FOLDER), took(Caption.class).getLast());
         answerAll();
         assertEquals(List.of(x), shown());
         tell(Messages.LISTED_TOPIC, new Listed(other, List.of(x, other.resolve("y.png"))));
-        assertEquals(new Caption("x.png", "1 of 2"), took(Caption.class).getLast());
+        assertEquals(new Caption("x.png", "elsewhere/x.png", "1 of 2"), took(Caption.class).getLast());
     }
 
     @Test
@@ -440,7 +440,7 @@ class ViewerTest {
         assertEquals(List.of(new ListFolder(other)), took(ListFolder.class));
         assertEquals(List.of(), took(Read.class), "nothing to read until the folder is listed");
         tell(Messages.LISTED_TOPIC, new Listed(other, List.of(x)));
-        assertEquals(new Caption("x.png", "1 of 1"), took(Caption.class).getLast());
+        assertEquals(new Caption("x.png", "elsewhere/x.png", "1 of 1"), took(Caption.class).getLast());
         answerAll();
         assertEquals(List.of(x), shown());
         assertEquals(List.of(A, B, C), took(ReleaseThumb.class).stream().map(ReleaseThumb::path).sorted().toList(),
@@ -456,7 +456,7 @@ class ViewerTest {
         tell(Picked.TOPIC, new Picked(1, empty.toString()));
         tell(Messages.LISTED_TOPIC, new Listed(empty, List.of()));
         assertEquals(List.of(new Clear()), took(Clear.class));
-        assertEquals(new Caption("", "no pictures here"), took(Caption.class).getLast());
+        assertEquals(new Caption("", "", "no pictures here"), took(Caption.class).getLast());
         tell(Messages.OPEN_TOPIC, new Open(false));
         assertEquals(List.of(PickFile.open(2, empty.toString(), Viewer.PICTURES)), took(PickFile.class));
     }

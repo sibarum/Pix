@@ -569,7 +569,7 @@ final class View {
      */
     @Subscribe
     public void caption(Caption m) {
-        ui.name(m.name());
+        ui.name(m.name(), m.title());
         ui.splash(m.name().isEmpty());
         if (shown == null || !m.name().equals(String.valueOf(shown.path().getFileName()))) {
             say(Details.KIND, "");

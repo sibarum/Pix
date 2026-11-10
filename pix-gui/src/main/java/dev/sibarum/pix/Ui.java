@@ -622,11 +622,11 @@ final class Ui {
     }
 
     /**
-     * The picture's name in the title bar, before the wordmark, and in the bar; with none, the title bar has the mark
-     * alone and the bar asks for a picture, since a click on the name opens one.
+     * The picture's title (its folder and name) in the title bar, before the wordmark, and its name in the bar; with
+     * none, the title bar has the mark alone and the bar asks for a picture, since a click on the name opens one.
      */
-    void name(String name) {
-        titleBar.title(name);
+    void name(String name, String title) {
+        titleBar.title(title);
         this.name.text(name.isEmpty() ? OPEN_A_PICTURE : name);
         named = !name.isEmpty();
         paintName();

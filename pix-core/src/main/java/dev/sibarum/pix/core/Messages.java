@@ -98,10 +98,13 @@ public final class Messages {
     public record Release(Path path) {
     }
 
-    /** What the window's title and status line say: the picture's name, and where it is in its folder. */
+    /**
+     * What the window's title and status line say: the picture's name, its title (its folder's name, a slash and its
+     * name, as {@code Trophies/404.jpg}; the name alone with no folder above it), and where it is in its folder.
+     */
     public static final Topic<Caption> CAPTION_TOPIC = Topic.state(Caption.class);
 
-    public record Caption(String name, String place) {
+    public record Caption(String name, String title, String place) {
     }
 
     /**

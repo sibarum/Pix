@@ -672,6 +672,7 @@ public final class Viewer {
 
     private static void caption(State s, Out out) {
         String name = s.wanted().map(Viewer::name).orElse("");
+        String title = s.wanted().map(Viewer::title).orElse("");
         String place;
         if (!s.listed()) {
             place = READING_FOLDER;
@@ -682,11 +683,18 @@ public final class Viewer {
         } else {
             place = (s.at() + 1) + " of " + s.pictures().size();
         }
-        out.send(Messages.CAPTION_TOPIC, new Caption(name, place));
+        out.send(Messages.CAPTION_TOPIC, new Caption(name, title, place));
     }
 
     private static String name(Path p) {
         Path n = p.getFileName();
         return n == null ? p.toString() : n.toString();
+    }
+
+    /** The folder's name, a slash and the picture's name, as {@code Trophies/404.jpg}; the name alone at a root. */
+    static String title(Path p) {
+        Path parent = p.getParent();
+        Path folder = parent == null ? null : parent.getFileName();
+        return folder == null ? name(p) : folder + "/" + name(p);
     }
 }
