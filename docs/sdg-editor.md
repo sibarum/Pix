@@ -184,9 +184,12 @@ A stencil kept a true distance, and a brush that snaps to the picture under it. 
   between each texel and its right and lower neighbours by where the line between their values meets ½, so an edge
   keeps its place within a texel; a summed-area table of texels with a crossing skips the search wherever none is near.
   A stroke whose lift was never heard is settled before the next stroke and before a save. Mask is left as painted.
-- **What a soft stroke leaves is where it crossed ½**: with a soft brush the edge is where the brush's reach times its
-  strength makes ½, so at 100 % half way out along its falloff, and at 50 % only where it was whole. A stroke at under
-  50 % from the far outside moves no edge.
+- **A stencil is painted at full strength, and its edge is where the brush's falloff crosses ½** (`Brush.whole`), so
+  the hardness says where that is and Strength is not shown. *Fixed 2026-11-12*: as first built, Strength applied to a
+  stencil too, and at the default 50 % a stroke moved its texels only to ½. It showed grey while held and, once settled,
+  fell back where it was: an erase stroke on a field started inside vanished when the brush lifted. ottermate had not
+  caught it, because its check started the field outside and set Strength to 100 % before painting. The person caught it
+  in the release build; `StencilTest.aStencilStrokeAtHalfStrengthStaysWhenTheBrushLifts` holds it now.
 - **The preview draws a stencil as a reader would**: its distance in preview pixels plus a half, clamped (sdg.md §2). So
   during a soft stroke the edge shows as soft as it would be drawn if saved then, and it sharpens when the brush lifts.
 - **Snap is a colour-aware brush**, not an edge detector. With a picture under a stencil and Snap above 0, each dab

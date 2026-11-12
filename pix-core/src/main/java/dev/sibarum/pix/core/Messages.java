@@ -534,6 +534,16 @@ public final class Messages {
         public Brush(float radius, float strength, float hardness, boolean erase) {
             this(radius, strength, hardness, erase, 0f);
         }
+
+        /**
+         * This brush at full strength: how a stencil is painted ({@link EditMode#distances}). A stencil's texel is only
+         * inside or outside once the stroke settles, so a stroke that moved it part of the way would show grey while
+         * drawn and then fall back to where it was; at full strength the edge settles where the brush's falloff crosses
+         * a half, and the hardness says where that is.
+         */
+        public Brush whole() {
+            return new Brush(radius, 1f, hardness, erase, snap);
+        }
     }
 
     /**

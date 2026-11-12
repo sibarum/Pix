@@ -77,7 +77,7 @@ final class SketchView {
             before.close();
         }
         page.title(s.mode().label() + Ui.DOT + size(s.sizing()));
-        page.tools(s.mode().paints(), s.mode().snaps(), s.mode().traces());
+        page.tools(s.mode().paints(), !s.mode().distances(), s.mode().snaps(), s.mode().traces());
         paint("");
     }
 

@@ -136,6 +136,31 @@ class StencilTest {
         assertEquals(1, lifted(EditMode.MASK), "the stroke alone");
     }
 
+    @Test
+    void aStencilStrokeAtHalfStrengthStaysWhenTheBrushLifts() {
+        // The bug: at 50 % a stroke moved a stencil's texels to ½ and no further, which showed grey while held and,
+        // once settled, fell back where it was. Inside and erased, or outside and painted, the stroke must stay.
+        assertEquals(0, middleAfterLift(true, true), "erased from the inside: outside where it went");
+        assertEquals(255, middleAfterLift(false, false), "painted on the outside: inside where it went");
+    }
+
+    /** The preview's value at the middle of an N × N stencil after a 50 % stroke there and a lift. */
+    private static int middleAfterLift(boolean inside, boolean erase) {
+        List<Sketched> sketched = new ArrayList<>();
+        Sketcher s = new Sketcher(Sender.collecting(Messages.SKETCHED_TOPIC, sketched),
+                Sender.collecting(PickFile.TOPIC, new ArrayList<>()),
+                Sender.collecting(Messages.WRITE_SDG_TOPIC, new ArrayList<>()),
+                Sender.collecting(Messages.SDG_WRITTEN_TOPIC, new ArrayList<>()),
+                Sender.collecting(Messages.READ_BACKDROP_TOPIC, new ArrayList<>()), Timer.silent(Atchung.create()));
+        s.create(new CreateSdg(new Sizing(N, N, Unit.PX, 300), inside, EditMode.STENCIL));
+        Feed feed = sketched.getFirst().feed();
+        Brush half = new Brush(12, 0.5f, 0.5f, erase);
+        s.dab(new Dab(half, 20f, 32f, true));
+        s.dab(new Dab(half, 44f, 32f, false));
+        s.lift(new Lift());
+        return feed.chain(feed.newest())[0][(32 * N + 32) * 4] & 0xff;
+    }
+
     /** The stamp of the newest preview after a soft dab and a lift in {@code mode}. */
     private static long lifted(EditMode mode) {
         List<Sketched> sketched = new ArrayList<>();

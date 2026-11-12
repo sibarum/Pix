@@ -49,6 +49,7 @@ final class SketchWindow {
     private final Node hardnessValue;
     private final Node snapValue;
     private final Node snapLabel;
+    private final Node strengthLabel;
     private final Button trace;
     private final Node stage;
     /** The field's box, fitted to the stage; the picture traced over, fitted in it; the field, over the whole box. */
@@ -81,12 +82,13 @@ final class SketchWindow {
         hardnessValue = value();
         snapValue = value();
         snapLabel = label("Snap");
+        strengthLabel = label("Strength");
         trace = new Button(gui, "Trace over…").kind(Button.Kind.SECONDARY).name(Landmarks.SKETCH_TRACE);
         gui.landmark(Landmarks.SKETCH_TRACE, trace.node());
         Node spring = gui.box().width(Length.grow(1f));
         tools = gui.row().width(Length.FILL).padding(Length.rem(0.375f), Ui.MARGIN).gap(Length.rem(0.5f))
                 .alignItems(AlignItems.CENTER).scroll(false, false).background(gui.theme().color(Role.PANEL))
-                .children(erase.node(), label("Size"), size.node(), sizeValue, label("Strength"), strength.node(),
+                .children(erase.node(), label("Size"), size.node(), sizeValue, strengthLabel, strength.node(),
                         strengthValue, label("Hardness"), hardness.node(), hardnessValue, snapLabel, snap.node(),
                         snapValue, spring, trace.node())
                 .visible(false);
@@ -147,8 +149,14 @@ final class SketchWindow {
                 .visible(true);
     }
 
-    /** The brush's row shown, for a mode that paints; its Snap, for one that snaps; its Trace over…, for one that traces. */
-    void tools(boolean paints, boolean snaps, boolean traces) {
+    /**
+     * The brush's row shown, for a mode that paints; its Strength, for one painted part of the way (a stencil is always
+     * painted whole); its Snap, for one that snaps; its Trace over…, for one that traces.
+     */
+    void tools(boolean paints, boolean strengths, boolean snaps, boolean traces) {
+        strengthLabel.visible(strengths);
+        strength.node().visible(strengths);
+        strengthValue.visible(strengths);
         tools.visible(paints);
         snapLabel.visible(snaps);
         snap.node().visible(snaps);

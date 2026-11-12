@@ -112,7 +112,7 @@ DPI, with the texels that makes; whether its field starts inside or outside; and
 Create opens the editor, a window of its own showing the field, and its Save asks where with the OS's dialog and shows
 the drawing once written.
 
-In Mask and Stencil a drag on the field paints it with a round brush: Paint or Erase, its size, its strength (how far
+In Mask and Stencil a drag on the field paints it with a round brush: Paint or Erase, its size, in a mask its strength (how far
 one stroke goes, however its dabs overlap) and its hardness (how much of it is solid before it falls off). **Trace
 over…** puts a picture under the field, which is then a shade over the outside.
 

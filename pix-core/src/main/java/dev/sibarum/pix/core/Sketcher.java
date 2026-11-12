@@ -1,6 +1,7 @@
 package dev.sibarum.pix.core;
 
 import dev.sibarum.pix.core.Messages.Backdrop;
+import dev.sibarum.pix.core.Messages.Brush;
 import dev.sibarum.pix.core.Messages.CreateSdg;
 import dev.sibarum.pix.core.Messages.Dab;
 import dev.sibarum.pix.core.Messages.Lift;
@@ -153,9 +154,11 @@ public final class Sketcher {
             stroke.begin(width, reached);
             reached = Sketch.Rect.NONE;
         }
+        // A stencil is painted at full strength: part of the way would settle back where it was (Brush.whole).
+        Brush brush = mode.distances() ? d.brush().whole() : d.brush();
         Sketch.Rect touched = d.first()
-                ? Sketch.dab(field, stroke, width, height, d.brush(), d.x(), d.y(), snapping())
-                : Sketch.line(field, stroke, width, height, d.brush(), lastX, lastY, d.x(), d.y(),
+                ? Sketch.dab(field, stroke, width, height, brush, d.x(), d.y(), snapping())
+                : Sketch.line(field, stroke, width, height, brush, lastX, lastY, d.x(), d.y(),
                         snapping());
         lastX = d.x();
         lastY = d.y();
