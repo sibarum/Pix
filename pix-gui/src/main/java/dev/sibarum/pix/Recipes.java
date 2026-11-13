@@ -48,7 +48,8 @@ final class Recipes {
      */
     @Provides
     Appearance look() {
-        return Appearance.of(Look.THEME, Length.rem(Pix.MIN_W_EM), Length.rem(Pix.MIN_H_EM));
+        return Appearance.of(Look.DARK, Length.rem(Pix.MIN_W_EM), Length.rem(Pix.MIN_H_EM))
+                .themes(Look.LIGHT, Look.DARK);
     }
 
     /**

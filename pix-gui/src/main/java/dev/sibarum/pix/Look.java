@@ -1,13 +1,16 @@
 package dev.sibarum.pix;
 
+import dev.vexelray.canvas.Color;
 import dev.vexelray.gui.core.style.Oklab;
 import dev.vexelray.gui.core.style.Palette;
 import dev.vexelray.gui.core.style.Relief;
+import dev.vexelray.gui.core.style.Role;
 import dev.vexelray.gui.core.style.Shading;
 import dev.vexelray.gui.core.style.Theme;
 
 /**
- * The palette, as anchors.
+ * The two looks, dark and light, as anchors: the person chooses between them in the app menu (Theme, then Light or
+ * Dark), and the framework remembers the choice and re-themes every window with it. Rasterware opens in the dark one.
  *
  * <h2>A palette is a construction, not a list of colours</h2>
  *
@@ -39,6 +42,21 @@ import dev.vexelray.gui.core.style.Theme;
  * stepping from the page to an ink as grey as the page, keeps theirs flat, so a raised surface is a little greyer
  * than drawn. And the fill's chroma (0.16) is past what sRGB holds at this hue and lightness, so it is 0.14.
  * {@code LookTest} holds each authored colour, turned, to within the distance these cost.
+ *
+ * <h2>The light look is authored, not reflected</h2>
+ *
+ * <p>No design has drawn Rasterware light, so its light look is the dark one's decisions made again for a white page,
+ * on the same hue: the brand's blue is the only colour, and every grey leans to it. A mirror of the dark page (L 0.15)
+ * would land at 0.85, a grey, where a light page wants 0.975; the brand's blue, at L 0.80, does not read on white and has
+ * to come down to about half that; and a shadow that is depth on the dark page is a smudge on a white one. Each anchor
+ * below says why it is where it is, and {@code LookTest} holds both looks to WCAG contrast.
+ *
+ * <h2>Write the role, never the colour</h2>
+ *
+ * <p>The look can change while Rasterware runs. A node handed a {@link dev.vexelray.gui.core.style.Role} is repainted
+ * in the new look, and fades to it; a node handed {@code gui.theme().color(role)} keeps the colour it was given,
+ * forever. So the views write roles. A picture's own pixels are data and keep their colours in either look, and so is
+ * the backdrop a picture is converted onto and a drawing layer's swatch.
  */
 final class Look {
 
@@ -74,7 +92,7 @@ final class Look {
     /** How dark a shadow is. */
     private static final double SHADOW_ALPHA = 0.60;
 
-    static final Palette PALETTE =
+    static final Palette DARK_PALETTE =
             new Palette(PAGE, STEP, INK, FADE, ACCENT, ACTION, DANGER, DEPTH, SHADOW_ALPHA);
 
     /**
@@ -84,7 +102,60 @@ final class Look {
      * contrast for white-on-fill labels by spending crispness, which small text can least afford. Both are
      * decisions to make against a real design rather than defaults to leave alone.
      */
-    static final Theme THEME = Theme.of(PALETTE, Shading.ON_DARK, Relief.STANDARD, true, false);
+    static final Theme DARK = Theme.of(DARK_PALETTE, Shading.ON_DARK, Relief.STANDARD, true, false);
+
+    // ---------------------------------------------------------------- the light look
+
+    /** A near-white page on the brand's hue, tinted just enough that the two looks read as one family. */
+    private static final Oklab LIGHT_PAGE = Oklab.polar(0.9750, 0.0060, HUE);
+
+    /** Primary text: a deep blue slate rather than black, at the ink's hue, as the dark ink is the faintest blue. */
+    private static final Oklab LIGHT_INK = Oklab.polar(0.2400, 0.0300, HUE);
+
+    /** The brand's blue brought down from L 0.80 to 0.52, where it reads on white as text does, inside sRGB. */
+    private static final Oklab LIGHT_ACCENT = Oklab.polar(0.5200, 0.1300, -114.91);
+
+    /** A filled control's fill: deeper than the accent, so the white label light shading gives it has room. */
+    private static final Oklab LIGHT_ACTION = Oklab.polar(0.4700, 0.1200, HUE);
+
+    /** The close button's red, darker for the same reason as the accent, and still the one colour off the hue. */
+    private static final Oklab LIGHT_DANGER = Oklab.polar(0.5300, 0.1800, 8.96);
+
+    /** Shadows at the page's hue, a little lifted: on white, depth is a hint rather than a void. */
+    private static final Oklab LIGHT_DEPTH = Oklab.polar(0.2000, 0.0120, HUE);
+
+    /** Surfaces step down from the page, further than the dark look's 0.018: the eye parts near-whites less well. */
+    private static final double LIGHT_STEP = 0.0250;
+
+    /** The ink fades slower than in the dark look, so dim text keeps its contrast against a white page. */
+    private static final double LIGHT_FADE = 0.300;
+
+    /** Under a third of the dark look's: a shadow at 0.60 on white is a smudge. */
+    private static final double LIGHT_SHADOW_ALPHA = 0.18;
+
+    static final Palette LIGHT_PALETTE = new Palette(LIGHT_PAGE, LIGHT_STEP, LIGHT_INK, LIGHT_FADE, LIGHT_ACCENT,
+            LIGHT_ACTION, LIGHT_DANGER, LIGHT_DEPTH, LIGHT_SHADOW_ALPHA);
+
+    /** Light shading, and no edge light, which on a white panel reads as a smear rather than a glint. */
+    static final Theme LIGHT = Theme.of(LIGHT_PALETTE, Shading.ON_LIGHT, Relief.STANDARD, false, false);
+
+    // ---------------------------------------------------------------- roles of our own
+
+    /** How much of a scanline shows over the lockup. */
+    private static final float SCAN_ALPHA = 0.45f;
+
+    /** Black, as the scanlines were drawn: on the dark page a line all but vanishes, and darkens the mark. */
+    private static final Color DARK_SCANLINE = Color.rgba(0f, 0f, 0f, SCAN_ALPHA);
+
+    /** The light page's own colour: a line vanishes on it as a black one does on the dark page, and lightens the mark. */
+    private static final Color LIGHT_SCANLINE = Color.withAlpha(LIGHT_PAGE.toColor(), SCAN_ALPHA);
+
+    /**
+     * The splash's scanlines across the lockup (Splash): black lines on the light page would be a grey band across the
+     * whole lockup, gaps and all, where on the dark page they show only over the mark. So a line is the page's own
+     * extreme in each look, with an answer in each, and follows the person's choice.
+     */
+    static final Role SCANLINE = p -> p.equals(LIGHT_PALETTE) ? LIGHT_SCANLINE : DARK_SCANLINE;
 
     private Look() {
     }

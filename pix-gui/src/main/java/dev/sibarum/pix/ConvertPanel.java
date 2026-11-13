@@ -47,7 +47,7 @@ final class ConvertPanel {
         this.gui = gui;
         badge = gui.text("").role("button").wordWrap(false).textSize(Ui.DETAIL_TEXT).bold()
                 .padding(Length.rem(0.125f), Length.rem(0.5f)).corner(Length.rem(0.375f))
-                .border(Length.dp(1f), gui.theme().color(Role.LINE)).visible(false);
+                .border(Length.dp(1f), Role.LINE).visible(false);
         gui.cursor(badge, CursorShape.POINTER);
         gui.landmark(Landmarks.FORMAT, badge);
         gui.hear(badge, NodeEvent.STATE, s -> {
@@ -57,22 +57,22 @@ final class ConvertPanel {
         paintBadge();
 
         Node title = gui.text("Convert").wordWrap(false).textSize(TracePanel.TITLE_TEXT).bold()
-                .textColor(gui.theme().color(Role.INK));
+                .textColor(Role.INK);
         Node row = gui.row().gap(Length.rem(0.5f)).scroll(false, false);
         for (Format f : Format.values()) {
             tiles[f.ordinal()] = new Button(gui, f.label()).kind(Button.Kind.SECONDARY).toggle(true);
             gui.landmark(Landmarks.convertTo(f), tiles[f.ordinal()].node());
             row.append(tiles[f.ordinal()].node());
         }
-        says = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DIM)).width(Length.FILL);
+        says = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(Role.DIM).width(Length.FILL);
 
         // What shows through a transparent picture made a video: a swatch and its hex, which opens the picker under it.
         swatch = gui.box().size(Length.rem(1.25f), Length.rem(1.25f)).corner(Length.rem(0.25f))
-                .border(Length.dp(1f), gui.theme().color(Role.LINE)).scroll(false, false);
+                .border(Length.dp(1f), Role.LINE).scroll(false, false);
         backgroundButton = new Button(gui, "").kind(Button.Kind.SECONDARY);
         gui.landmark(Landmarks.CONVERT_BACKGROUND, backgroundButton.node());
         Node backgroundLabel = gui.text("Background").wordWrap(false).textSize(Ui.DETAIL_TEXT)
-                .textColor(gui.theme().color(Role.INK));
+                .textColor(Role.INK);
         background = gui.row().width(Length.FILL).gap(Length.rem(0.5f)).alignItems(AlignItems.CENTER)
                 .scroll(false, false).visible(false)
                 .children(backgroundLabel, gui.row().width(Length.grow(1f)).scroll(false, false), swatch,
@@ -80,14 +80,14 @@ final class ConvertPanel {
         picker = new ColorPicker(gui, Color.rgb(Messages.BLACK)).alpha(false).undoable(false).name("convert.background");
         picker.node().visible(false);
         gui.landmark(Landmarks.CONVERT_PICKER, picker.node());
-        status = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DANGER)).width(Length.FILL)
+        status = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(Role.DANGER).width(Length.FILL)
                 .visible(false);
         gui.landmark(Landmarks.CONVERT_STATUS, status);
         save = new Button(gui, "Save").kind(Button.Kind.PRIMARY);
         gui.landmark(Landmarks.CONVERT_SAVE, save.node());
         Node buttons = gui.row().width(Length.FILL).justify(Justify.END).scroll(false, false).children(save.node());
         panel = gui.column().width(WIDTH).padding(Length.rem(1f)).gap(Length.rem(0.75f)).corner(Length.rem(0.5f))
-                .background(Role.RAISED).border(Length.dp(1f), gui.theme().color(Role.LINE))
+                .background(Role.RAISED).border(Length.dp(1f), Role.LINE)
                 .alignItems(AlignItems.START).scroll(false, false)
                 .floatAt(Ui.MARGIN, Length.percent(100f)).visible(false)
                 .children(title, row, says, background, picker.node(), status, buttons);

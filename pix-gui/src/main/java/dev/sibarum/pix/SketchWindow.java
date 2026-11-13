@@ -60,15 +60,15 @@ final class SketchWindow {
     SketchWindow(Window window) {
         gui = window.gui();
         title = gui.text("").wordWrap(false).textSize(TracePanel.TITLE_TEXT).bold()
-                .textColor(gui.theme().color(Role.INK));
+                .textColor(Role.INK);
         gui.landmark(Landmarks.SKETCH_TITLE, title);
-        status = gui.text("").wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DIM))
+        status = gui.text("").wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(Role.DIM)
                 .width(Length.grow(1f));
         gui.landmark(Landmarks.SKETCH_STATUS, status);
         save = new Button(gui, "Save").kind(Button.Kind.PRIMARY).name(Landmarks.SKETCH_SAVE).enabled(false);
         gui.landmark(Landmarks.SKETCH_SAVE, save.node());
         Node bar = gui.row().width(Length.FILL).padding(Length.rem(0.5f), Ui.MARGIN).gap(Length.rem(0.75f))
-                .alignItems(AlignItems.CENTER).scroll(false, false).background(gui.theme().color(Role.PANEL))
+                .alignItems(AlignItems.CENTER).scroll(false, false).background(Role.PANEL)
                 .children(title, status, save.node());
 
         erase = new Segment<Boolean>(gui).option("Paint", false).option("Erase", true).name(Landmarks.SKETCH_ERASE);
@@ -87,7 +87,7 @@ final class SketchWindow {
         gui.landmark(Landmarks.SKETCH_TRACE, trace.node());
         Node spring = gui.box().width(Length.grow(1f));
         tools = gui.row().width(Length.FILL).padding(Length.rem(0.375f), Ui.MARGIN).gap(Length.rem(0.5f))
-                .alignItems(AlignItems.CENTER).scroll(false, false).background(gui.theme().color(Role.PANEL))
+                .alignItems(AlignItems.CENTER).scroll(false, false).background(Role.PANEL)
                 .children(erase.node(), label("Size"), size.node(), sizeValue, strengthLabel, strength.node(),
                         strengthValue, label("Hardness"), hardness.node(), hardnessValue, snapLabel, snap.node(),
                         snapValue, spring, trace.node())
@@ -101,8 +101,8 @@ final class SketchWindow {
                 .children(backdrop, field).visible(false);
         stage = gui.box().width(Length.FILL).height(Length.grow(1f)).clip(true).scroll(false, false)
                 .alignItems(AlignItems.CENTER).justify(Justify.CENTER).padding(Ui.MARGIN)
-                .background(gui.theme().color(Role.WELL)).children(frame);
-        Node root = gui.root().direction(Direction.COLUMN).background(gui.theme().color(Role.PAGE));
+                .background(Role.WELL).children(frame);
+        Node root = gui.root().direction(Direction.COLUMN).background(Role.PAGE);
         if (window.titleBar() != null) {
             root.children(window.titleBar().node(), bar, tools, stage);
         } else {
@@ -118,12 +118,12 @@ final class SketchWindow {
     }
 
     private Node label(String text) {
-        return gui.text(text).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DIM));
+        return gui.text(text).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(Role.DIM);
     }
 
     private Node value() {
         return gui.text("").wordWrap(false).width(VALUE_W).textSize(Ui.DETAIL_TEXT)
-                .textColor(gui.theme().color(Role.INK));
+                .textColor(Role.INK);
     }
 
     /**
@@ -188,7 +188,7 @@ final class SketchWindow {
 
     /** What the last save said, or what a save is doing; Save offered or not. */
     void status(String text, boolean danger, boolean canSave, String saveLabel) {
-        status.text(text).textColor(gui.theme().color(danger ? Role.DANGER : Role.DIM));
+        status.text(text).textColor(danger ? Role.DANGER : Role.DIM);
         save.label(saveLabel).enabled(canSave);
     }
 

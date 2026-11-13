@@ -65,7 +65,7 @@ final class NewSdgWindow {
             mode.option(m.label(), m);
         }
         mode.name(Landmarks.NEW_MODE);
-        modeSays = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DIM)).width(Length.FILL);
+        modeSays = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(Role.DIM).width(Length.FILL);
         cancel = new Button(gui, "Cancel").kind(Button.Kind.SECONDARY).name(Landmarks.NEW_CANCEL);
         create = new Button(gui, "Create").kind(Button.Kind.PRIMARY).name(Landmarks.NEW_CREATE);
         gui.landmark(Landmarks.NEW_UNIT, unit.node());
@@ -86,7 +86,7 @@ final class NewSdgWindow {
                 .children(row("Size in", unit.node()), row("Width", width.node()), row("Height", height.node()), dpiRow,
                         row("", texels), row("Starts", starts.node()), row("Mode", mode.node()), row("", modeSays),
                         spring, buttons);
-        Node root = gui.root().direction(Direction.COLUMN).background(gui.theme().color(Role.PAGE));
+        Node root = gui.root().direction(Direction.COLUMN).background(Role.PAGE);
         if (window.titleBar() != null) {
             root.children(window.titleBar().node(), body);
         } else {
@@ -97,7 +97,7 @@ final class NewSdgWindow {
     /** A label and its control, side by side. */
     private Node row(String label, Node control) {
         Node name = gui.text(label).wordWrap(false).width(LABEL_W).textSize(Ui.NAME_TEXT)
-                .textColor(gui.theme().color(Role.DIM));
+                .textColor(Role.DIM);
         return gui.row().width(Length.FILL).gap(Length.rem(0.75f)).alignItems(AlignItems.CENTER).scroll(false, false)
                 .children(name, control);
     }
@@ -115,7 +115,7 @@ final class NewSdgWindow {
         dpiRow.visible(sizing.unit() != Unit.PX);
         String why = sizing.why();
         texels.text(why.isEmpty() ? sizing.texelsWide() + " × " + sizing.texelsHigh() + " texels" : why)
-                .textColor(gui.theme().color(why.isEmpty() ? Role.DIM : Role.DANGER));
+                .textColor(why.isEmpty() ? Role.DIM : Role.DANGER);
         create.enabled(why.isEmpty());
         starts.show(inside);
         mode.show(m);

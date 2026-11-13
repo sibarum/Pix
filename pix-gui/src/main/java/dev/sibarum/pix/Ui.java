@@ -147,7 +147,7 @@ final class Ui {
         }
         gui.landmark(Landmarks.PICTURE, layers[0]);
         // Always there, and shown as far as the view shades it (Shade), so it comes and goes gradually.
-        note = gui.text("").textSize(NAME_TEXT).textColor(gui.theme().color(Role.DIM));
+        note = gui.text("").textSize(NAME_TEXT).textColor(Role.DIM);
         gui.landmark(Landmarks.NOTE, note);
 
         previous = new IconButton(gui, Icon.CHEVRON_LEFT, "Previous").size(SIDE, SIDE_ICON).tip("Previous (←)");
@@ -221,7 +221,7 @@ final class Ui {
             cells[i] = gui.box().role("button").width(Length.rem(Strip.CELL_W)).height(Length.rem(Strip.CELL_H))
                     .direction(Direction.COLUMN).justify(Justify.CENTER).alignItems(AlignItems.CENTER)
                     .corner(Length.rem(0.25f)).clip(true).scroll(false, false)
-                    .background(gui.theme().color(Role.WELL)).children(thumbs[i], cellNames[i]);
+                    .background(Role.WELL).children(thumbs[i], cellNames[i]);
             cellStates[i] = InteractionState.NORMAL;
             int at = i;
             gui.hear(cells[i], NodeEvent.STATE, s -> {
@@ -235,7 +235,7 @@ final class Ui {
 
         zoomOut = new IconButton(gui, Icon.MINUS, "Zoom out").size(TOOL, TOOL_ICON).tip("Zoom out");
         zoomIn = new IconButton(gui, Icon.PLUS, "Zoom in").size(TOOL, TOOL_ICON).tip("Zoom in");
-        zoomLevel = gui.text(FIT).wordWrap(false).textSize(DETAIL_TEXT).textColor(gui.theme().color(Role.INK));
+        zoomLevel = gui.text(FIT).wordWrap(false).textSize(DETAIL_TEXT).textColor(Role.INK);
         gui.landmark(Landmarks.ZOOM_OUT, zoomOut.node());
         gui.landmark(Landmarks.ZOOM_IN, zoomIn.node());
         gui.landmark(Landmarks.ZOOM, zoomLevel);
@@ -262,7 +262,7 @@ final class Ui {
         // whole window under the title bar; unfloated, it takes room of its own below the stage (keep). The zoom
         // joins it with the first picture wanted (splash).
         bar = gui.row().width(Length.percent(100f)).alignItems(AlignItems.CENTER).padding(Length.rem(0.5f), MARGIN)
-                .gap(MARGIN).background(gui.theme().color(Role.CHROME)).scroll(false, false)
+                .gap(MARGIN).background(Role.CHROME).scroll(false, false)
                 .children(convertPanel.badge(), words, strip, zoom.visible(false), trace.node().visible(false),
                         layersTool.node().visible(false), detailsTool.node().visible(false), keep.node());
         gui.landmark(Landmarks.BAR, bar);
@@ -276,15 +276,15 @@ final class Ui {
         // the view's asked half as the picture plays (View.draw). Floated in the bar, so it goes where the bar goes,
         // over the stage or below it, and fades with it. Shown only while one plays.
         head = gui.box().width(SEEK_H).height(Length.percent(100f)).corner(Length.rem(0.15f))
-                .background(gui.theme().color(Role.ACCENT)).floatAt(Length.ZERO, Length.ZERO).hitInert(true);
-        seek = gui.row().width(Length.percent(100f)).height(SEEK_H).background(gui.theme().color(Role.DIM))
+                .background(Role.ACCENT).floatAt(Length.ZERO, Length.ZERO).hitInert(true);
+        seek = gui.row().width(Length.percent(100f)).height(SEEK_H).background(Role.DIM)
                 .floatAt(Length.ZERO, Length.ZERO).scroll(false, false).visible(false).children(head);
         bar.append(seek);
         gui.landmark(Landmarks.SEEK, seek);
         gui.landmark(Landmarks.SEEK_HEAD, head);
 
         gui.root().direction(Direction.COLUMN)
-                .background(gui.theme().color(Role.PAGE))
+                .background(Role.PAGE)
                 .children(titleBar.node(), middle, bar);
     }
 
@@ -296,7 +296,7 @@ final class Ui {
     }
 
     private static Node detail(Gui gui, String text) {
-        return gui.text(text).wordWrap(false).textSize(DETAIL_TEXT).textColor(gui.theme().color(Role.DIM));
+        return gui.text(text).wordWrap(false).textSize(DETAIL_TEXT).textColor(Role.DIM);
     }
 
     Node stage() {

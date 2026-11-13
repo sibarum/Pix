@@ -40,6 +40,7 @@ import dev.vexelray.codec.video.Footage;
 import dev.vexelray.framework.api.Draw;
 import dev.vexelray.framework.api.Subscribe;
 import dev.vexelray.framework.core.CloseRequested;
+import dev.vexelray.framework.core.ThemeShifted;
 import dev.vexelray.framework.core.WindowCommand;
 import dev.vexelray.framework.core.WindowFullScreen;
 import dev.vexelray.gui.core.Drawn;
@@ -48,7 +49,6 @@ import dev.vexelray.gui.core.Frame;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.ImageSdg;
 import dev.vexelray.gui.core.style.SdgRoles;
-import dev.vexelray.gui.core.style.Theme;
 import dev.vexelray.fields.sdg.Sdg;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
@@ -947,14 +947,14 @@ final class View {
 
     /**
      * Layer {@code i} alone, as a drawing: its solid paint following the role set for it, or, on the light page, the
-     * colour that role takes in the framework's light theme, since the window's own theme is dark.
+     * colour that role takes in Rasterware's own light look, whichever look the window is in.
      */
     private ImageSdg layerImage(int i) {
         Sdg.Layer l = drawingShown.layers().get(i);
         if (!l.isGroup() && l.paint() instanceof Sdg.Paint.Solid s) {
             String role = roles.get(i);
             Sdg.Paint.Solid paint = lightPage
-                    ? new Sdg.Paint.Solid(SdgRoles.rgba(Theme.LIGHT, role, s.rgba()))
+                    ? new Sdg.Paint.Solid(SdgRoles.rgba(Look.LIGHT, role, s.rgba()))
                     : s.as(role);
             l = new Sdg.Layer(l.name(), l.stencil(), paint, l.opacity());
         }
@@ -1011,7 +1011,20 @@ final class View {
         if (l.isGroup() || !(l.paint() instanceof Sdg.Paint.Solid s)) {
             return null;
         }
-        return SdgRoles.rgba(lightPage ? Theme.LIGHT : gui.theme(), roles.get(i), s.rgba());
+        return SdgRoles.rgba(lightPage ? Look.LIGHT : gui.theme(), roles.get(i), s.rgba());
+    }
+
+    /**
+     * The person chose the other look. Everything else follows by its role, but a layer's swatch is a colour worked out
+     * from the theme in force ({@link #swatch}: the panel shows a layer's colour as a number, and its hex in the card), so
+     * the rows and the card are painted again in the new one.
+     */
+    @Subscribe
+    public void shifted(ThemeShifted look) {
+        if (layering && drawingShown != null) {
+            paintLayers();
+            wake();
+        }
     }
 
     /** Row {@code r} (front first) clicked: that layer picked, or, picked already, none. */

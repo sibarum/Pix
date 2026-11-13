@@ -83,7 +83,7 @@ final class TracePanel {
 
     TracePanel(Gui gui) {
         this.gui = gui;
-        Color dim = gui.theme().color(Role.DIM);
+        Role dim = Role.DIM;
 
         // ---- on the stage
         traced = gui.box().paintCuts(true);
@@ -112,7 +112,7 @@ final class TracePanel {
 
         // ---- the panel
         Node title = gui.text("Trace to SDG").wordWrap(false).textSize(TITLE_TEXT).bold()
-                .textColor(gui.theme().color(Role.INK));
+                .textColor(Role.INK);
         Node hint = gui.text("Drag the line to compare").wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(dim);
         close = new IconButton(gui, Icon.CLOSE, "Close").size(Ui.TOOL, Ui.TOOL_ICON).tip("Close (Esc)");
         Node heading = gui.row().width(Length.FILL).alignItems(AlignItems.START).scroll(false, false)
@@ -127,7 +127,7 @@ final class TracePanel {
         Node palette = gui.row().width(Length.FILL).gap(Length.rem(0.25f)).scroll(false, false);
         for (int i = 0; i < swatches.length; i++) {
             swatches[i] = gui.box().size(SWATCH, SWATCH).corner(Length.rem(0.25f))
-                    .border(Length.dp(1f), gui.theme().color(Role.LINE)).visible(false);
+                    .border(Length.dp(1f), Role.LINE).visible(false);
             palette.append(swatches[i]);
         }
 
@@ -183,16 +183,16 @@ final class TracePanel {
 
     private static Node label(Gui gui, String text) {
         return gui.text(text.toUpperCase(java.util.Locale.ROOT)).wordWrap(false).textSize(LABEL_TEXT).bold()
-                .textColor(gui.theme().color(Role.DIM));
+                .textColor(Role.DIM);
     }
 
     private static Node value(Gui gui, String text) {
-        return gui.text(text).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.INK));
+        return gui.text(text).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(Role.INK);
     }
 
     /** A word on the stage, in a pill so it reads over any picture. */
     private static Node tag(Gui gui, String text) {
-        return gui.text(text).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.INK))
+        return gui.text(text).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(Role.INK)
                 .padding(Length.rem(0.25f), Length.rem(0.5f)).corner(Length.rem(0.75f)).background(Role.CHROME)
                 .hitInert(true).visible(false);
     }

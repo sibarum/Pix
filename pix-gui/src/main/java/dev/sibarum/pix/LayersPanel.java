@@ -10,7 +10,6 @@ import dev.vexelray.gui.core.layout.LayoutEnums.Direction;
 import dev.vexelray.gui.core.layout.LayoutEnums.Justify;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.core.style.Role;
-import dev.vexelray.gui.core.style.Theme;
 import dev.vexelray.gui.icons.Icon;
 import dev.vexelray.gui.widget.Button;
 import dev.vexelray.gui.widget.IconButton;
@@ -62,8 +61,8 @@ final class LayersPanel {
 
     LayersPanel(Gui gui) {
         this.gui = gui;
-        Color dim = gui.theme().color(Role.DIM);
-        Color ink = gui.theme().color(Role.INK);
+        Role dim = Role.DIM;
+        Role ink = Role.INK;
 
         // ---- on the stage: a light page under the layers, and a node a layer, back first
         page = gui.box().width(Length.percent(100f)).height(Length.percent(100f)).hitInert(true)
@@ -84,7 +83,7 @@ final class LayersPanel {
         Node list = gui.column().width(Length.FILL).gap(Length.rem(0.25f)).scroll(false, false);
         for (int i = 0; i < rows.length; i++) {
             rowSwatches[i] = gui.box().size(Length.rem(1.75f), Length.rem(1.75f)).corner(Length.rem(0.375f))
-                    .border(Length.dp(1f), gui.theme().color(Role.LINE)).hitInert(true);
+                    .border(Length.dp(1f), Role.LINE).hitInert(true);
             rowNames[i] = gui.text("").wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(ink).hitInert(true);
             rowTags[i] = gui.text("").wordWrap(false).textSize(TracePanel.LABEL_TEXT).textColor(dim).hitInert(true);
             rows[i] = gui.row().role("button").width(Length.FILL).alignItems(AlignItems.CENTER).gap(Length.rem(0.625f))
@@ -100,7 +99,7 @@ final class LayersPanel {
         list.append(more);
 
         cardSwatch = gui.box().size(Length.rem(2.5f), Length.rem(2.5f)).corner(Length.rem(0.5f))
-                .border(Length.dp(1f), gui.theme().color(Role.LINE));
+                .border(Length.dp(1f), Role.LINE);
         cardName = gui.text("").wordWrap(false).bold().textSize(Ui.NAME_TEXT).textColor(ink);
         cardDetail = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(dim).width(Length.FILL);
         gui.landmark(Landmarks.LAYER_PICKED, cardName);
@@ -141,7 +140,7 @@ final class LayersPanel {
 
     private static Node label(Gui gui, String text) {
         return gui.text(text.toUpperCase(java.util.Locale.ROOT)).wordWrap(false).textSize(TracePanel.LABEL_TEXT)
-                .bold().textColor(gui.theme().color(Role.DIM));
+                .bold().textColor(Role.DIM);
     }
 
     /** The panel, at the stage's right. */
@@ -236,12 +235,15 @@ final class LayersPanel {
         role.show(ROLES.contains(roleNow) ? roleNow : "");
     }
 
-    /** The peel on or off and how far apart; the light page on or off, in its theme's page colour. */
+    /**
+     * The peel on or off and how far apart; the light page on or off, in the light look's page colour. A colour, not a
+     * role, on purpose: it previews that look whichever look the window is in.
+     */
     void tools(boolean peeled, float apartValue, boolean lightPage) {
         peel.on(peeled);
         apart.show(apartValue);
         light.on(lightPage);
-        page.visible(lightPage).background(Theme.LIGHT.color(Role.PAGE));
+        page.visible(lightPage).background(Look.LIGHT.color(Role.PAGE));
     }
 
     /** Save roles, pressable while there are roles to save and none is being saved. */

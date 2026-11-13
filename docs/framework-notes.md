@@ -453,3 +453,15 @@ What it costs: a copy of up to 26 MB, and a dependency on a method marked as som
 do: an immutable pixel handle a job may answer with and any part may read (`Pixels`, admitted by `Shareable` as
 `ImageSdg` is, with its maker's promise not to change it), or a `Feed.read()` for a still that says it is safe from any
 thread.
+
+## FN-38 · A raster cannot be painted in a role, so the splash's scanlines are 24 boxes 🔬
+
+Rasterware gained a light look (2026-11-13), and everything it paints had to follow the person's choice. The splash's
+scanlines were a raster, a `Feed` of one texel column with every third row black at 45%: on the dark page a line all
+but vanishes and shows only across the mark, but on the light page the same black drew a grey band over the whole
+lockup, gaps and all. A `Feed` has no tint a paint could feed (FN-20 asked for `imageTint(Paint)`; it was answered for
+SDG drawings, which take their node's text colour, and not for rasters). What was done: the raster became 24 boxes a dp
+tall, each painted in `Look.SCANLINE`, a role of the app's own (black at 45% dark, the light page's own colour at 45%
+light). What it costs: 24 nodes where one image did, and a layout that draws them a dp to the line rather than a
+filtered texel. What the framework could do: a paint-valued tint for an image (`imageTint(Paint)`, multiplied in the
+shader, resolved in each frame's theme as text colour is), so a mask drawn once in white is lit in whatever the look says.

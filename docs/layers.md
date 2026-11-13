@@ -15,8 +15,9 @@ previewed on a dark page and a light one, and saved into the drawing. The propos
 - **Peel**, a toggle and a slider: the layers fanned apart down and to the right, back to front, each a step further,
   so what lies under what can be seen. Flat: the board's 3D tilt needs a turn and a perspective the canvas has not got
   (FN-28; `Drawn.turn` is already in the TODO).
-- **Light page**, a toggle: the drawing's roles drawn as the framework's light theme would draw them
-  (`Theme.LIGHT`, through `SdgRoles.rgba`), on a light page. Rasterware has no light theme of its own.
+- **Light page**, a toggle: the drawing's roles drawn as Rasterware's own light look draws them (`Look.LIGHT`,
+  through `SdgRoles.rgba`), on that look's page, whichever look the window is in. Before Rasterware had a light look
+  (2026-11-13) this drew them in the framework's `Theme.LIGHT`. In the light look it shows what the window already does.
 - **Save roles**, once a role has changed: writes the drawing in place (compiled if it is `.sdgb`), and Rasterware reads
   it again and shows it.
 - Left out: the board's distance-field view (no way to draw a layer's field as bands, FN-29) and its opacity slider

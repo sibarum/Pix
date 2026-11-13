@@ -30,8 +30,8 @@ final class DetailsPanel {
     private final IconButton close;
 
     DetailsPanel(Gui gui) {
-        Color dim = gui.theme().color(Role.DIM);
-        Color ink = gui.theme().color(Role.INK);
+        Role dim = Role.DIM;
+        Role ink = Role.INK;
         Node title = gui.text("Details").wordWrap(false).textSize(TracePanel.TITLE_TEXT).bold().textColor(ink);
         name = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(dim).width(Length.FILL);
         gui.landmark(Landmarks.DETAILS_NAME, name);
@@ -59,7 +59,7 @@ final class DetailsPanel {
         Node swatchRow = gui.row().width(Length.FILL).gap(Length.rem(0.375f)).scroll(false, false);
         for (int i = 0; i < swatches.length; i++) {
             swatches[i] = gui.box().width(Length.grow(1f)).height(Length.rem(2.5f)).corner(Length.rem(0.375f))
-                    .border(Length.dp(1f), gui.theme().color(Role.LINE)).visible(false);
+                    .border(Length.dp(1f), Role.LINE).visible(false);
             swatchRow.append(swatches[i]);
         }
         palette = gui.column().width(Length.FILL).gap(Length.rem(0.5f)).scroll(false, false)

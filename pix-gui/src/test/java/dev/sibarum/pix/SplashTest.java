@@ -1,6 +1,5 @@
 package dev.sibarum.pix;
 
-import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.ImageSdg;
 import org.junit.jupiter.api.Test;
 
@@ -20,9 +19,9 @@ class SplashTest {
     }
 
     @Test
-    void theScanlinesAreOneRowToADpOfTheLockup() {
-        Feed scan = Splash.scanlines(Splash.SCAN_ROWS);
-        assertEquals(1, scan.width());
-        assertEquals(Splash.SCAN_ROWS, scan.height());
+    void theScanlinesAreOneLineInThreeDpOfTheLockup() {
+        assertEquals(24, Splash.scanlines(Splash.SCAN_ROWS), "a line at the top of every three dp of 72");
+        assertEquals(1, Splash.scanlines(1), "the first row is a line");
+        assertEquals(2, Splash.scanlines(4), "and so is the fourth");
     }
 }

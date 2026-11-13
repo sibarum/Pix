@@ -1,9 +1,6 @@
 package dev.sibarum.pix;
 
-import dev.vexelray.canvas.ImageFilter;
-import dev.vexelray.gui.core.Feed;
 import dev.vexelray.gui.core.Gui;
-import dev.vexelray.vulkan.present.MipChain;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.layout.LayoutEnums.AlignItems;
 import dev.vexelray.gui.core.layout.Length;
@@ -34,9 +31,11 @@ final class Splash {
     static final Length MARK = Length.dp(72f);
     static final Length LOCKUP_GAP = Length.dp(22f);
 
-    /** Scanlines: one dark texel row in three, drawn a dp to the texel over the lockup. */
+    /**
+     * Scanlines: one line a dp tall in three, over the lockup, in {@link Look#SCANLINE}: the page's own darkness on the
+     * dark page and its own lightness on the light one, so a line vanishes on the page and shows only across the mark.
+     */
     static final int SCAN_PERIOD = 3;
-    private static final float SCAN_ALPHA = 0.45f;
 
     /** As many rows as the lockup is dp tall, which is the mark's height. */
     static final int SCAN_ROWS = 72;
@@ -59,14 +58,16 @@ final class Splash {
         if (tape != null) {
             word.sdg(tape);
         }
-        Node scan = gui.box().width(Length.percent(100f)).height(Length.percent(100f)).hitInert(true)
-                .floatAt(Length.ZERO, Length.ZERO)
-                .image(scanlines(SCAN_ROWS)).imageFilter(ImageFilter.SHARP_BILINEAR, 1, SCAN_ROWS);
+        Node scan = gui.column().width(Length.percent(100f)).height(Length.percent(100f)).hitInert(true)
+                .gap(Length.dp(SCAN_PERIOD - 1)).floatAt(Length.ZERO, Length.ZERO).scroll(false, false);
+        for (int i = 0; i < scanlines(SCAN_ROWS); i++) {
+            scan.append(gui.box().width(Length.percent(100f)).height(Length.dp(1f)).background(Look.SCANLINE));
+        }
         Node lockup = gui.row().alignItems(AlignItems.CENTER).gap(LOCKUP_GAP).scroll(false, false)
                 .children(mark, word, scan);
 
         open = new Button(gui, Ui.OPEN_A_PICTURE).kind(Button.Kind.PRIMARY);
-        Node key = gui.text(KEY).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DIM));
+        Node key = gui.text(KEY).wordWrap(false).textSize(Ui.DETAIL_TEXT).textColor(Role.DIM);
         Node ask = gui.row().alignItems(AlignItems.CENTER).gap(Ui.MARGIN).scroll(false, false)
                 .children(open.node(), key);
 
@@ -99,12 +100,11 @@ final class Splash {
         }
     }
 
-    /** {@code rows} texel rows, one in {@link #SCAN_PERIOD} a dark line and the rest clear: the tape's scanlines. */
-    static Feed scanlines(int rows) {
-        byte[] rgba = new byte[rows * 4];
-        for (int y = 0; y < rows; y += SCAN_PERIOD) {
-            rgba[y * 4 + 3] = (byte) Math.round(SCAN_ALPHA * 255f);
-        }
-        return Feed.still(1, rows, true, MipChain.of(rgba, 1, rows));
+    /**
+     * How many lines {@code rows} dp of lockup has, one at the top of every {@link #SCAN_PERIOD}. Lines rather than a
+     * raster, so each is painted in a role and follows the look: a raster keeps the colour it was made in.
+     */
+    static int scanlines(int rows) {
+        return (rows + SCAN_PERIOD - 1) / SCAN_PERIOD;
     }
 }
