@@ -67,12 +67,28 @@ class MotionVideoTest {
 
     @Test
     void oneFrameMakesAVideoAsLongAsItIsShownAndNoPartIsLeft() throws IOException {
-        Path gif = Files.write(dir.resolve("still.gif"), Gif.of(4, 4, new int[]{0, 0xFFFFFF}, -1,
-                List.of(new byte[16]), new int[]{0}));
+        Path gif = Files.write(dir.resolve("still.gif"), Gif.of(16, 16, new int[]{0, 0xFFFFFF}, -1,
+                List.of(new byte[256]), new int[]{0}));
         Written w = new ConvertPicture().run(new WriteCopy(gif, Format.WEBM, 0));
         assertTrue(w.file().isPresent(), w.why());
         try (var files = Files.list(dir)) {
             assertTrue(files.noneMatch(x -> x.getFileName().toString().contains(".part")));
+        }
+    }
+
+    /**
+     * A picture within 8 x 8 cannot be a video: the AV1 encoder corrupts memory on one, so the recorder refuses it. It
+     * is an answer that says why, with nothing left behind, and the process goes on (it used to end it, now and then).
+     */
+    @Test
+    void aPictureTooSmallForAVideoIsRefusedWithWhy() throws IOException {
+        Path gif = Files.write(dir.resolve("tiny.gif"), Gif.of(4, 4, new int[]{0, 0xFFFFFF}, -1,
+                List.of(new byte[16]), new int[]{0}));
+        Written w = new ConvertPicture().run(new WriteCopy(gif, Format.WEBM, 0));
+        assertFalse(w.file().isPresent());
+        assertTrue(w.why().contains("too small"), w.why());
+        try (var files = Files.list(dir)) {
+            assertEquals(1, files.count(), "nothing but the picture");
         }
     }
 
