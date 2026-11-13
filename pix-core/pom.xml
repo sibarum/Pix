@@ -55,6 +55,13 @@
             <artifactId>vexelray-codec-video</artifactId>
             <version>${vexelray-codec.version}</version>
         </dependency>
+        <!-- Convert's Video: a picture that plays written as AV1 in WebM (Recording, ffmpeg-wrapper-record), on a job.
+             The same encoder -gui's title bar records the window with. -->
+        <dependency>
+            <groupId>dev.vexelray.codec</groupId>
+            <artifactId>vexelray-codec-record</artifactId>
+            <version>${vexelray-codec.version}</version>
+        </dependency>
         <!-- Convert.rasterToSdg: a picture traced into an SDG drawing (docs/trace.md), on a job. -->
         <dependency>
             <groupId>dev.vexelray.fields</groupId>

@@ -87,6 +87,9 @@ final class Landmarks {
     static final String CONVERT_PANEL = "convert";
     static final String CONVERT_STATUS = "convert.status";
     static final String CONVERT_SAVE = "convert.save";
+    /** The background a transparent picture made a video is laid on: its hex, which opens the picker. */
+    static final String CONVERT_BACKGROUND = "convert.background";
+    static final String CONVERT_PICKER = "convert.picker";
 
     /**
      * Layers, in the bar's tools for a drawing, and the Layers panel (docs/layers.md): its rows front first

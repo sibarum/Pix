@@ -1,6 +1,8 @@
 package dev.sibarum.pix;
 
+import dev.sibarum.pix.core.Messages;
 import dev.sibarum.pix.core.Messages.Format;
+import dev.vexelray.canvas.Color;
 import dev.vexelray.gui.core.Gui;
 import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
@@ -11,6 +13,7 @@ import dev.vexelray.gui.core.layout.LayoutEnums.Justify;
 import dev.vexelray.gui.core.layout.Length;
 import dev.vexelray.gui.core.style.Role;
 import dev.vexelray.gui.widget.Button;
+import dev.vexelray.gui.widget.ColorPicker;
 
 /**
  * The format badge at the start of the bar, which is a button, and the Convert panel it opens over the stage's bottom
@@ -32,6 +35,11 @@ final class ConvertPanel {
     private final Node panel;
     private final Button[] tiles = new Button[Format.values().length];
     private final Node says;
+    private final Node background;
+    private final Node swatch;
+    private final Button backgroundButton;
+    private final ColorPicker picker;
+    private boolean pickerOpen;
     private final Node status;
     private final Button save;
 
@@ -57,6 +65,21 @@ final class ConvertPanel {
             row.append(tiles[f.ordinal()].node());
         }
         says = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DIM)).width(Length.FILL);
+
+        // What shows through a transparent picture made a video: a swatch and its hex, which opens the picker under it.
+        swatch = gui.box().size(Length.rem(1.25f), Length.rem(1.25f)).corner(Length.rem(0.25f))
+                .border(Length.dp(1f), gui.theme().color(Role.LINE)).scroll(false, false);
+        backgroundButton = new Button(gui, "").kind(Button.Kind.SECONDARY);
+        gui.landmark(Landmarks.CONVERT_BACKGROUND, backgroundButton.node());
+        Node backgroundLabel = gui.text("Background").wordWrap(false).textSize(Ui.DETAIL_TEXT)
+                .textColor(gui.theme().color(Role.INK));
+        background = gui.row().width(Length.FILL).gap(Length.rem(0.5f)).alignItems(AlignItems.CENTER)
+                .scroll(false, false).visible(false)
+                .children(backgroundLabel, gui.row().width(Length.grow(1f)).scroll(false, false), swatch,
+                        backgroundButton.node());
+        picker = new ColorPicker(gui, Color.rgb(Messages.BLACK)).alpha(false).undoable(false).name("convert.background");
+        picker.node().visible(false);
+        gui.landmark(Landmarks.CONVERT_PICKER, picker.node());
         status = gui.text("").textSize(Ui.DETAIL_TEXT).textColor(gui.theme().color(Role.DANGER)).width(Length.FILL)
                 .visible(false);
         gui.landmark(Landmarks.CONVERT_STATUS, status);
@@ -67,7 +90,7 @@ final class ConvertPanel {
                 .background(Role.RAISED).border(Length.dp(1f), gui.theme().color(Role.LINE))
                 .alignItems(AlignItems.START).scroll(false, false)
                 .floatAt(Ui.MARGIN, Length.percent(100f)).visible(false)
-                .children(title, row, says, status, buttons);
+                .children(title, row, says, background, picker.node(), status, buttons);
         gui.landmark(Landmarks.CONVERT_PANEL, panel);
     }
 
@@ -112,6 +135,40 @@ final class ConvertPanel {
     /** Why the last save failed, shown only while there is something to say. */
     void status(String text) {
         status.text(text).visible(!text.isEmpty());
+    }
+
+    /**
+     * The background row: shown or not (a transparent picture made a video), the colour {@code rgb} ({@code 0xRRGGBB})
+     * in its swatch and said as hex, and the picker under it open or not. The picker is told the colour only as it
+     * opens, so a drag in it is never written back over.
+     */
+    void background(boolean shown, int rgb, boolean picking) {
+        background.visible(shown);
+        swatch.background(Color.rgb(rgb));
+        backgroundButton.label(String.format("#%06X", rgb & 0xFFFFFF));
+        boolean open = shown && picking;
+        if (open && !pickerOpen) {
+            picker.show(Color.rgb(rgb));
+        }
+        pickerOpen = open;
+        picker.node().visible(open);
+    }
+
+    /** The colour {@code c} as {@code 0xRRGGBB}. */
+    static int rgb(Color c) {
+        return channel(c.r()) << 16 | channel(c.g()) << 8 | channel(c.b());
+    }
+
+    private static int channel(float v) {
+        return Math.round(Math.max(0f, Math.min(1f, v)) * 255f);
+    }
+
+    String backgroundAddress() {
+        return backgroundButton.address();
+    }
+
+    String pickerAddress() {
+        return picker.address();
     }
 
     String tileAddress(Format f) {

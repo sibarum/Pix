@@ -59,11 +59,12 @@ public final class ReadPicture {
         Motion m = p.motion();
         if (m != null && m.source() == Motion.ANIMATION && m.frames() > 1) {
             // An animation: its first frame in a feed with room for the rest, which the view's player makes there.
-            return new Pictured(r.path(), Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), firstFrame(p))),
+            byte[] first = firstFrame(p);
+            return new Pictured(r.path(), Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), first)),
                     p.frameWidth(), p.frameHeight(), d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)),
                     Optional.empty(), modified(r.path()), Palette.of(d.picture(1)),
                     Optional.of(new Plays(m.stamp().size(), m.stamp().modified(), m.frames(), m.durationMillis(),
-                            m.loops(), false)));
+                            m.loops(), false, transparent(first))));
         }
         return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
                 bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.empty(), modified(r.path()),
@@ -91,7 +92,17 @@ public final class ReadPicture {
         return new Pictured(path, Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), firstFrame(p))),
                 p.frameWidth(), p.frameHeight(), d.identity(), bytes(path), thumb(path, small), Optional.empty(),
                 modified(path), Palette.of(small), Optional.of(new Plays(m.stamp().size(), m.stamp().modified(),
-                m.frames(), m.durationMillis(), 0, true)));
+                m.frames(), m.durationMillis(), 0, true, false)));
+    }
+
+    /** Whether any pixel of {@code rgba} (straight RGBA8) is not wholly opaque. */
+    static boolean transparent(byte[] rgba) {
+        for (int i = 3; i < rgba.length; i += 4) {
+            if (rgba[i] != (byte) 0xFF) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The thumbnail of {@code path} from {@code p}, decoded at {@link #THUMB}. */

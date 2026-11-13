@@ -214,9 +214,12 @@ public final class Messages {
      * That a picture plays, and what its file says about the playing: the codec's {@code Motion} as values, which the
      * view plays it by. {@code size} and {@code modified} are the file's as it was read, so the frames played are of the
      * file the first was. {@code video} is a video, played with its sound and fitted to fill the stage; otherwise an
-     * animated GIF, WebP or APNG, never enlarged. Not a message: what {@link Pictured} carries.
+     * animated GIF, WebP or APNG, never enlarged. {@code transparent} is whether its first frame has a pixel that is not
+     * opaque, so a video made of it asks what goes behind (docs/convert.md); never for a video. Not a message: what
+     * {@link Pictured} carries.
      */
-    public record Plays(long size, long modified, int frames, long durationMillis, int loops, boolean video) {
+    public record Plays(long size, long modified, int frames, long durationMillis, int loops, boolean video,
+                        boolean transparent) {
     }
 
     // ------------------------------------------------------------------ tracing a picture into a drawing (docs/trace.md)
@@ -286,12 +289,14 @@ public final class Messages {
     // ------------------------------------------------------------------ converting a picture (docs/convert.md)
 
     /**
-     * The formats a picture can be written in, as far as the stack can write them: PNG (pure Java, {@code Png.write})
-     * and SDG. What each is called, its extension, and what the Convert panel says it does to a picture.
+     * The formats a picture can be written in, as far as the stack can write them: PNG (pure Java, {@code Png.write}),
+     * SDG, and a picture that plays as a video (AV1 in WebM, the recorder's encoder). What each is called, its
+     * extension, and what the Convert panel says it does to a picture.
      */
     public enum Format {
         PNG("PNG", "png", "Every pixel kept, saved as PNG."),
-        SDG("SDG", "sdg", "Shapes and colours as a drawing, sharp at any size.");
+        SDG("SDG", "sdg", "Shapes and colours as a drawing, sharp at any size."),
+        WEBM("Video", "webm", "Every frame, for as long as it is shown, as an AV1 video. Plays once, silent.");
 
         private final String label;
         private final String extension;
@@ -324,6 +329,9 @@ public final class Messages {
             if (name.endsWith(".sdg") || name.endsWith(".sdgb")) {
                 return Optional.of(SDG);
             }
+            if (name.endsWith(".webm")) {
+                return Optional.of(WEBM);
+            }
             return Optional.empty();
         }
 
@@ -334,16 +342,33 @@ public final class Messages {
         }
     }
 
-    /** The view asks for a picture to be written beside itself in another format: Save in the Convert panel. */
+    /** What goes behind a transparent picture made a video unless the person picks otherwise: black, {@code 0xRRGGBB}. */
+    public static final int BLACK = 0x000000;
+
+    /**
+     * The view asks for a picture to be written beside itself in another format: Save in the Convert panel.
+     * {@code background} ({@code 0xRRGGBB}) is what shows through a transparent pixel in a format that has none (a
+     * video); the formats that keep transparency ignore it.
+     */
     public static final Topic<Convert> CONVERT_TOPIC = Topic.edge(Convert.class);
 
-    public record Convert(Path path, Format to) {
+    public record Convert(Path path, Format to, int background) {
+
+        /** On black, which only a video uses. */
+        public Convert(Path path, Format to) {
+            this(path, to, BLACK);
+        }
     }
 
-    /** The viewer asks {@link ConvertPicture} to write a picture beside itself in another format. */
+    /** The viewer asks {@link ConvertPicture} to write a picture beside itself in another format, as {@link Convert}. */
     public static final Topic<WriteCopy> WRITE_COPY_TOPIC = Topic.edge(WriteCopy.class);
 
-    public record WriteCopy(Path path, Format to) {
+    public record WriteCopy(Path path, Format to, int background) {
+
+        /** On black, which only a video uses. */
+        public WriteCopy(Path path, Format to) {
+            this(path, to, BLACK);
+        }
     }
 
     // ------------------------------------------------------------------ a drawing's layers (docs/layers.md)

@@ -60,6 +60,8 @@ import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.keymap.Keymap;
 import dev.vexelray.gui.core.layout.NodeLayout;
 import dev.vexelray.gui.widget.Button;
+import dev.sibarum.pix.core.Messages;
+import dev.vexelray.gui.widget.ColorPicker;
 import dev.vexelray.gui.widget.Segment;
 import dev.vexelray.gui.widget.Slider;
 import sibarum.atchung.Sender;
@@ -182,6 +184,9 @@ final class View {
     private boolean converting;
     private Format chosen = Format.PNG;
     private final Sender<Convert> convertOut;
+    /** What a transparent picture made a video is laid on, {@code 0xRRGGBB}, kept between pictures; its picker open. */
+    private int background = Messages.BLACK;
+    private boolean picking;
 
     /**
      * The Layers panel: open or not, the drawing it shows, each layer's role as set and as saved, the layer picked (-1
@@ -734,6 +739,9 @@ final class View {
             saveRolesOut.send(new SaveRoles(shown.path(), roles));
         } else if (p.button().equals(ui.convertPanel().saveAddress())) {
             convertSave();
+        } else if (p.button().equals(ui.convertPanel().backgroundAddress()) && converting) {
+            picking = !picking;
+            paintConvert();
         } else if (p.button().equals(ui.traceAddress())) {
             traceKey(new TraceKey());
         } else if (p.button().equals(ui.tracePanel().closeAddress())
@@ -1081,7 +1089,8 @@ final class View {
         closeTrace();
         closeDetails();
         converting = true;
-        chosen = offered(Format.PNG) ? Format.PNG : Format.SDG;
+        picking = false;
+        chosen = offered(Format.WEBM) ? Format.WEBM : offered(Format.PNG) ? Format.PNG : Format.SDG;
         ui.converting(true);
         ui.convertPanel().status("");
         paintConvert();
@@ -1093,6 +1102,17 @@ final class View {
         for (Format f : Format.values()) {
             if (t.button().equals(ui.convertPanel().tileAddress(f)) && offered(f)) {
                 chosen = f;
+                paintConvert();
+            }
+        }
+    }
+
+    /** A colour chosen in the Convert panel's picker: what a transparent picture made a video is laid on. */
+    @Subscribe
+    public void backgroundChosen(ColorPicker.Committed c) {
+        if (c.picker().equals(ui.convertPanel().pickerAddress())) {
+            background = ConvertPanel.rgb(c.color());
+            if (converting) {
                 paintConvert();
             }
         }
@@ -1114,19 +1134,31 @@ final class View {
         saving = true;
         ui.convertPanel().status("");
         paintConvert();
-        convertOut.send(new Convert(shown.path(), chosen));
+        convertOut.send(new Convert(shown.path(), chosen, background));
     }
 
     private void closeConvert() {
         if (converting) {
             converting = false;
+            picking = false;
             ui.converting(false);
         }
     }
 
-    /** Whether the picture shown can be written as {@code f}: anything Rasterware reads as PNG, an SVG or raster as SDG. */
+    /**
+     * Whether the picture shown can be written as {@code f}: anything Rasterware reads as PNG, an SVG or raster as SDG,
+     * an animated GIF, WebP or APNG as a video.
+     */
     private boolean offered(Format f) {
-        return shown != null && shown.feed().isPresent() && !current(f);
+        if (shown == null || shown.feed().isEmpty() || current(f)) {
+            return false;
+        }
+        return f != Format.WEBM || shown.plays().filter(m -> !m.video()).isPresent();
+    }
+
+    /** Whether the chosen format will lay the picture shown on a background: a transparent one made a video. */
+    private boolean onBackground() {
+        return chosen == Format.WEBM && shown.plays().filter(Plays::transparent).isPresent();
     }
 
     /** Whether the picture shown is in {@code f} already. */
@@ -1154,6 +1186,7 @@ final class View {
             save = "Save " + stem(shown.path()) + "." + chosen.extension();
         }
         ui.convertPanel().says(says, save, saving);
+        ui.convertPanel().background(onBackground(), background, picking);
     }
 
     /** What the badge says of {@code p}: SDG for a drawing, its format by its name, nothing for a file that is none. */

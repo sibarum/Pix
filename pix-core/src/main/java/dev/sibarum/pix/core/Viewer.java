@@ -444,7 +444,7 @@ public final class Viewer {
         if (s.saving().isPresent()) {
             return s;
         }
-        out.send(Messages.WRITE_COPY_TOPIC, new WriteCopy(m.path(), m.to()));
+        out.send(Messages.WRITE_COPY_TOPIC, new WriteCopy(m.path(), m.to(), m.background()));
         return s.saving(Optional.of(m.path()));
     }
 
