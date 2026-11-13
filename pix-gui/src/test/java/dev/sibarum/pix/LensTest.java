@@ -190,4 +190,16 @@ class LensTest {
         assertEquals(48f, l.to().zoom(), CLOSE, "2400% of a picture at zoom two; 3200% is past the largest zoom");
         assertTrue(l.to().zoom() <= Lens.MAX_ZOOM);
     }
+
+    /** View → Actual Size: the picture's own pixels, about the stage's centre, from wherever it was. */
+    @Test
+    void actualSizeGoesToThePicturesOwnPixelsAboutTheCentre() {
+        Pose moved = new Pose(1.5f, 100f, -40f);
+        Lens a = new Lens(moved, moved, Lens.AT_REST, 800f, 450f, 1000f, 600f).actual(2f, T);
+        assertEquals(100, a.percent(2f));
+        assertEquals(100f * 2f / 1.5f, a.to().x(), CLOSE, "the point at the stage's centre stays there");
+        assertEquals(Lens.MAX_ZOOM, lens().actual(1000f, T).to().zoom(), CLOSE, "within the zoom's bounds");
+        Lens unmeasured = Lens.fitted(0f, 0f, 0f, 0f);
+        assertEquals(unmeasured, unmeasured.actual(2f, T));
+    }
 }

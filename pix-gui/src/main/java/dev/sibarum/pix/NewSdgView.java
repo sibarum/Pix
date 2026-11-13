@@ -6,7 +6,6 @@ import dev.sibarum.pix.core.Messages.Sizing;
 import dev.sibarum.pix.core.Messages.Unit;
 import dev.vexelray.framework.api.Subscribe;
 import dev.vexelray.framework.core.WindowCommand;
-import dev.vexelray.gui.core.input.Menu;
 import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.keymap.Keymap;
 import dev.vexelray.gui.widget.Button;
@@ -17,8 +16,8 @@ import sibarum.tactroller.api.Key;
 import sibarum.tactroller.api.Modifier;
 
 /**
- * The New menu and the New SDG window's view (docs/sdg-editor.md): the menu and Ctrl+N declared as the window they
- * open, the choices the person makes kept and shown back, and Create told to the {@code Sketcher} as {@link CreateSdg},
+ * The New SDG window's view (docs/sdg-editor.md): Ctrl+N declared as the window it opens (File → New → SDG… is
+ * {@link View}'s, which declares the title bar's menus), the choices the person makes kept and shown back, and Create told to the {@code Sketcher} as {@link CreateSdg},
  * with the editor's window opened in this one's place.
  *
  * <p>It decides nothing about the field: what a size makes, and whether it can be made, is {@link Sizing}'s. A view of
@@ -38,13 +37,12 @@ final class NewSdgView {
     private boolean inside = true;
     private EditMode mode = EditMode.STENCIL;
 
-    NewSdgView(NewSdgWindow page, Ui ui, Keymap keys, Sender<WindowCommand> windows, Sender<CreateSdg> create) {
+    NewSdgView(NewSdgWindow page, Keymap keys, Sender<WindowCommand> windows, Sender<CreateSdg> create) {
         this.page = page;
         this.windows = windows;
         this.create = create;
         WindowCommand open = WindowCommand.show(NewSdgWindow.KEY);
         keys.action(NEW_SDG, "New SDG…", Shortcut.of(Key.N, Modifier.CONTROL)).sends(windows, open);
-        ui.newMenu(Menu.builder().item("SDG…", windows, open).command(NEW_SDG).build());
         page.show(sizing, inside, mode);
     }
 

@@ -2,6 +2,7 @@ package dev.sibarum.pix;
 
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
+import dev.sibarum.pix.Keys.LensKey;
 import dev.sibarum.pix.Keys.PlayKey;
 import dev.sibarum.pix.Keys.ConvertKey;
 import dev.sibarum.pix.Keys.DetailsKey;
@@ -53,6 +54,7 @@ import dev.vexelray.gui.core.Node;
 import dev.vexelray.gui.core.NodeEvent;
 import dev.vexelray.gui.core.input.CursorShape;
 import dev.vexelray.gui.core.input.DragEvent;
+import dev.vexelray.gui.core.input.Menu;
 import dev.vexelray.gui.core.input.PinchEvent;
 import dev.vexelray.gui.core.input.Shortcut;
 import dev.vexelray.gui.keymap.Keymap;
@@ -279,7 +281,8 @@ final class View {
          Sender<Open> open, Sender<WindowCommand> window, Sender<FitKey> fitKey, Sender<ZoomKey> zoomKey,
          Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace,
          Sender<ConvertKey> convertKey, Sender<Convert> convertOut, Sender<LayersKey> layersKey,
-         Sender<SaveRoles> saveRolesOut, Sender<DetailsKey> detailsKey, Sender<PlayKey> playKey) {
+         Sender<SaveRoles> saveRolesOut, Sender<DetailsKey> detailsKey, Sender<PlayKey> playKey,
+         Sender<LensKey> lensKey) {
         this.saveRolesOut = saveRolesOut;
         this.convertOut = convertOut;
         this.gui = gui;
@@ -429,6 +432,29 @@ final class View {
         keys.action("view.zoom-reset", "Controls as they started",
                 Shortcut.of(Key.DIGIT_0, Modifier.CONTROL), Shortcut.of(Key.NUMPAD_0, Modifier.CONTROL))
                 .sends(zoomKey, new ZoomKey(0));
+        keys.action("view.picture-in", "Zoom the picture in", Shortcut.of(Key.EQUAL), Shortcut.of(Key.NUMPAD_ADD))
+                .sends(lensKey, new LensKey(1));
+        keys.action("view.picture-out", "Zoom the picture out", Shortcut.of(Key.MINUS),
+                Shortcut.of(Key.NUMPAD_SUBTRACT)).sends(lensKey, new LensKey(-1));
+        keys.action("view.actual-size", "The picture at its own pixels", Shortcut.of(Key.DIGIT_1))
+                .sends(lensKey, new LensKey(0));
+
+        // The title bar's menus: each line sends what its chord does, and says the chord the person has for it.
+        WindowCommand newSdg = WindowCommand.show(NewSdgWindow.KEY);
+        ui.menus(
+                Menu.builder()
+                        .submenu("New", Menu.builder().item("SDG…", window, newSdg).command(NewSdgView.NEW_SDG).build())
+                        .item("Open…", open, new Open(false)).command("file.open")
+                        .build(),
+                Menu.builder()
+                        .item("Convert to…", convertKey, new ConvertKey()).command("view.convert")
+                        .build(),
+                Menu.builder()
+                        .item("Zoom In", lensKey, new LensKey(1)).command("view.picture-in")
+                        .item("Zoom Out", lensKey, new LensKey(-1)).command("view.picture-out")
+                        .item("Actual Size", lensKey, new LensKey(0)).command("view.actual-size")
+                        .item("Fill Window", fitKey, new FitKey()).command("view.fit")
+                        .build());
 
         gui.hear(ui.details(), NodeEvent.RESIZE, layout -> {
             room = layout.content().w();
@@ -648,6 +674,13 @@ final class View {
     @Subscribe
     public void fitKey(FitKey k) {
         look(state.lens().fit(System.nanoTime()));
+    }
+
+    /** View → Zoom In and Zoom Out, a stop as the bar's + and − go, or Actual Size. */
+    @Subscribe
+    public void lensKey(LensKey k) {
+        long now = System.nanoTime();
+        look(k.direction() == 0 ? state.lens().actual(own(), now) : state.lens().stepped(k.direction(), own(), now));
     }
 
     @Subscribe

@@ -617,11 +617,14 @@ final class Ui {
     }
 
     /**
-     * The title bar's New menu (docs/sdg-editor.md): what Rasterware can make from nothing. Declared by the view that
-     * holds the messages its items send; its name is the one a script opens it by ({@link Landmarks#NEW_MENU}).
+     * The title bar's menus, File, Edit and View, in that order. Declared by the view that holds the messages their
+     * items send; their names are the ones a script opens them by ({@link Landmarks#FILE_MENU} and the others).
      */
-    void newMenu(dev.vexelray.gui.core.input.Menu menu) {
-        titleBar.menu(Landmarks.NEW_MENU, "New", menu);
+    void menus(dev.vexelray.gui.core.input.Menu file, dev.vexelray.gui.core.input.Menu edit,
+               dev.vexelray.gui.core.input.Menu view) {
+        titleBar.menu(Landmarks.FILE_MENU, "File", file);
+        titleBar.menu(Landmarks.EDIT_MENU, "Edit", edit);
+        titleBar.menu(Landmarks.VIEW_MENU, "View", view);
     }
 
     /** Full screen, the title bar gone so the picture has the whole display; or the window again, with it. */

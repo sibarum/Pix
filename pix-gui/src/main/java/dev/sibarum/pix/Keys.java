@@ -20,6 +20,15 @@ final class Keys {
     }
 
     /**
+     * View → Zoom In ({@code 1}), Zoom Out ({@code -1}) and Actual Size ({@code 0}): the picture a stop larger or
+     * smaller, as the bar's + and − make it, or at its own pixels. How it is looked at is the view's, so this never
+     * reaches {@code -core}. Fill Window is {@link FitKey}.
+     */
+    record LensKey(int direction) {
+        static final Topic<LensKey> TOPIC = Topic.edge(LensKey.class);
+    }
+
+    /**
      * Space: a picture that plays paused, or played on. How it is watched is the view's, as how it is looked at is, so
      * this never reaches {@code -core}.
      */

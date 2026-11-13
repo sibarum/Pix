@@ -164,6 +164,20 @@ record Lens(Pose from, Pose to, long since, float fitW, float fitH, float stageW
         return toward(at, held(new Pose(goal, at.x() * k, at.y() * k)), now);
     }
 
+    /**
+     * The picture at its own pixels, one picture pixel to a layout px ({@code own} as {@link #stepped} takes it), about
+     * the stage's centre and held where it can be seen. Within the zoom's bounds; with no size yet, it stays.
+     */
+    Lens actual(float own, long now) {
+        if (!(own > 0f) || !(fitW > 0f) || !(fitH > 0f)) {
+            return this;
+        }
+        float goal = clamp(own, MIN_ZOOM, MAX_ZOOM);
+        Pose at = at(now);
+        float k = goal / at.zoom();
+        return toward(at, held(new Pose(goal, at.x() * k, at.y() * k)), now);
+    }
+
     /** Whether the picture is going to its fitted size: what the bar says instead of a percent. */
     boolean fitted() {
         return Math.abs(to.zoom() - 1f) < STOP_SLACK;
