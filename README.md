@@ -47,9 +47,9 @@ does.
 
 | Input | Does |
 | --- | --- |
-| → / ←, Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends |
+| → / ←, Page Down / Page Up | the next picture in the folder / the one before, stopping at the ends. On a video, → and ← are its own (below) |
 | Home / End | the folder's first picture / its last |
-| ‹ and › at the window's sides | as ← and → |
+| ‹ and › at the window's sides | as Page Up and Page Down |
 | The wheel, or two fingers on the touchpad | zoom in (up, or spread) or out, about the pointer |
 | Drag | move the picture; it stays where at least a quarter of the window still shows it |
 | 0 | fit the picture again, in the middle. Every picture arrives fitted |
@@ -91,7 +91,10 @@ coming back when it moves. Left to right:
 
 An animated file (GIF, WebP, APNG) plays, looping, at its own pace, and so does a video (anything FFmpeg decodes),
 with its sound, filling the window. **Space** pauses either, and the thin track along the top of the bar is clicked to
-seek.
+seek. **,** and **.** pause it a frame back and on (round from the last frame to the first, as it loops), and with
+**Shift** a second. **While a video is shown the arrows are its**: **←** and **→** seek 5 s back and on, playing as it
+was, and Page Up and Page Down still step through the folder; on an animated picture the arrows step the folder as on
+any other. Each is in the key bindings (*A frame on*, *Next picture, or a video 5 s on*, ...).
 
 ### The tools
 
@@ -170,7 +173,7 @@ It builds against no widget, so its tests need no window.
 | `Lens.java` | how the picture is looked at, as a value: the zoom and where it was moved, eased in closed form so a frame is drawn from the value and its moment alone; and the bar's zoom stops. |
 | `Fade.java`, `Toss.java`, `Glide.java`, `Shade.java` | the other motions, each a value in closed form: the controls fading at rest; a step's throw; the filmstrip's glide; one node shown or hidden over 150 ms. |
 | `Fit.java`, `Strip.java`, `Details.java`, `Facts.java` | arithmetic with no `Gui` in it: where a picture sits; how many thumbnails fit and which is which; what the bar's details say and which a narrow bar keeps; what the Details panel says. |
-| `Keys.java` | the chords that ask something of the view itself: 0, Space, Esc, the tools' keys, and the controls' size. |
+| `Keys.java` | the chords that ask something of the view itself: 0, Space, `,` and `.`, the arrows (a video's or the folder's), Esc, the tools' keys, and the controls' size. |
 | `Pix.java`, `PixApp.java` | the entry point and constants; the application, which names its starters, `AutomationStarter` among them. |
 | `Look.java`, `Landmarks.java` | the vocabularies: colour, and the names an automation script may depend on. |
 

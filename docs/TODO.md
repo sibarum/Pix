@@ -20,6 +20,13 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       Keep shown remembered between runs comes with Rasterware's settings.
 - [ ] **Sharp at rest, and the scaling setting**: the eight filters moving and at rest, kept in settings.
 - [ ] **The backdrop** behind a transparent picture (Auto, Dark, Light, Checker, ...).
+- [ ] **Pictures that play, the rest.** Space, the seek track, `,` and `.` (Shift: a second) and a video's ← and → are
+      in. `Player` already has the rest (`hold`, `volume`, `muted`, `Motion.glimpses`), so these are not waiting on the
+      stack: held while the window is not focused; the volume and mute, ↑ and ↓ and M, kept between runs (with
+      Rasterware's settings); the seek preview under the pointer; a file that asks to play only so many times
+      (`Plays.loops`) stopping after them, its end heard as a `Timer` message. A held arrow on a large video goes on from
+      a guess of where it was sent (FN-39). And the native build staging FFmpeg beside the executable for video (Later,
+      *Packaging*).
 
 ## Trace, the rest (docs/trace.md)
 
@@ -45,12 +52,6 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 
 ## Waiting on the stack
 
-- [ ] **Pictures that play, the rest.** Animated pictures and videos play, looping, a video with its sound; Space
-      pauses, and the seek track along the bar's top is clicked to seek (the view's own, as the lens is). Still to come
-      from 0.1: `,` and `.` stepping a frame, and on a video the arrows seeking; the seek preview under the pointer
-      (`Motion.glimpses`); the volume and mute, kept between runs; held while the window is not focused; a file that asks
-      to play only so many times (`Plays.loops`) stopping after them, its end heard as a `Timer` message. And the native
-      build staging FFmpeg beside the executable for video (Later, *Packaging*).
 - [ ] **Recording from the camera** (`vexelray-codec-record`, still in `pix-gui`'s pom from 0.1's).
 - [ ] **Corners** in the Trace panel, fit sharp or as traced: the tracer has no corner fitting (FN-22). A prototype,
   `CornerTrace`, works for shapes and logos but not yet for small text, and nothing in the app uses it (FN-22 has the

@@ -36,6 +36,22 @@ final class Keys {
         static final Topic<PlayKey> TOPIC = Topic.edge(PlayKey.class);
     }
 
+    /**
+     * {@code ,} and {@code .}: a picture that plays paused, a frame back ({@code -1}) or on ({@code 1}); with Shift
+     * ({@code seconds}), a second back or on instead. Nothing on a still picture.
+     */
+    record FrameKey(int direction, boolean seconds) {
+        static final Topic<FrameKey> TOPIC = Topic.edge(FrameKey.class);
+    }
+
+    /**
+     * ← and →: on a video, 5 s back ({@code -1}) or on ({@code 1}); on anything else, the previous or next picture,
+     * as PgUp and PgDn always are. Which, only the view knows.
+     */
+    record ArrowKey(int direction) {
+        static final Topic<ArrowKey> TOPIC = Topic.edge(ArrowKey.class);
+    }
+
     /** Esc: out of full screen, or, in the window, closing Rasterware. Which, only the view knows. */
     record EscKey() {
         static final Topic<EscKey> TOPIC = Topic.edge(EscKey.class);

@@ -1,7 +1,9 @@
 package dev.sibarum.pix;
 
+import dev.sibarum.pix.Keys.ArrowKey;
 import dev.sibarum.pix.Keys.EscKey;
 import dev.sibarum.pix.Keys.FitKey;
+import dev.sibarum.pix.Keys.FrameKey;
 import dev.sibarum.pix.Keys.LensKey;
 import dev.sibarum.pix.Keys.PlayKey;
 import dev.sibarum.pix.Keys.ConvertKey;
@@ -243,6 +245,15 @@ final class View {
 
     /** The picture shown; null before the first. */
     private Pictured shown;
+    /** How far Shift with , or . goes, and an arrow on a video, in ms: 0.1's. */
+    private static final long SECOND_MS = 1_000L;
+    private static final long SKIP_MS = 5_000L;
+    /** How long a skip's place is gone on from by the next, rather than the feed's time (FN-39). */
+    private static final long AIM_NANOS = 500_000_000L;
+    /** Where the last skip sent the picture playing, in ms into a pass, or -1; and when, by {@code System.nanoTime}. */
+    private long aimed = -1;
+    private long aimedNanos;
+
     /** Playing the picture shown into its feed, when it is one that plays; null otherwise. */
     private Player player;
     /** The seek track's left edge and width in client px, and the playhead's width: measured. */
@@ -287,7 +298,7 @@ final class View {
          Sender<EscKey> escKey, Sender<TraceKey> traceKey, Sender<Tracing> tracingOut, Sender<SaveTrace> saveTrace,
          Sender<ConvertKey> convertKey, Sender<Convert> convertOut, Sender<LayersKey> layersKey,
          Sender<SaveRoles> saveRolesOut, Sender<DetailsKey> detailsKey, Sender<PlayKey> playKey,
-         Sender<LensKey> lensKey) {
+         Sender<LensKey> lensKey, Sender<FrameKey> frameKey, Sender<ArrowKey> arrowKey) {
         this.saveRolesOut = saveRolesOut;
         this.convertOut = convertOut;
         this.gui = gui;
@@ -386,10 +397,14 @@ final class View {
         });
         // Every window-wide command is the keymap's, so Key bindings… lists it and the person can change its chords.
         // The id is what their changes are stored under, so it is the part to keep stable.
-        keys.action("view.next", "Next picture", Shortcut.of(Key.RIGHT), Shortcut.of(Key.PAGE_DOWN))
-                .sends(step, new Step(1));
-        keys.action("view.previous", "Previous picture", Shortcut.of(Key.LEFT), Shortcut.of(Key.PAGE_UP))
-                .sends(step, new Step(-1));
+        // The arrows are a video's while one is shown (5 s on and back) and step the folder otherwise; PgUp and PgDn
+        // always step it. Next and Previous keep their ids, so a chord the person gave them stays theirs.
+        keys.action("view.next", "Next picture", Shortcut.of(Key.PAGE_DOWN)).sends(step, new Step(1));
+        keys.action("view.previous", "Previous picture", Shortcut.of(Key.PAGE_UP)).sends(step, new Step(-1));
+        keys.action("view.forward", "Next picture, or a video 5 s on", Shortcut.of(Key.RIGHT))
+                .sends(arrowKey, new ArrowKey(1));
+        keys.action("view.back", "Previous picture, or a video 5 s back", Shortcut.of(Key.LEFT))
+                .sends(arrowKey, new ArrowKey(-1));
         keys.action("view.first", "First picture", Shortcut.of(Key.HOME)).sends(edge, new Edge(false));
         keys.action("view.last", "Last picture", Shortcut.of(Key.END)).sends(edge, new Edge(true));
         keys.action("file.open", "Open a picture", Shortcut.of(Key.O, Modifier.CONTROL)).sends(open, new Open(false));
@@ -404,6 +419,12 @@ final class View {
                 c -> window.send(WindowCommand.toggleFullScreen(CloseRequested.MAIN)));
         keys.action("view.fit", "Fit the picture", Shortcut.of(Key.DIGIT_0)).sends(fitKey, new FitKey());
         keys.action("view.play", "Pause, or play on", Shortcut.of(Key.SPACE)).sends(playKey, new PlayKey());
+        keys.action("view.frame-back", "A frame back", Shortcut.of(Key.COMMA)).sends(frameKey, new FrameKey(-1, false));
+        keys.action("view.frame-on", "A frame on", Shortcut.of(Key.PERIOD)).sends(frameKey, new FrameKey(1, false));
+        keys.action("view.second-back", "A second back", Shortcut.of(Key.COMMA, Modifier.SHIFT))
+                .sends(frameKey, new FrameKey(-1, true));
+        keys.action("view.second-on", "A second on", Shortcut.of(Key.PERIOD, Modifier.SHIFT))
+                .sends(frameKey, new FrameKey(1, true));
         gui.hear(ui.seek(), NodeEvent.RESIZE, layout -> {
             if (measured(layout)) {
                 seekX = layout.rect().x();
@@ -1477,6 +1498,7 @@ final class View {
         if (player != null && player.feed() == feed) {
             return;
         }
+        aimed = -1;
         if (player != null) {
             player.close();
             player = null;
@@ -1515,6 +1537,7 @@ final class View {
         if (player == null || !(seekW > 0f)) {
             return;
         }
+        aimed = -1;
         float through = Math.clamp((x - seekX) / seekW, 0f, 1f);
         player.seek(Math.round(through * player.duration()));
     }
@@ -1525,6 +1548,47 @@ final class View {
         if (player != null) {
             player.toggle();
         }
+    }
+
+    /**
+     * , and . (with Shift, a second): the picture playing paused a frame back or on, round from the last to the first
+     * and back, as it loops. A second is a seek from where it is, paused too, so it stays where it was sent.
+     */
+    @Subscribe
+    public void frameKey(FrameKey k) {
+        if (player == null) {
+            return;
+        }
+        if (k.seconds()) {
+            player.pause();
+            skip(k.direction() * SECOND_MS);
+        } else {
+            aimed = -1;
+            player.step(k.direction());
+        }
+    }
+
+    /** ← and →: a video shown 5 s back or on, playing as it was; anything else, the previous or next picture. */
+    @Subscribe
+    public void arrowKey(ArrowKey k) {
+        if (player != null && player.motion().source() != Motion.ANIMATION) {
+            skip(k.direction() * SKIP_MS);
+        } else {
+            step.send(new Step(k.direction()));
+        }
+    }
+
+    /**
+     * The picture playing sent {@code ms} on from where it is, or back. Where it is is the feed's time, which stays where
+     * it was until a seek's first frame lands, so a key pressed again before that (a held arrow on a large video) goes on
+     * from where the last one sent it rather than from the old place, if it came within {@link #AIM_NANOS} (FN-39).
+     */
+    private void skip(long ms) {
+        long now = System.nanoTime();
+        long from = aimed >= 0 && now - aimedNanos < AIM_NANOS ? aimed : player.position();
+        aimed = Math.clamp(from + ms, 0L, player.duration());
+        aimedNanos = now;
+        player.seek(aimed);
     }
 
     /** Where {@code p} sits on the stage: whole, at its aspect; never larger than its pixels, unless it is a video. */

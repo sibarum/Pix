@@ -465,3 +465,16 @@ tall, each painted in `Look.SCANLINE`, a role of the app's own (black at 45% dar
 light). What it costs: 24 nodes where one image did, and a layout that draws them a dp to the line rather than a
 filtered texel. What the framework could do: a paint-valued tint for an image (`imageTint(Paint)`, multiplied in the
 shader, resolved in each frame's theme as text colour is), so a mask drawn once in white is lit in whatever the look says.
+
+## FN-39 · A player cannot be sent so far on from where it is, and does not say where a seek is going 🔬
+
+The arrows seek a video 5 s back and on, and Shift with `,` or `.` a second (2026-11-13), each relative to where it is.
+`Player` offers `seek(ms)`, absolute, and `position()`, which is the feed's time: that stays where it was until the
+seek's first frame is made, which for a 1080p MSMPEG4 file is several hundred ms. So two presses inside that each went
+on from the old place, and the second was lost: twelve → presses sent quickly put Big Buck Bunny 41 s in, not 60. A held
+arrow, auto-repeating, would barely move. What was done: `View.skip` remembers where it last sent the picture and when,
+and a press within 500 ms goes on from there instead of from `position()`; a click on the track, a frame step, or
+another picture playing forgets it. What it costs: a guess at how long a seek takes, and a few fields of the view's
+that only shadow the player's own `seekTo`. What the framework could do: `Player.seekBy(ms)`, relative to a seek still
+waiting if there is one, under the lock that already holds `seekTo`; or `position()` answering a waiting seek's target.
+Every player with a skip key (0.1's, the video-player demo's) writes this.
