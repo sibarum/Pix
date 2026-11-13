@@ -64,3 +64,34 @@ Built as proposed, with these departures:
 
 Seen with `ottermate`: `dusk.svg` → SDG made `dusk.sdg`, 5 layers, shown; that drawing → PNG made `dusk.png`, 480 × 320,
 shown; `shot.png`'s SDG tile opened Trace with 6 layers. FN-27: after Save closed the panel, Previous drew a focus ring.
+
+## Video: a picture that plays, as AV1 in WebM (2026-11-12)
+
+One destination for anything that moves, and the one the stack can write: AV1 in WebM, through the recorder's encoder
+(`Recording`, ffmpeg-wrapper-record). WebP was the other candidate and has no encoder (FN-26). Sound is ignored both
+ways: a picture has none, and a video made a video is written without its own.
+
+- **The tile**: *Video*, offered for an animated GIF, WebP or APNG, and chosen first when the panel opens on one. A
+  video's own `.webm` is its current format. Video sources are slice 2 (below).
+- **What is written**: every frame at the picture's own size, each for as long as Rasterware shows it (`Movie.timed`,
+  so a 0 ms GIF delay is 100 ms), the last held to its end. It plays once: a video cannot ask to loop.
+- **Transparency**: a video has none, so a picture whose first frame has a pixel not wholly opaque
+  (`Plays.transparent`, found by `ReadPicture` from the frame it already decodes) shows a *Background* row: a swatch
+  and its hex, black by default, whose button opens the stack's `ColorPicker` (alpha hidden) inside the panel. Each
+  frame is laid over that colour as a browser draws it. The colour is kept between pictures for the run.
+- **Messages**: `Format.WEBM`; `Convert` and `WriteCopy` carry `background` (`0xRRGGBB`, ignored by PNG and SDG);
+  `Plays` carries `transparent`. `ConvertPicture` hands a video to `MotionVideo`, which reads frames one at a time
+  (imagelib's `Animation`), so only one canvas is held. The part file is `<name>.part.webm`, since the encoder picks its
+  container by the name, and it is deleted when the write fails.
+
+Seen with `ottermate` on a 160 × 96, 12-frame GIF with a transparent background, every default untouched: the panel
+opened on *Video* with *Background #000000*, Save wrote `ball.webm` and showed it, playing. Not yet seen: the picker
+opened and a colour chosen, because the stack installed at the time was out of step with itself (a click on the
+Background button stopped the app with `NoClassDefFoundError: DragEvent$DragEnded`, from a `vexelray-gui` built ahead
+of the `tactroller` installed). Save's label says `ball.webm` when that name is taken and `ball (2).webm` is what is
+written, as it does for PNG and SDG.
+
+**Slice 2, video sources**: frames read one after another with no clock, which codec-video does not offer (`Clip`'s
+decoder is package-private; `Reel` drops late frames; `Footage` is for playing), and a progress and Cancel, which a
+`@Job` cannot give: it answers once and cannot be cancelled. Animated pictures take well under a second, so slice 1
+needs neither.

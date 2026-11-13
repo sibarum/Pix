@@ -56,6 +56,10 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
   `CornerTrace`, works for shapes and logos but not yet for small text, and nothing in the app uses it (FN-22 has the
   numbers).
 - [ ] **JPEG, WebP, GIF and SVG** in the Convert panel, with the board's knobs: the stack has no encoder for them (FN-26).
+- [ ] **Video, the rest** (docs/convert.md, *Video*): the Background picker seen live with a colour chosen (blocked by a
+      stack out of step with itself); video sources to `.webm`, which want a clock-free frame reader in codec-video and
+      a job that can say how far it is and be cancelled; `MotionVideoTest` crashing surefire's JVM (0xC0000374) while
+      the same encoder never does standalone.
 - [ ] **Layers, the rest**: the 3D peel (FN-28), the distance-field view (FN-29), a layer's opacity, and roles inside
       a group (only top-level solid layers take one).
 
