@@ -34,6 +34,7 @@ import dev.sibarum.pix.core.Messages.SaveRoles;
 import dev.sibarum.pix.core.Messages.WriteRoles;
 import dev.sibarum.pix.core.Messages.SdgWritten;
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.video.Videos;
 import dev.vexelray.framework.api.Component;
 import dev.vexelray.framework.api.Hears;
 import dev.vexelray.framework.api.Publishes;
@@ -121,8 +122,15 @@ public final class Viewer {
     record Picking(long id, boolean folder) {
     }
 
-    /** What the open dialog offers: the files a folder is listed for. */
-    static final List<PickFile.Filter> PICTURES = List.of(new PickFile.Filter("Pictures", Pictures.extensions()));
+    /**
+     * What the open dialog offers: the files a folder is listed for, pictures and videos together first (what it opens
+     * on), then each alone.
+     */
+    static final List<PickFile.Filter> PICTURES = List.of(
+            new PickFile.Filter("Pictures and videos",
+                    java.util.stream.Stream.concat(Pictures.extensions().stream(), Videos.extensions().stream()).toList()),
+            new PickFile.Filter("Pictures", Pictures.extensions()),
+            new PickFile.Filter("Videos", Videos.extensions()));
 
     /**
      * The Trace panel's part of the state (docs/trace.md): the trace the person wants now, none with the panel closed;

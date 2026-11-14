@@ -397,6 +397,12 @@ class ViewerTest {
     }
 
     @Test
+    void theOpenDialogOpensOnPicturesAndVideosTogether() {
+        List<String> first = Viewer.PICTURES.getFirst().extensions();
+        assertTrue(first.contains("png") && first.contains("mkv") && first.contains("mp4"), first.toString());
+    }
+
+    @Test
     void openAsksForAPictureOrAFolderStartingInTheFolderOpenAndOneAtATime() {
         startedOn(A);
         tell(Messages.OPEN_TOPIC, new Open(false));

@@ -215,6 +215,26 @@
                                 </target>
                             </configuration>
                         </execution>
+                        <!-- FFmpeg's decoding libraries (see ffmpeg-beside) laid out flat in target/ffmpeg, and zipped
+                             for installer.json, which unpacks the zip into the install's own ffmpeg folder. Fixed
+                             times, as below: this one is 55 MB. -->
+                        <execution>
+                            <id>ffmpeg-zip</id>
+                            <phase>prepare-package</phase>
+                            <goals><goal>run</goal></goals>
+                            <configuration>
+                                <target>
+                                    <delete dir="${project.build.directory}/ffmpeg"/>
+                                    <copy todir="${project.build.directory}/ffmpeg" flatten="true">
+                                        <fileset dir="${project.build.directory}/ffmpeg-wrapper/natives/windows-x86_64"/>
+                                    </copy>
+                                    <delete file="${project.build.directory}/pix-ffmpeg-windows-x86_64.zip"/>
+                                    <zip destfile="${project.build.directory}/pix-ffmpeg-windows-x86_64.zip"
+                                         basedir="${project.build.directory}/ffmpeg"
+                                         modificationtime="2026-01-01T00:00:00Z"/>
+                                </target>
+                            </configuration>
+                        </execution>
                         <!-- The recording encoder (see ffmpeg-record-beside) laid out flat in target/ffmpeg-record, and
                              zipped for installer.json, which unpacks it into the install's own ffmpeg-record folder.
                              Fixed times, so the same libraries make the same zip and an installer that already has
@@ -249,6 +269,23 @@
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>3.7.0</version>
                     <executions>
+                        <!-- Video playback beside the executable: FFmpeg is a set of shared libraries, not a resource
+                             of the image, and its loader looks for them in an ffmpeg folder beside the executable.
+                             Taken out of ffmpeg-wrapper-windows's jar into target/ffmpeg-wrapper, then flattened into
+                             target/ffmpeg by ffmpeg-zip. Without it a native build plays no video at all ("the video
+                             decoder is unavailable" in the log). -->
+                        <execution>
+                            <id>ffmpeg-beside</id>
+                            <phase>prepare-package</phase>
+                            <goals><goal>unpack-dependencies</goal></goals>
+                            <configuration>
+                                <includeArtifactIds>ffmpeg-wrapper-windows</includeArtifactIds>
+                                <includes>natives/windows-x86_64/**</includes>
+                                <outputDirectory>${project.build.directory}/ffmpeg-wrapper</outputDirectory>
+                                <overWriteReleases>true</overWriteReleases>
+                                <overWriteSnapshots>true</overWriteSnapshots>
+                            </configuration>
+                        </execution>
                         <execution>
                             <id>ffmpeg-record-beside</id>
                             <phase>prepare-package</phase>

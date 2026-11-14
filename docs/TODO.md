@@ -25,8 +25,7 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       stack: held while the window is not focused; the volume and mute, ↑ and ↓ and M, kept between runs (with
       Rasterware's settings); the seek preview under the pointer; a file that asks to play only so many times
       (`Plays.loops`) stopping after them, its end heard as a `Timer` message. A held arrow on a large video goes on from
-      a guess of where it was sent (FN-39). And the native build staging FFmpeg beside the executable for video (Later,
-      *Packaging*).
+      a guess of where it was sent (FN-39).
 
 ## Trace, the rest (docs/trace.md)
 
@@ -70,7 +69,8 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
   (up to 1024 px, with its mips), which is only drawn in the filmstrip's thumbnail. The feed could be the thumbnail's
   alone, once `View` stops reading "no feed" as "not a picture".
 - [ ] Packaging, as 0.1 had it: `installer.json` (carried over, still at 0.1.2) with its `appId` checked against the
-      build's, the file associations, the native builds staging FFmpeg and the recording encoder, the Linux build.
+      build's, the file associations, the Linux build. The Windows native builds already stage FFmpeg and the
+      recording encoder beside the executable, and zip each for the installer.
 - [ ] **A held picture can go stale.** The viewer holds pictures by path, so a file changed on disk since it was read
       shows as it was until it is let go. Rasterware's own writes over a file (Save roles) read it again (`readAgain`);
       a change made by another program does not. 0.1 kept by the file's `Stamp`; the read could answer with one, and a step
