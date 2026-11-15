@@ -91,16 +91,17 @@ public final class ReadPicture {
     }
 
     /**
-     * A video: its size from its first frame at most {@link #SIDE}, and an empty feed of that size on the device, whose
-     * frames the view's player makes with the video's sound. The player writes the decoder's planes and the frame that
-     * shows one converts it on the GPU, which it can do only for a feed nothing was written into first (vexelray-gui's
-     * docs/plans/device-feed.md B). The first frame, as a still, is shown until the player's own first frame lands.
-     * Its poster, a tenth of the way in, is its thumbnail: two opens of the file, since
-     * the first frame that plays and the frame that stands for the video are not the same. A video that does not say how
-     * long it is or how fast it plays is shown by its first frame, still.
+     * A video: its own size, from its first frame, and an empty feed of that size on the device, whose frames the
+     * view's player makes with the video's sound. At its own size, not {@link #SIDE}, because then the frames are not
+     * scaled, and the player has the decoder decode each straight into memory the feed lends, which the GPU copies it
+     * from and converts (vexelray-gui's docs/plans/device-feed.md B): the CPU copies no byte of a frame, and the GPU's
+     * mips do the shrinking. The first frame, as a still, is shown until the player's own first frame lands. Its
+     * poster, a tenth of the way in, is its thumbnail: two opens of the file, since the first frame that plays and the
+     * frame that stands for the video are not the same. A video that does not say how long it is or how fast it plays
+     * is shown by its first frame, still, at most {@link #SIDE}.
      */
     Pictured video(Path path) {
-        Decoded d = Videos.poster(path, SIDE, true);
+        Decoded d = Videos.poster(path, 0, true);
         Picture p = d.picture();
         if (p == null) {
             return new Pictured(path, Optional.empty(), 0, 0, d.identity(), bytes(path), none(path));
@@ -108,8 +109,10 @@ public final class ReadPicture {
         Picture small = Videos.poster(path, THUMB).picture();
         Motion m = p.motion();
         if (m == null) {
-            return new Pictured(path, Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(), bytes(path),
-                    thumb(path, small), Optional.empty(), modified(path), Palette.of(small));
+            Picture still = Math.max(p.frameWidth(), p.frameHeight()) > SIDE ? Videos.poster(path, SIDE).picture() : p;
+            still = still == null ? p : still;
+            return new Pictured(path, Optional.of(feed(still)), still.frameWidth(), still.frameHeight(), d.identity(),
+                    bytes(path), thumb(path, small), Optional.empty(), modified(path), Palette.of(small));
         }
         return new Pictured(path, Optional.of(Player.feed(feeds, p.frameWidth(), p.frameHeight())),
                 p.frameWidth(), p.frameHeight(), d.identity(), bytes(path), thumb(path, small), Optional.empty(),

@@ -189,9 +189,11 @@ the disk, waits or reaches outside itself does not compile. Every read and write
 lane, so a slow disk is a slow reply and never a frozen window. **A picture reaches the screen as a feed**: `ReadPicture`
 decodes it, builds its mip chain and writes it into a one-slot `Feed`, and answers with the feed; the view names it on
 a node, and the renderer uploads it the first time it is drawn. A picture that plays has a device feed of four slots,
-made empty from the framework's `Feeds` (vexelray-gui's `docs/plans/device-feed.md`): the codec's `Player` writes its
-frames, the first too, into the slots' staging on a thread of its own and keeps the feed's time, the frame that first
-shows a slot lands it on the GPU (a video's YUV planes converted there, and the mips made there), and the view's
+made empty from the framework's `Feeds` (vexelray-gui's `docs/plans/device-feed.md`): the codec's `Player` makes its
+frames, the first too, on a thread of its own and keeps the feed's time, and the frame that first shows a slot lands
+it on the GPU (a video's YUV planes converted there, and the mips made there). A video's feed is its own size, so its
+frames are not scaled: FFmpeg decodes each straight into memory the feed lends, the player hands the slot over by a
+reference to the frame, and the GPU copies it from where it was decoded, so the CPU copies no byte of it, and the view's
 `@Draw` shows the frame due. Until the first one lands, the layer shows `Pictured.poster`, a still of the first frame
 the job decoded anyway, scaled down to at most `ReadPicture.POSTER` (1280 px) on its longer side and stretched to fill,
 under the frames node, so the stage is never empty while a video opens. The pixels are written once and never cross the bus. **Jobs are in no order at all**, which is why the
