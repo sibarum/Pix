@@ -12,6 +12,7 @@ import dev.vexelray.codec.image.gui.Player;
 import dev.vexelray.codec.video.Videos;
 import dev.vexelray.framework.api.Job;
 import dev.vexelray.gui.core.Feed;
+import dev.vexelray.gui.core.Feeds;
 import dev.vexelray.vulkan.present.MipChain;
 
 import java.io.IOException;
@@ -22,7 +23,8 @@ import java.util.Optional;
 /**
  * Read a picture and put it in a feed, on the offload lane: the decode, the mip chain and the copy into the feed's slot
  * all happen here, and the answer is the feed, a handle. The pixels stay where they were written, and the renderer
- * of whichever window shows the feed uploads them (vexelray-gui's frame-contract.md D).
+ * of whichever window shows the feed uploads them (vexelray-gui's frame-contract.md D). A picture that plays is the
+ * exception: its feed is on the device and empty, and the view's player fills it (device-feed.md).
  *
  * <p>Decoded at most {@link #SIDE} px on its longer side, which is what is drawn while the picture moves, and at most
  * {@link #THUMB} for the filmstrip, both from the one decode, which is the expensive part. A file that is not a picture,
@@ -36,6 +38,14 @@ public final class ReadPicture {
 
     /** The longest side of a thumbnail: a filmstrip cell a few em tall, at twice the density, with room to spare. */
     static final int THUMB = 192;
+
+    /** Where a picture that plays gets its feed: on the window's device, so its frames land there with no upload. */
+    private final Feeds feeds;
+
+    /** Built once the window's device exists ({@code Shell.feeds()}, from the window's phase), as no job runs before. */
+    public ReadPicture(Feeds feeds) {
+        this.feeds = feeds;
+    }
 
     public Pictured run(Read r) {
         if (Videos.named(r.path())) {
@@ -58,9 +68,9 @@ public final class ReadPicture {
         }
         Motion m = p.motion();
         if (m != null && m.source() == Motion.ANIMATION && m.frames() > 1) {
-            // An animation: its first frame in a feed with room for the rest, which the view's player makes there.
+            // An animation: an empty feed on the device, whose frames, the first among them, the view's player makes.
             byte[] first = firstFrame(p);
-            return new Pictured(r.path(), Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), first)),
+            return new Pictured(r.path(), Optional.of(Player.feed(feeds, p.frameWidth(), p.frameHeight())),
                     p.frameWidth(), p.frameHeight(), d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)),
                     Optional.empty(), modified(r.path()), Palette.of(d.picture(1)),
                     Optional.of(new Plays(m.stamp().size(), m.stamp().modified(), m.frames(), m.durationMillis(),
@@ -72,12 +82,14 @@ public final class ReadPicture {
     }
 
     /**
-     * A video: its first frame at most {@link #SIDE}, in a feed with room for the rest, which the view's player makes
-     * there with the video's sound; and its poster, a tenth of the way in, as its thumbnail. Two opens of the file, since
+     * A video: its size from its first frame at most {@link #SIDE}, and an empty feed of that size on the device, whose
+     * frames the view's player makes with the video's sound. The player writes the decoder's planes and the frame that
+     * shows one converts it on the GPU, which it can do only for a feed nothing was written into first (vexelray-gui's
+     * docs/plans/device-feed.md B). Its poster, a tenth of the way in, is its thumbnail: two opens of the file, since
      * the first frame that plays and the frame that stands for the video are not the same. A video that does not say how
      * long it is or how fast it plays is shown by its first frame, still.
      */
-    static Pictured video(Path path) {
+    Pictured video(Path path) {
         Decoded d = Videos.poster(path, SIDE, true);
         Picture p = d.picture();
         if (p == null) {
@@ -89,7 +101,7 @@ public final class ReadPicture {
             return new Pictured(path, Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(), bytes(path),
                     thumb(path, small), Optional.empty(), modified(path), Palette.of(small), Optional.empty());
         }
-        return new Pictured(path, Optional.of(Player.feed(p.frameWidth(), p.frameHeight(), firstFrame(p))),
+        return new Pictured(path, Optional.of(Player.feed(feeds, p.frameWidth(), p.frameHeight())),
                 p.frameWidth(), p.frameHeight(), d.identity(), bytes(path), thumb(path, small), Optional.empty(),
                 modified(path), Palette.of(small), Optional.of(new Plays(m.stamp().size(), m.stamp().modified(),
                 m.frames(), m.durationMillis(), 0, true, false)));

@@ -1489,7 +1489,7 @@ final class View {
 
     /**
      * Play {@code p} if it is a picture that plays, and stop whatever played before: one picture plays at a time, the one
-     * shown. The player makes its frames on its own thread into the feed the job made from the first frame (a video's
+     * shown. The player makes its frames, the first too, on its own thread into the empty device feed the job made (a video's
      * with its sound, through the codec's {@code Footage}), so this returns at once; the frame due is the asked half's
      * to show ({@link #draw}). The seek track is up while one plays. Null stops the one playing.
      */

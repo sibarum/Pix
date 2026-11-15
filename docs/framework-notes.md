@@ -478,3 +478,21 @@ another picture playing forgets it. What it costs: a guess at how long a seek ta
 that only shadow the player's own `seekTo`. What the framework could do: `Player.seekBy(ms)`, relative to a seek still
 waiting if there is one, under the lock that already holds `seekTo`; or `position()` answering a waiting seek's target.
 Every player with a skip key (0.1's, the video-player demo's) writes this.
+
+## FN-40 · The processor's technique check attributes records too early, and no application with one compiles 🔬 (fixed upstream)
+
+Fixed upstream 2026-11-15 (vexelray-framework `6027ca8`): `TechniqueCalls` is a `TaskListener` on `ANALYZE`, as
+`StepCheck` is, and `TechniqueCallsTest` compiles a record with a compact constructor, which failed with Rasterware's
+error before the fix.
+
+Found 2026-11-15, putting Rasterware's video on the device feed. With vexelray-framework at `5708ead` or later installed,
+`pix-core` stops compiling, its last commit as well: every record with a compact constructor (`Filmstrip`, `Pictured`,
+`Viewer.State`, nine in all) is refused with "invalid canonical constructor ... must not contain explicit constructor
+invocation". The cause, read from the code: `TechniqueCalls.check` runs on every root element while the processor's
+round runs, and calls `Trees.getElement` on each class and call in it. On a tree not yet attributed that makes javac
+attribute the class there and then, which adds the compact constructor's implicit field assignments and `super()`
+to its tree; when javac attributes the class again in its own phase, it finds a constructor call it did not write and
+refuses the record. `TechniqueCallsTest` passed because none of its sources has a compact constructor. Nothing was
+done about it in Rasterware: no application can, short of an older processor. What the framework could do: run the check after
+attribution (a `TaskListener` on `ANALYZE`, which `StepCheck.install` already shows how to install), where
+`getElement` reads what javac already decided, and add a record with a compact constructor to the test's sources.
