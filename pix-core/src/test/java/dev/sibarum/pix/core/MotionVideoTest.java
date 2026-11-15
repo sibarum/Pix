@@ -88,6 +88,25 @@ class MotionVideoTest {
         assertTrue(shown.poster().isEmpty(), "a still is its own feed");
     }
 
+    /** A poster is at most {@code ReadPicture.POSTER} on its longer side, its shape kept; the feed is the picture's size. */
+    @Test
+    void aPosterLargerThanItsLimitIsScaledDown() throws IOException {
+        int w = 2000;
+        int h = 50;
+        byte[] first = new byte[w * h];
+        byte[] second = new byte[w * h];
+        java.util.Arrays.fill(second, (byte) 1);
+        Path wide = Files.write(dir.resolve("wide.gif"), Gif.of(w, h, new int[]{0x0000FF, 0x00FF00}, -1,
+                List.of(first, second), new int[]{10, 10}));
+        var read = new ReadPicture(null).run(new Messages.Read(wide));
+        assertEquals(w, read.feed().orElseThrow().width());
+        var poster = read.poster().orElseThrow();
+        assertEquals(ReadPicture.POSTER, poster.width());
+        assertEquals(32, poster.height(), "50 x 1280/2000, its shape kept");
+        byte[] px = poster.chain(poster.newest())[0];
+        assertNear(new int[]{0, 0, 255}, px, poster.width(), 640, 16);
+    }
+
     @Test
     void oneFrameMakesAVideoAsLongAsItIsShownAndNoPartIsLeft() throws IOException {
         Path gif = Files.write(dir.resolve("still.gif"), Gif.of(16, 16, new int[]{0, 0xFFFFFF}, -1,

@@ -8,6 +8,7 @@ import dev.vexelray.codec.image.Decoded;
 import dev.vexelray.codec.image.Motion;
 import dev.vexelray.codec.image.Picture;
 import dev.vexelray.codec.image.Pictures;
+import dev.vexelray.codec.image.Resample;
 import dev.vexelray.codec.image.gui.Player;
 import dev.vexelray.codec.video.Videos;
 import dev.vexelray.framework.api.Job;
@@ -38,6 +39,13 @@ public final class ReadPicture {
 
     /** The longest side of a thumbnail: a filmstrip cell a few em tall, at twice the density, with room to spare. */
     static final int THUMB = 192;
+
+    /**
+     * The longest side of a poster, the still that stands in for a picture that plays until its player's first frame
+     * lands. Shown for a moment and stretched to the picture's size, so it is kept small: a 2560 px first frame is about
+     * 20 MB with its mips, held for as long as the picture is, and at this side about 5.
+     */
+    static final int POSTER = 1280;
 
     /** Where a picture that plays gets its feed: on the window's device, so its frames land there with no upload. */
     private final Feeds feeds;
@@ -75,7 +83,7 @@ public final class ReadPicture {
                     p.frameWidth(), p.frameHeight(), d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)),
                     Optional.empty(), modified(r.path()), Palette.of(d.picture(1)),
                     Optional.of(new Plays(m.stamp().size(), m.stamp().modified(), m.frames(), m.durationMillis(),
-                            m.loops(), false, transparent(first))), Optional.of(feed(p)));
+                            m.loops(), false, transparent(first))), Optional.of(poster(p)));
         }
         return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
                 bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.empty(), modified(r.path()),
@@ -106,7 +114,7 @@ public final class ReadPicture {
         return new Pictured(path, Optional.of(Player.feed(feeds, p.frameWidth(), p.frameHeight())),
                 p.frameWidth(), p.frameHeight(), d.identity(), bytes(path), thumb(path, small), Optional.empty(),
                 modified(path), Palette.of(small), Optional.of(new Plays(m.stamp().size(), m.stamp().modified(),
-                m.frames(), m.durationMillis(), 0, true, false)), Optional.of(feed(p)));
+                m.frames(), m.durationMillis(), 0, true, false)), Optional.of(poster(p)));
     }
 
     /** Whether any pixel of {@code rgba} (straight RGBA8) is not wholly opaque. */
@@ -133,6 +141,24 @@ public final class ReadPicture {
         int w = p.frameWidth();
         int h = p.frameHeight();
         return Feed.still(w, h, true, MipChain.of(firstFrame(p), w, h));
+    }
+
+    /**
+     * {@code p}'s first frame as a poster: a still feed, scaled down to at most {@link #POSTER} on its longer side
+     * (Lanczos, in linear light), and as it is when it is no larger.
+     */
+    static Feed poster(Picture p) {
+        int w = p.frameWidth();
+        int h = p.frameHeight();
+        int longer = Math.max(w, h);
+        if (longer <= POSTER) {
+            return feed(p);
+        }
+        double k = (double) POSTER / longer;
+        int pw = Math.max(1, (int) Math.round(w * k));
+        int ph = Math.max(1, (int) Math.round(h * k));
+        byte[] small = Resample.lanczos(firstFrame(p), w, h, 0, 0, w, h, pw, ph);
+        return Feed.still(pw, ph, true, MipChain.of(small, pw, ph));
     }
 
     /** The file's last-modified time, ms since the epoch, or -1 when it cannot be asked. */
