@@ -488,15 +488,28 @@
                             </buildArgs>
                         </configuration>
                     </plugin>
-                    <!-- The camera's recording encoder beside the executable, as on Windows: ffmpeg-wrapper-record-linux's
-                         libraries, flat in target-linux/ffmpeg-record, and packed as pix-ffmpeg-record-linux-x86_64.tar.gz
-                         for an installer to unpack into the install's own ffmpeg-record folder (Linux's form of
-                         ffmpeg-record-zip: names in order, fixed times, owners and modes, gzip without a name or time,
-                         so the same libraries make the same archive). -->
+                    <!-- Video playback and the camera's recording encoder beside the executable, as on Windows:
+                         ffmpeg-wrapper-linux's libraries flat in target-linux/ffmpeg and ffmpeg-wrapper-record-linux's in
+                         target-linux/ffmpeg-record, packed as pix-ffmpeg-linux-x86_64.tar.gz and
+                         pix-ffmpeg-record-linux-x86_64.tar.gz for an installer to unpack into the install's own ffmpeg
+                         and ffmpeg-record folders (Linux's form of ffmpeg-zip and ffmpeg-record-zip: names in order,
+                         fixed times, owners and modes, gzip without a name or time, so the same libraries make the same
+                         archive). Without the first a native build plays no video at all. -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
                         <executions>
+                            <execution>
+                                <id>ffmpeg-beside</id>
+                                <configuration>
+                                    <includeArtifactIds>ffmpeg-wrapper-linux</includeArtifactIds>
+                                    <includes>natives/linux-x86_64/**</includes>
+                                    <outputDirectory>${project.build.directory}/ffmpeg</outputDirectory>
+                                    <fileMappers>
+                                        <org.codehaus.plexus.components.io.filemappers.FlattenFileMapper/>
+                                    </fileMappers>
+                                </configuration>
+                            </execution>
                             <execution>
                                 <id>ffmpeg-record-beside</id>
                                 <configuration>
@@ -514,6 +527,16 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
+                            <execution>
+                                <id>ffmpeg-tar</id>
+                                <phase>package</phase>
+                                <goals><goal>exec</goal></goals>
+                                <configuration>
+                                    <executable>sh</executable>
+                                    <workingDirectory>${project.build.directory}/ffmpeg</workingDirectory>
+                                    <commandlineArgs>-c "LC_ALL=C tar --sort=name --mtime=2026-01-01T00:00:00Z --owner=0 --group=0 --numeric-owner --mode=a=r,u+w -cf - * | gzip -n > ../pix-ffmpeg-linux-x86_64.tar.gz"</commandlineArgs>
+                                </configuration>
+                            </execution>
                             <execution>
                                 <id>ffmpeg-record-tar</id>
                                 <phase>package</phase>
