@@ -63,6 +63,21 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
 - [ ] **Layers, the rest**: the 3D peel (FN-28), the distance-field view (FN-29), a layer's opacity, and roles inside
       a group (only top-level solid layers take one).
 
+## After v0.2
+
+Decided 2026-11-15: out of scope for v0.2, wanted after it.
+
+- [ ] **Hardware video decoding**, on Windows, Linux and macOS alike, or on none. Today FFmpeg decodes on the CPU and
+      the frame's planes reach the GPU through the device feed (vexelray-gui's `docs/plans/device-feed.md`, step 3
+      and open question 5). A hardware decoder changes who writes the feed's slot, not the feed, so `VideoView` and
+      Rasterware should not learn which one ran. Each platform has its own API to weigh: D3D11VA or Vulkan Video on
+      Windows, VA-API or Vulkan Video on Linux (NVDEC on NVIDIA), VideoToolbox on macOS, where MoltenVK has no Vulkan
+      Video. **It falls back to the CPU decoder whenever the GPU path fails**: no decoder for the codec or profile, a
+      failed open, or an error mid-stream. The video plays on from the frame it was at, the person sees no error, and
+      the log says why once. The fallback needs a test on every platform, with the hardware path made to fail.
+- [ ] **The physics simulations on the device feed** (device-feed.md steps 4d, 5 and 6): not Rasterware's, but on the
+      same plan and deferred with hardware decoding.
+
 ## Later
 
 - [ ] **A drawing holds its poster too.** `ReadPicture` answers a `.sdg` with the drawing and, as its feed, the CPU poster
