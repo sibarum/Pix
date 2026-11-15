@@ -65,6 +65,29 @@ class MotionVideoTest {
         assertNear(new int[]{255, 0, 0}, f, p.frameWidth(), 12, 4);
     }
 
+    /**
+     * A picture that plays is read into an empty feed, which its player fills, and a poster of its first frame, which
+     * stands in until the player's first frame lands; a still has no poster. With no device to hand ({@code null}
+     * feeds), the empty feed is in the heap, as a tree no window has shown gets.
+     */
+    @Test
+    void aPictureThatPlaysIsReadEmptyWithItsFirstFrameAsAPoster() throws IOException {
+        var plays = new ReadPicture(null).run(new Messages.Read(spin()));
+        var feed = plays.feed().orElseThrow();
+        assertTrue(plays.plays().isPresent());
+        assertEquals(-1, feed.newest(), "nothing handed over: the player makes every frame, the first too");
+        var poster = plays.poster().orElseThrow(() -> new AssertionError("a picture that plays has a poster"));
+        assertEquals(feed.width(), poster.width());
+        assertEquals(feed.height(), poster.height());
+        assertTrue(poster.newest() >= 0, "the poster is its first frame, handed over");
+
+        Path still = Files.write(dir.resolve("still.gif"), Gif.of(16, 16, new int[]{0, 0xFFFFFF}, -1,
+                List.of(new byte[256]), new int[]{0}));
+        var shown = new ReadPicture(null).run(new Messages.Read(still));
+        assertTrue(shown.feed().isPresent());
+        assertTrue(shown.poster().isEmpty(), "a still is its own feed");
+    }
+
     @Test
     void oneFrameMakesAVideoAsLongAsItIsShownAndNoPartIsLeft() throws IOException {
         Path gif = Files.write(dir.resolve("still.gif"), Gif.of(16, 16, new int[]{0, 0xFFFFFF}, -1,

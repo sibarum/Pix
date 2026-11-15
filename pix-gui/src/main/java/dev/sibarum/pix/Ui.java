@@ -73,6 +73,12 @@ final class Ui {
     private final Node stage;
     private final Gui gui;
     private final Node[] layers = new Node[2];
+    /**
+     * In each layer, for a picture that plays: its first frame as a still, and over it the frames its player makes, each
+     * filling the layer. The view shows the poster until the first frame lands, then the frames alone.
+     */
+    private final Node[] posters = new Node[2];
+    private final Node[] frames = new Node[2];
     private final Node note;
     /** What the stage shows while no picture is wanted, and whether it is in the stage. */
     private final Splash splash;
@@ -143,7 +149,9 @@ final class Ui {
         this.gui = gui;
         // The view throws and crossfades the pictures itself (Toss): the framework leaves their look alone.
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = gui.box().visible(false).paintCuts(true);
+            posters[i] = filling(gui.box().visible(false).paintCuts(true));
+            frames[i] = filling(gui.box().visible(false).paintCuts(true));
+            layers[i] = gui.box().visible(false).paintCuts(true).children(posters[i], frames[i]);
         }
         gui.landmark(Landmarks.PICTURE, layers[0]);
         // Always there, and shown as far as the view shades it (Shade), so it comes and goes gradually.
@@ -309,6 +317,16 @@ final class Ui {
      */
     Node layer(int i) {
         return layers[i];
+    }
+
+    /** Layer {@code i}'s still of a playing picture's first frame, shown until the player's first frame lands. */
+    Node poster(int i) {
+        return posters[i];
+    }
+
+    /** Layer {@code i}'s frames of a playing picture, over its poster. */
+    Node frames(int i) {
+        return frames[i];
     }
 
     /** The row the details are in, whose width is the room they have. */
@@ -545,10 +563,14 @@ final class Ui {
     /**
      * Layer {@code i} shows {@code feed}, laid out {@code widthPercent} by {@code heightPercent} of the stage and centred
      * in it; with none, it shows nothing and holds no feed. With a {@code drawing}, the drawing is drawn instead, sharp at
-     * any zoom, and the feed (its poster) is not.
+     * any zoom, and the feed (its poster) is not. With a {@code poster}, a picture that plays, the layer shows nothing of
+     * its own: the poster and, over it, the feed are its two children.
      */
-    void layer(int i, Feed feed, ImageSdg drawing, float widthPercent, float heightPercent) {
+    void layer(int i, Feed feed, ImageSdg drawing, Feed poster, float widthPercent, float heightPercent) {
         Node n = layers[i];
+        boolean plays = feed != null && drawing == null && poster != null;
+        posters[i].image(plays ? poster : null).visible(plays);
+        frames[i].image(plays ? feed : null).visible(plays);
         if (feed == null) {
             n.image((Feed) null).sdg(null).visible(false);
             return;
@@ -556,9 +578,14 @@ final class Ui {
         if (drawing != null) {
             n.image((Feed) null).sdg(drawing).visible(true);
         } else {
-            n.image(feed).sdg(null).visible(true);
+            n.image(plays ? null : feed).sdg(null).visible(true);
         }
         place(n, widthPercent, heightPercent);
+    }
+
+    /** A child that lies over its layer's whole box, as its sibling does. */
+    private static Node filling(Node n) {
+        return n.width(Length.percent(100f)).height(Length.percent(100f)).floatAt(Length.ZERO, Length.ZERO);
     }
 
     /** Layer {@code i} at a new size, the stage having changed under it. */

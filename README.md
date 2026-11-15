@@ -192,7 +192,8 @@ a node, and the renderer uploads it the first time it is drawn. A picture that p
 made empty from the framework's `Feeds` (vexelray-gui's `docs/plans/device-feed.md`): the codec's `Player` writes its
 frames, the first too, into the slots' staging on a thread of its own and keeps the feed's time, the frame that first
 shows a slot lands it on the GPU (a video's YUV planes converted there, and the mips made there), and the view's
-`@Draw` shows the frame due. The pixels are written once and never cross the bus. **Jobs are in no order at all**, which is why the
+`@Draw` shows the frame due. Until the first one lands, the layer shows `Pictured.poster`, a still of the first frame
+the job decoded anyway, under the frames node, so the stage is never empty while a video opens. The pixels are written once and never cross the bus. **Jobs are in no order at all**, which is why the
 viewer keeps one read out at a time and drops an answer it no longer wants.
 
 ## Building it

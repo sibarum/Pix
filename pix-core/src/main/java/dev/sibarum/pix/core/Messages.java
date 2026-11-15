@@ -192,21 +192,30 @@ public final class Messages {
      * {@code height} are then what it is fitted from, as an SVG decoded at its longest. {@code modified} is the file's
      * last-modified time, ms since the epoch, or -1 unknown; {@code palette} up to five of its colours, most of the
      * picture first, {@code 0xRRGGBBAA} (docs/details.md). {@code plays} is there when the file plays (an animated GIF,
-     * WebP or APNG): its feed then has room for the frames after the first, which it shows until it is played.
+     * WebP or APNG, or a video): its feed is then on the device and empty, the view's player making every frame there.
+     * {@code poster} is then its first frame as a still, shown under the feed until the player's first frame lands, so
+     * the stage is never empty while it opens; none for a picture that does not play.
      */
     public static final Topic<Pictured> PICTURED_TOPIC = Topic.edge(Pictured.class);
 
     public record Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes,
                            Thumb thumb, Optional<ImageSdg> drawing, long modified, List<Integer> palette,
-                           Optional<Plays> plays) {
+                           Optional<Plays> plays, Optional<Feed> poster) {
 
         public Pictured {
             palette = List.copyOf(palette);
         }
 
+        /** A picture that does not play: no poster. */
+        public Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes, Thumb thumb,
+                        Optional<ImageSdg> drawing, long modified, List<Integer> palette) {
+            this(path, feed, width, height, identity, bytes, thumb, drawing, modified, palette, Optional.empty(),
+                    Optional.empty());
+        }
+
         /** A picture that is not a drawing, with no time or palette known: what a test makes. */
         public Pictured(Path path, Optional<Feed> feed, int width, int height, String identity, long bytes, Thumb thumb) {
-            this(path, feed, width, height, identity, bytes, thumb, Optional.empty(), -1, List.of(), Optional.empty());
+            this(path, feed, width, height, identity, bytes, thumb, Optional.empty(), -1, List.of());
         }
     }
 

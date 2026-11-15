@@ -147,9 +147,10 @@ final class View {
     /**
      * A picture that plays, as the asked half draws it: its feed, whose frame due it shows; one pass in ms; and the
      * playhead, moved {@code range} px across the seek track over a pass. Its player keeps the feed's time, so this holds
-     * no clock.
+     * no clock. {@code poster} is the still of its first frame and {@code frames} the node its feed is drawn on, over it:
+     * the poster is shown until the player has handed a frame over, then the frames alone.
      */
-    record Playing(Feed feed, long passMillis, Node head, float range) {
+    record Playing(Feed feed, long passMillis, Node head, float range, Node poster, Node frames) {
     }
 
     /**
@@ -542,11 +543,12 @@ final class View {
             toss = Toss.crossfade(now, from, was.inOpacity(now));
             front = 1 - front;
         } else {
-            ui.layer(1 - front, null, null, 0f, 0f);
+            ui.layer(1 - front, null, null, null, 0f, 0f);
             onLayer[1 - front] = null;
         }
         Fit fit = fitted(p, stageW, stageH);
-        ui.layer(front, feed, p.drawing().orElse(null), fit.widthPercent(), fit.heightPercent());
+        ui.layer(front, feed, p.drawing().orElse(null), p.poster().orElse(null), fit.widthPercent(),
+                fit.heightPercent());
         ui.front(front);
         ui.note(feed == null ? p.identity() : null);
         shades[NOTE] = shades[NOTE].toward(feed == null ? 1f : 0f, now);
@@ -589,7 +591,7 @@ final class View {
         play(null);
         Toss toss = Toss.crossfade(now, drawnAt(now), state.toss().inOpacity(now));
         front = 1 - front;
-        ui.layer(front, null, null, 0f, 0f);
+        ui.layer(front, null, null, null, 0f, 0f);
         onLayer[front] = null;
         shades[NOTE] = shades[NOTE].toward(0f, now);
         state = new Drawing(ui.layer(front), ui.layer(1 - front), state.lens(), toss, state.faded(), state.fade(),
@@ -1384,6 +1386,12 @@ final class View {
         if (slot >= 0) {
             out.show(feed, slot);
         }
+        // Until the player has handed a frame over, the feed has nothing to draw and the poster stands in; once it has,
+        // the poster goes, so a later frame's transparent pixels show what is behind the picture and not the first frame.
+        // The same frame either way, so the change is not seen.
+        boolean landed = feed.newest() >= 0;
+        out.opacity(p.poster(), landed ? 0f : 1f);
+        out.opacity(p.frames(), landed ? 1f : 0f);
         out.offset(p.head(), Player.positionOf(feed, frame, p.passMillis()) * p.range(), 0f);
         return feed.next(frame);
     }
@@ -1500,6 +1508,13 @@ final class View {
         }
         aimed = -1;
         if (player != null) {
+            // The layer it played in may still be drawn, flung out: its frames stay, and the poster under them goes, as
+            // the asked half had it.
+            for (int i = 0; i < onLayer.length; i++) {
+                if (onLayer[i] != null && onLayer[i].feed().orElse(null) == player.feed()) {
+                    ui.poster(i).visible(false);
+                }
+            }
             player.close();
             player = null;
         }
@@ -1520,7 +1535,7 @@ final class View {
             return null;
         }
         return new Playing(player.feed(), Math.max(1, player.motion().durationMillis()), ui.head(),
-                Math.max(0f, seekW - headW));
+                Math.max(0f, seekW - headW), ui.poster(front), ui.frames(front));
     }
 
     /** The seek track or its playhead has a new size: the playhead's room with it. */
@@ -1621,6 +1636,7 @@ final class View {
 
     private static void close(Pictured p) {
         p.feed().ifPresent(Feed::close);
+        p.poster().ifPresent(Feed::close);
     }
 
     private static void close(Thumb t) {

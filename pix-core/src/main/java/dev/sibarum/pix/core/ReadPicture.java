@@ -64,28 +64,30 @@ public final class ReadPicture {
             double k = SIDE / Math.max(dw, dh);
             return new Pictured(r.path(), Optional.of(feed(p)), (int) Math.round(dw * k), (int) Math.round(dh * k),
                     d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.of(p.drawing()),
-                    modified(r.path()), Palette.of(d.picture(1)), Optional.empty());
+                    modified(r.path()), Palette.of(d.picture(1)));
         }
         Motion m = p.motion();
         if (m != null && m.source() == Motion.ANIMATION && m.frames() > 1) {
-            // An animation: an empty feed on the device, whose frames, the first among them, the view's player makes.
+            // An animation: an empty feed on the device, whose frames, the first among them, the view's player makes, and
+            // its first frame as a still, shown until the player's lands.
             byte[] first = firstFrame(p);
             return new Pictured(r.path(), Optional.of(Player.feed(feeds, p.frameWidth(), p.frameHeight())),
                     p.frameWidth(), p.frameHeight(), d.identity(), bytes(r.path()), thumb(r.path(), d.picture(1)),
                     Optional.empty(), modified(r.path()), Palette.of(d.picture(1)),
                     Optional.of(new Plays(m.stamp().size(), m.stamp().modified(), m.frames(), m.durationMillis(),
-                            m.loops(), false, transparent(first))));
+                            m.loops(), false, transparent(first))), Optional.of(feed(p)));
         }
         return new Pictured(r.path(), Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(),
                 bytes(r.path()), thumb(r.path(), d.picture(1)), Optional.empty(), modified(r.path()),
-                Palette.of(d.picture(1)), Optional.empty());
+                Palette.of(d.picture(1)));
     }
 
     /**
      * A video: its size from its first frame at most {@link #SIDE}, and an empty feed of that size on the device, whose
      * frames the view's player makes with the video's sound. The player writes the decoder's planes and the frame that
      * shows one converts it on the GPU, which it can do only for a feed nothing was written into first (vexelray-gui's
-     * docs/plans/device-feed.md B). Its poster, a tenth of the way in, is its thumbnail: two opens of the file, since
+     * docs/plans/device-feed.md B). The first frame, as a still, is shown until the player's own first frame lands.
+     * Its poster, a tenth of the way in, is its thumbnail: two opens of the file, since
      * the first frame that plays and the frame that stands for the video are not the same. A video that does not say how
      * long it is or how fast it plays is shown by its first frame, still.
      */
@@ -99,12 +101,12 @@ public final class ReadPicture {
         Motion m = p.motion();
         if (m == null) {
             return new Pictured(path, Optional.of(feed(p)), p.frameWidth(), p.frameHeight(), d.identity(), bytes(path),
-                    thumb(path, small), Optional.empty(), modified(path), Palette.of(small), Optional.empty());
+                    thumb(path, small), Optional.empty(), modified(path), Palette.of(small));
         }
         return new Pictured(path, Optional.of(Player.feed(feeds, p.frameWidth(), p.frameHeight())),
                 p.frameWidth(), p.frameHeight(), d.identity(), bytes(path), thumb(path, small), Optional.empty(),
                 modified(path), Palette.of(small), Optional.of(new Plays(m.stamp().size(), m.stamp().modified(),
-                m.frames(), m.durationMillis(), 0, true, false)));
+                m.frames(), m.durationMillis(), 0, true, false)), Optional.of(feed(p)));
     }
 
     /** Whether any pixel of {@code rgba} (straight RGBA8) is not wholly opaque. */

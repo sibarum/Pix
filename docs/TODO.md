@@ -26,10 +26,6 @@ The v0.2 port starts from the template, and Pix 0.1's features come back one sli
       Rasterware's settings); the seek preview under the pointer; a file that asks to play only so many times
       (`Plays.loops`) stopping after them, its end heard as a `Timer` message. A held arrow on a large video goes on from
       a guess of where it was sent (FN-39).
-- [ ] **A picture that plays shows grey until its first frame lands** (seen 2026-11-15, a 1440 px screen recording).
-      Its feed is on the device and empty, so the player can stage the decoder's planes; a first frame written by
-      `ReadPicture` would make it RGBA for good. The poster the job decodes anyway could be shown under it until the
-      feed has a slot, or the codec could let a device feed take one RGBA frame before it is staged as planes.
 
 ## Trace, the rest (docs/trace.md)
 
